@@ -67,6 +67,9 @@ export default function App() {
         {page === 'servicos' && <Servicos />}
         {page === 'funcionarios' && <Funcionarios />}
         {page === 'temporizadores' && <Temporizadores />}
+        <footer className="app-footer">
+          Criado por <strong>Elizandra Cardoso</strong> · Oficina Lima © {new Date().getFullYear()}
+        </footer>
       </main>
     </div>
   )

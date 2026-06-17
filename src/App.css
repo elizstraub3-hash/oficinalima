@@ -251,6 +251,19 @@ table tr:hover td {
   border-color: var(--primary);
 }
 
+.app-footer {
+  margin-top: 48px;
+  padding: 20px 0 8px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.app-footer strong {
+  color: var(--primary);
+}
+
 .search-bar .search-icon {
   position: absolute;
   left: 12px;
