@@ -44,7 +44,7 @@ function LiveTimer({ inicio }) {
 
 const emptyForm = () => ({
   clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
-  servico: '', descricao: '', funcionario: '', valor: '', status: 'orcamento',
+  servico: '', descricao: '', funcionario: '', valor: '', maoDeObra: '', status: 'orcamento',
   itens: [],
 })
 
@@ -53,6 +53,17 @@ function gerarPDF(ordem) {
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
   const hoje = new Date().toLocaleDateString('pt-BR')
   const st = STATUS[ordem.status]
+  const logoUrl = window.location.origin + '/logo.png'
+
+  const tempoStr = (() => {
+    if (ordem.inicio && ordem.fim) {
+      const ms = ordem.fim - ordem.inicio
+      const h = Math.floor(ms / 3600000)
+      const m = Math.floor((ms % 3600000) / 60000)
+      return h > 0 ? `${h}h ${m}min` : `${m}min`
+    }
+    return null
+  })()
 
   const itensHTML = (ordem.itens && ordem.itens.length > 0)
     ? ordem.itens.map((it, i) => `
@@ -65,9 +76,11 @@ function gerarPDF(ordem) {
         </tr>`).join('')
     : `<tr><td colspan="5" style="padding:16px;text-align:center;color:#999">${ordem.servico || 'Serviço não especificado'}</td></tr>`
 
-  const totalItens = (ordem.itens && ordem.itens.length > 0)
+  const totalPecas = (ordem.itens && ordem.itens.length > 0)
     ? ordem.itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
-    : Number(ordem.valor || 0)
+    : 0
+  const maoDeObra = Number(ordem.maoDeObra || 0)
+  const totalGeral = totalPecas + maoDeObra || Number(ordem.valor || 0)
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -76,71 +89,118 @@ function gerarPDF(ordem) {
   <title>${ordem.numero} – Oficina Lima</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; color: #1a1a2e; background: white; padding: 32px; font-size: 13px; }
-    @media print {
-      body { padding: 0; }
-      .no-print { display: none !important; }
+    body { font-family: Arial, sans-serif; color: #111; background: white; padding: 36px; font-size: 13px; }
+    @media print { body { padding: 16px; } .no-print { display:none !important; } }
+
+    /* Cabeçalho preto */
+    .header {
+      background: #000;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
     }
-    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; padding-bottom:20px; border-bottom:3px solid #e63946; }
-    .logo { display:flex; align-items:center; gap:12px; }
-    .logo-icon { font-size:40px; }
-    .logo-text h1 { font-size:22px; color:#1a1a2e; font-weight:800; }
-    .logo-text p { color:#6b7280; font-size:12px; }
-    .os-info { text-align:right; }
-    .os-numero { font-size:20px; font-weight:800; color:#e63946; }
-    .os-data { color:#6b7280; font-size:12px; margin-top:4px; }
-    .status-badge { display:inline-block; padding:4px 14px; border-radius:20px; font-size:12px; font-weight:700; margin-top:6px; background:${st.bg}; color:${st.color}; }
-    .section { margin-bottom:20px; }
-    .section-title { font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; padding-bottom:4px; border-bottom:1px solid #e5e7eb; }
-    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    .field label { font-size:11px; color:#9ca3af; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:2px; }
-    .field span { font-size:14px; font-weight:600; color:#1a1a2e; }
-    table { width:100%; border-collapse:collapse; }
-    table thead { background:#f9fafb; }
-    table th { padding:10px 12px; text-align:left; font-size:11px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; }
-    table th:last-child, table td:last-child { text-align:right; }
-    .total-row { background:#1a1a2e; color:white; }
-    .total-row td { padding:12px 12px; font-size:15px; font-weight:800; }
-    .obs-box { background:#f9fafb; border-radius:8px; padding:14px; font-size:13px; color:#374151; line-height:1.5; }
-    .footer { margin-top:32px; padding-top:16px; border-top:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; }
-    .footer p { font-size:12px; color:#9ca3af; }
+    .logo-wrap { display:flex; align-items:center; gap:14px; }
+    .logo-img {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      object-fit: contain;
+      background: #111;
+    }
+    .logo-text h1 { font-size:20px; color:#fff; font-weight:800; }
+    .logo-text p { color:rgba(255,255,255,0.5); font-size:11px; margin-top:2px; }
+    .logo-text .telefone { color:rgba(255,255,255,0.7); font-size:12px; margin-top:4px; }
+    .os-badge { text-align:right; }
+    .os-numero { font-size:22px; font-weight:900; color:#fff; letter-spacing:1px; }
+    .os-data { color:rgba(255,255,255,0.5); font-size:11px; margin-top:4px; }
+    .status-badge {
+      display:inline-block; padding:4px 14px; border-radius:20px;
+      font-size:11px; font-weight:700; margin-top:6px;
+      background:${st.bg}; color:${st.color};
+    }
+
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+    .section { background:#fafafa; border-radius:10px; padding:14px 16px; }
+    .section-title {
+      font-size:10px; font-weight:700; color:#888;
+      text-transform:uppercase; letter-spacing:1px;
+      margin-bottom:10px; padding-bottom:6px;
+      border-bottom:1px solid #e5e7eb;
+    }
+    .field { margin-bottom:6px; }
+    .field label { font-size:10px; color:#aaa; font-weight:700; text-transform:uppercase; display:block; margin-bottom:1px; }
+    .field span { font-size:13px; font-weight:700; color:#111; }
+
+    table { width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; }
+    table thead { background:#000; }
+    table th { padding:10px 12px; text-align:left; font-size:11px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; }
+    table th:nth-child(3), table th:nth-child(4), table th:nth-child(5) { text-align:right; }
+    table td { padding:9px 12px; border-bottom:1px solid #f0f0f0; font-size:13px; }
+    table td:nth-child(3), table td:nth-child(4), table td:nth-child(5) { text-align:right; }
+
+    .subtotal-row td { background:#f5f5f5; font-weight:700; font-size:13px; }
+    .mob-row td { background:#f0f0f0; font-weight:700; font-size:13px; color:#555; }
+    .total-row td { background:#000; color:#fff; font-size:16px; font-weight:900; padding:13px 12px; }
+
+    .obs-box { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px; font-size:13px; color:#374151; line-height:1.6; margin-top:14px; }
+
+    .resp-box {
+      background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;
+      padding:14px 18px; margin-top:14px;
+      display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+    }
+    .resp-item label { font-size:10px; color:#6b7280; font-weight:700; text-transform:uppercase; display:block; margin-bottom:3px; }
+    .resp-item span { font-size:14px; font-weight:800; color:#111; }
+    .resp-item span.verde { color:#059669; }
+
+    .footer {
+      margin-top:28px; padding-top:16px;
+      border-top:2px solid #000;
+      display:flex; justify-content:space-between; align-items:flex-end;
+    }
+    .footer-left p { font-size:11px; color:#999; line-height:1.8; }
     .assinatura { text-align:center; }
-    .assinatura .linha { border-top:1px solid #9ca3af; width:200px; margin:0 auto 6px; padding-top:6px; }
-    .assinatura p { font-size:12px; color:#6b7280; }
-    .print-btn { display:block; margin:20px auto; padding:12px 32px; background:#e63946; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
-    .wpp-note { text-align:center; font-size:13px; color:#6b7280; margin-top:8px; }
+    .assinatura .linha { border-top:1px solid #999; width:200px; margin:0 auto 5px; padding-top:5px; }
+    .assinatura p { font-size:11px; color:#888; }
+
+    .print-btn { display:block; margin:0 auto 20px; padding:13px 36px; background:#000; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
+    .wpp-note { text-align:center; font-size:12px; color:#888; margin-bottom:24px; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
-  <p class="wpp-note no-print">Após salvar o PDF, envie pelo WhatsApp ao cliente.</p>
+  <button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF / Enviar WhatsApp</button>
+  <p class="wpp-note no-print">Salve como PDF e envie pelo WhatsApp para o cliente.</p>
 
+  <!-- CABEÇALHO PRETO COM LOGO -->
   <div class="header">
-    <div class="logo">
-      <div class="logo-icon">🔧</div>
+    <div class="logo-wrap">
+      <img src="${logoUrl}" alt="Logo" class="logo-img" onerror="this.style.display='none'" />
       <div class="logo-text">
         <h1>Oficina Lima</h1>
         <p>Serviços Automotivos</p>
+        <p class="telefone">📞 (41) 9 9595-5516</p>
       </div>
     </div>
-    <div class="os-info">
+    <div class="os-badge">
       <div class="os-numero">${ordem.numero}</div>
-      <div class="os-data">Data: ${hoje}</div>
+      <div class="os-data">Emitido em: ${hoje}</div>
       <div class="status-badge">${st.icon} ${st.label}</div>
     </div>
   </div>
 
-  <div class="grid2" style="margin-bottom:20px">
+  <!-- CLIENTE + VEÍCULO -->
+  <div class="grid2">
     <div class="section">
       <div class="section-title">👤 Dados do Cliente</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="field"><label>Nome</label><span>${ordem.clienteNome || '—'}</span></div>
-        <div class="field"><label>Telefone</label><span>${ordem.clienteTelefone || '—'}</span></div>
-      </div>
+      <div class="field"><label>Nome</label><span>${ordem.clienteNome || '—'}</span></div>
+      <div class="field"><label>Telefone</label><span>${ordem.clienteTelefone || '—'}</span></div>
     </div>
     <div class="section">
       <div class="section-title">🚗 Dados do Veículo</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="field"><label>Placa</label><span>${ordem.placa || '—'}</span></div>
         <div class="field"><label>Modelo</label><span>${ordem.modelo || '—'}</span></div>
         <div class="field"><label>Ano</label><span>${ordem.ano || '—'}</span></div>
@@ -149,44 +209,46 @@ function gerarPDF(ordem) {
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">🔧 Serviços / Peças</div>
+  <!-- SERVIÇOS / PEÇAS -->
+  <div style="margin-bottom:14px">
     <table>
       <thead>
         <tr>
-          <th style="width:40px">#</th>
-          <th>Descrição</th>
-          <th style="width:60px;text-align:center">Qtd</th>
-          <th style="width:100px;text-align:right">Unit.</th>
-          <th style="width:110px;text-align:right">Total</th>
+          <th style="width:36px">#</th>
+          <th>Descrição do Serviço / Peça</th>
+          <th style="width:50px">Qtd</th>
+          <th style="width:100px">Unitário</th>
+          <th style="width:110px">Total</th>
         </tr>
       </thead>
-      <tbody>
-        ${itensHTML}
-      </tbody>
+      <tbody>${itensHTML}</tbody>
       <tfoot>
-        <tr class="total-row">
-          <td colspan="4">TOTAL</td>
-          <td>${fmt(totalItens)}</td>
-        </tr>
+        ${totalPecas > 0 ? `<tr class="subtotal-row"><td colspan="4">Subtotal Peças</td><td>${fmt(totalPecas)}</td></tr>` : ''}
+        ${maoDeObra > 0 ? `<tr class="mob-row"><td colspan="4">🔧 Mão de Obra (${ordem.funcionario || 'Mecânico'})</td><td>${fmt(maoDeObra)}</td></tr>` : ''}
+        <tr class="total-row"><td colspan="4">TOTAL GERAL</td><td>${fmt(totalGeral)}</td></tr>
       </tfoot>
     </table>
   </div>
 
-  ${ordem.descricao ? `
-  <div class="section">
-    <div class="section-title">📝 Observações</div>
-    <div class="obs-box">${ordem.descricao}</div>
-  </div>` : ''}
+  ${ordem.descricao ? `<div class="obs-box">📝 <strong>Obs:</strong> ${ordem.descricao}</div>` : ''}
 
+  <!-- RESPONSÁVEL + TEMPO -->
   ${ordem.funcionario ? `
-  <div class="section">
-    <div class="section-title">👷 Responsável</div>
-    <div class="field"><span>${ordem.funcionario}</span></div>
+  <div class="resp-box">
+    <div class="resp-item">
+      <label>👷 Responsável</label>
+      <span>${ordem.funcionario}</span>
+    </div>
+    ${tempoStr ? `<div class="resp-item"><label>⏱️ Tempo de Serviço</label><span>${tempoStr}</span></div>` : ''}
+    ${maoDeObra > 0 ? `<div class="resp-item"><label>💰 Mão de Obra</label><span class="verde">${fmt(maoDeObra)}</span></div>` : ''}
   </div>` : ''}
 
+  <!-- RODAPÉ -->
   <div class="footer">
-    <p>Criado por <strong>Elizandra Cardoso</strong> · Oficina Lima © ${new Date().getFullYear()}</p>
+    <div class="footer-left">
+      <p><strong>Oficina Lima</strong> · (41) 9 9595-5516</p>
+      <p>Criado por <strong>Elizandra Cardoso</strong> · © ${new Date().getFullYear()}</p>
+    </div>
     <div class="assinatura">
       <div class="linha"></div>
       <p>Assinatura do Cliente</p>
@@ -226,7 +288,7 @@ export default function OrdemServico() {
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
       servico: ordem.servico, descricao: ordem.descricao || '',
       funcionario: ordem.funcionario || '', valor: ordem.valor || '',
-      status: ordem.status,
+      maoDeObra: ordem.maoDeObra || '', status: ordem.status,
       itens: ordem.itens || [],
     })
     setViewing(null)
@@ -265,10 +327,10 @@ export default function OrdemServico() {
       let inicio = old.inicio, fim = old.fim
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
       if ((form.status === 'concluido' || form.status === 'cancelado') && !fim) fim = Date.now()
-      arr[idx] = { ...old, ...form, valor: total, inicio, fim }
+      arr[idx] = { ...old, ...form, valor: total, maoDeObra: parseFloat(form.maoDeObra) || 0, inicio, fim }
     } else {
       arr.push({
-        ...form, id: nextId(arr), numero: nextNumero(arr), valor: total,
+        ...form, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: parseFloat(form.maoDeObra) || 0,
         inicio: form.status === 'em_andamento' ? Date.now() : null,
         fim: null, data: new Date().toISOString().split('T')[0],
       })
@@ -613,10 +675,19 @@ export default function OrdemServico() {
 
             <div className="form-row">
               <div className="form-group">
+                <label>💰 Mão de Obra (R$)</label>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={form.maoDeObra}
+                  onChange={e => setForm(f => ({ ...f, maoDeObra: e.target.value }))}
+                  placeholder="Valor da mão de obra do mecânico..."
+                />
+              </div>
+              <div className="form-group">
                 <label>Valor Total (R$) {form.itens?.length > 0 ? '— calculado automaticamente' : ''}</label>
                 <input
                   type="number" min="0" step="0.01"
-                  value={totalItensForm !== '' ? totalItensForm : form.valor}
+                  value={totalItensForm !== '' ? (totalItensForm + (parseFloat(form.maoDeObra) || 0)) || '' : form.valor}
                   onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
                   placeholder="0,00"
                   readOnly={form.itens?.length > 0}
