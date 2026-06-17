@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
 
+// Horário da oficina: 8h–12h / 13h30–18h
 function getSaudacao() {
   const h = new Date().getHours()
   if (h >= 5 && h < 12) return { texto: 'Bom dia', emoji: '☀️' }
@@ -15,16 +16,49 @@ function getAvisoAlmoco() {
   return minutos >= 720 && minutos < 810 // 12:00 às 13:30
 }
 
-function getFraseMotivacional() {
-  const frases = [
-    'Cada cliente satisfeito é um anúncio gratuito! 🚗',
-    'Qualidade não é um ato, é um hábito. 🔧',
-    'Hoje é um ótimo dia para fazer a diferença! ✨',
-    'Uma equipe unida constrói grandes resultados! 💪',
-    'Cada desafio é uma oportunidade disfarçada. 🌟',
-    'Confie no seu trabalho — ele fala por você! 🏆',
-  ]
-  return frases[new Date().getDay() % frases.length]
+function getFraseContextual(checkedIds, agora) {
+  const h = agora.getHours()
+  const m = agora.getMinutes()
+  const min = h * 60 + m
+  const checkedCount = ITEMS_FIXOS.filter(i => checkedIds.includes(i.id)).length
+  const faltam = ITEMS_FIXOS.length - checkedCount
+
+  // Antes da abertura
+  if (min < 8 * 60) return { texto: 'A oficina abre às 8h — descanse bem, Leandra! Amanhã tem mais! 🌙', cor: '#6b7280' }
+
+  // Chegando
+  if (min >= 8 * 60 && min < 8 * 60 + 20) return { texto: 'Bom dia, Leandra! Que ótimo te ver por aqui! Vamos começar o dia com tudo? 💪', cor: '#000' }
+
+  // Manhã — checklist não feito
+  if (min >= 8 * 60 + 20 && min < 12 * 60) {
+    if (checkedCount === 0) return { texto: 'Não esqueceu do checklist, né Leandra? Já está esperando por você! 📋', cor: '#e63946' }
+    if (faltam > 0) return { texto: `Boa, Leandra! Você já marcou ${checkedCount} item(s). Ainda faltam ${faltam} — bora lá! 🔥`, cor: '#f59e0b' }
+    return { texto: 'Checklist completo! Que começo de dia incrível, Leandra! Agora é só arrasar! ⭐', cor: '#10b981' }
+  }
+
+  // Pré-almoço (11h40–12h)
+  if (min >= 11 * 60 + 40 && min < 12 * 60) return { texto: 'Quase na hora do almoço, Leandra! Não para não — mais um pouquinho! 😄', cor: '#f59e0b' }
+
+  // Almoço (12h–13h30)
+  if (min >= 12 * 60 && min < 13 * 60 + 30) return { texto: 'Hora de almoçar, Leandra! Você merece essa pausa. Volte renovada às 13h30! 🍽️', cor: '#f59e0b' }
+
+  // Retorno do almoço
+  if (min >= 13 * 60 + 30 && min < 13 * 60 + 50) return { texto: 'Bem-vinda de volta, Leandra! Tarde produtiva te espera! ☕', cor: '#3b82f6' }
+
+  // Tarde — meio da tarde
+  if (min >= 13 * 60 + 50 && min < 16 * 60) return { texto: 'A tarde está passando, Leandra! Como estão os carros com os mecânicos? Vale conferir! 🔧', cor: '#3b82f6' }
+
+  // Pré-fechamento (16h–17h30)
+  if (min >= 16 * 60 && min < 17 * 60 + 30) return { texto: 'A tarde está acabando! Aproveita pra fechar os orçamentos e alinhar com os mecânicos, Leandra! 📋', cor: '#8b5cf6' }
+
+  // Quase fechando (17h30–18h)
+  if (min >= 17 * 60 + 30 && min < 18 * 60) return { texto: 'Estamos quase fechando, não é mesmo, Leandra? Só mais um pouco — você chegou até aqui! 🏁', cor: '#e63946' }
+
+  // Fechamento (18h em ponto)
+  if (min >= 18 * 60 && min < 18 * 60 + 20) return { texto: 'Oficina fechada! Parabéns pelo dia de trabalho, Leandra! Descanse bem! 🎉', cor: '#10b981' }
+
+  // Após fechamento
+  return { texto: 'O expediente acabou, Leandra! Vai descansar — você merece! Até amanhã! 🌙', cor: '#6b7280' }
 }
 
 const CHECKLIST_KEY = 'ol_checklist_'
@@ -123,6 +157,7 @@ export default function Dashboard({ setPage }) {
     localStorage.getItem('ol_almoco_' + new Date().toISOString().split('T')[0]) === '1'
   )
   const saudacao = getSaudacao()
+  const fraseCtx = getFraseContextual(checked, agora)
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -193,8 +228,10 @@ export default function Dashboard({ setPage }) {
               {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {' · '}
               {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              {' · '}
+              Expediente: 08h–12h / 13h30–18h
             </p>
-            <p className="dash-frase">{getFraseMotivacional()}</p>
+            <p className="dash-frase" style={{ color: fraseCtx.cor }}>{fraseCtx.texto}</p>
           </div>
         </div>
       </div>
