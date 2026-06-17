@@ -56,10 +56,19 @@ export default function Sidebar({ page, setPage, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <span>🔧</span>
+        <div className="sidebar-logo-img-wrap">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="sidebar-logo-img"
+            onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block' }}
+          />
+          <span className="sidebar-logo-icon" style={{ display: 'none' }}>🔧</span>
+        </div>
         <div>
           <strong>Oficina Lima</strong>
           <small>Painel Admin</small>
+          <div className="sidebar-phone">📞 (41) 9 9595-5516</div>
         </div>
       </div>
 

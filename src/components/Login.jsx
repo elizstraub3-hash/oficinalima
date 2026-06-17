@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './Login.css'
 
 const SENHA = 'oficina2024'
+const TELEFONE = '(41) 9 9595-5516'
 
 export default function Login({ onLogin }) {
   const [senha, setSenha] = useState('')
@@ -24,35 +25,54 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-bg">
       <div className={`login-card ${shake ? 'shake' : ''}`}>
-        <div className="login-logo">
-          <span className="login-icon">🔧</span>
-          <h1>Oficina Lima</h1>
-          <p>Painel Administrativo</p>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>🔒 Senha de Acesso</label>
-            <div className="password-wrap">
-              <input
-                type={mostrar ? 'text' : 'password'}
-                value={senha}
-                onChange={e => { setSenha(e.target.value); setErro('') }}
-                placeholder="Digite a senha..."
-                autoFocus
-              />
-              <button
-                type="button"
-                className="toggle-pw"
-                onClick={() => setMostrar(v => !v)}
-              >
-                {mostrar ? '🙈' : '👁️'}
-              </button>
-            </div>
+
+        {/* Cabeçalho preto com logo */}
+        <div className="login-header">
+          <div className="login-logo-wrap">
+            <img
+              src="/logo.png"
+              alt="Oficina Lima"
+              className="login-logo-img"
+              onError={e => {
+                e.target.style.display = 'none'
+                e.target.nextSibling.style.display = 'block'
+              }}
+            />
+            <span className="login-logo-fallback" style={{ display: 'none' }}>🔧</span>
           </div>
-          {erro && <p className="login-erro">{erro}</p>}
-          <button type="submit" className="login-btn">Entrar</button>
-        </form>
-        <p className="login-footer">Oficina Lima © {new Date().getFullYear()}</p>
+          <h1>Oficina Lima</h1>
+          <p className="login-sub">Painel Administrativo</p>
+          <div className="login-phone">
+            📞 {TELEFONE}
+          </div>
+        </div>
+
+        {/* Corpo branco com formulário */}
+        <div className="login-body">
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>🔒 Senha de acesso</label>
+              <div className="password-wrap">
+                <input
+                  type={mostrar ? 'text' : 'password'}
+                  value={senha}
+                  onChange={e => { setSenha(e.target.value); setErro('') }}
+                  placeholder="Digite a senha..."
+                  autoFocus
+                />
+                <button type="button" className="toggle-pw" onClick={() => setMostrar(v => !v)}>
+                  {mostrar ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+            {erro && <p className="login-erro">⚠️ {erro}</p>}
+            <button type="submit" className="login-btn">Entrar no Painel</button>
+          </form>
+          <p className="login-footer">
+            Criado por <strong>Elizandra Cardoso</strong> · © {new Date().getFullYear()}
+          </p>
+        </div>
+
       </div>
     </div>
   )
