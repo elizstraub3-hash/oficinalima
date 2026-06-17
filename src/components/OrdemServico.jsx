@@ -44,15 +44,16 @@ function LiveTimer({ inicio }) {
 
 const emptyForm = () => ({
   clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
-  servico: '', descricao: '', funcionario: '', valor: '', maoDeObra: '', status: 'orcamento',
+  servico: '', descricao: '', descBreve: '', funcionario: '', valor: '', maoDeObra: '', status: 'orcamento',
   itens: [],
 })
 
 // ─── Gerador de PDF ──────────────────────────────────────────────────────────
 function gerarPDF(ordem) {
-  const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+  const fmt  = v => `R$${Number(v || 0).toFixed(2).replace('.', ',')}`
+  const fmt2 = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
   const hoje = new Date().toLocaleDateString('pt-BR')
-  const st = STATUS[ordem.status]
+  const st   = STATUS[ordem.status]
   const logoUrl = window.location.origin + '/logo da oficina.png'
 
   const tempoStr = (() => {
@@ -65,22 +66,22 @@ function gerarPDF(ordem) {
     return null
   })()
 
-  const itensHTML = (ordem.itens && ordem.itens.length > 0)
-    ? ordem.itens.map((it, i) => `
-        <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0">${i + 1}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0">${it.desc}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:center">${it.qtd}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right">${fmt(it.valor)}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right">${fmt(Number(it.valor) * Number(it.qtd))}</td>
-        </tr>`).join('')
-    : `<tr><td colspan="5" style="padding:16px;text-align:center;color:#999">${ordem.servico || 'Serviço não especificado'}</td></tr>`
-
-  const totalPecas = (ordem.itens && ordem.itens.length > 0)
-    ? ordem.itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
-    : 0
-  const maoDeObra = Number(ordem.maoDeObra || 0)
+  const itens      = ordem.itens && ordem.itens.length > 0 ? ordem.itens : []
+  const totalPecas = itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
+  const maoDeObra  = Number(ordem.maoDeObra || 0)
   const totalGeral = totalPecas + maoDeObra || Number(ordem.valor || 0)
+
+  const pecasRows = itens.length > 0
+    ? itens.map((it, i) => `
+      <tr>
+        <td>${it.qtd}</td>
+        <td>${it.uni || 'UN'}</td>
+        <td>${it.cod || '—'}</td>
+        <td>${it.desc}</td>
+        <td style="text-align:right">${fmt(it.valor)}</td>
+        <td style="text-align:right"><strong>${fmt(Number(it.valor) * Number(it.qtd))}</strong></td>
+      </tr>`).join('')
+    : `<tr><td colspan="6" style="text-align:center;color:#aaa;padding:14px">Nenhuma peca informada</td></tr>`
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -88,195 +89,203 @@ function gerarPDF(ordem) {
   <meta charset="UTF-8"/>
   <title>${ordem.numero} – Lima Oficina Mecanica</title>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; color: #111; background: white; padding: 36px; font-size: 13px; }
-    @media print { body { padding: 16px; } .no-print { display:none !important; } }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;color:#111;background:#fff;padding:28px;font-size:12.5px}
+    @media print{body{padding:14px}.no-print{display:none!important}}
 
-    /* Cabeçalho preto */
-    .header {
-      background: #000;
-      border-radius: 12px;
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .logo-wrap { display:flex; align-items:center; gap:14px; }
-    .logo-img {
-      width: 90px; height: 90px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.2);
-      object-fit: contain;
-      background: #111;
-    }
-    .logo-text h1 { font-size:20px; color:#fff; font-weight:800; }
-    .logo-text p { color:rgba(255,255,255,0.5); font-size:11px; margin-top:2px; }
-    .logo-text .telefone { color:rgba(255,255,255,0.7); font-size:12px; margin-top:4px; }
-    .os-badge { text-align:right; }
-    .os-numero { font-size:22px; font-weight:900; color:#fff; letter-spacing:1px; }
-    .os-data { color:rgba(255,255,255,0.5); font-size:11px; margin-top:4px; }
-    .status-badge {
-      display:inline-block; padding:4px 14px; border-radius:20px;
-      font-size:11px; font-weight:700; margin-top:6px;
-      background:${st.bg}; color:${st.color};
-    }
+    /* Cabeçalho */
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #000;padding-bottom:14px;margin-bottom:14px}
+    .header-left h1{font-size:18px;font-weight:900;color:#000;letter-spacing:0.5px}
+    .header-left p{font-size:11px;color:#555;margin-top:2px}
+    .logo-img{width:80px;height:80px;object-fit:contain;border-radius:50%;border:2px solid #ddd;background:#f9f9f9}
 
-    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
-    .section { background:#fafafa; border-radius:10px; padding:14px 16px; }
-    .section-title {
-      font-size:10px; font-weight:700; color:#888;
-      text-transform:uppercase; letter-spacing:1px;
-      margin-bottom:10px; padding-bottom:6px;
-      border-bottom:1px solid #e5e7eb;
-    }
-    .field { margin-bottom:6px; }
-    .field label { font-size:10px; color:#aaa; font-weight:700; text-transform:uppercase; display:block; margin-bottom:1px; }
-    .field span { font-size:13px; font-weight:700; color:#111; }
+    /* Título OS */
+    .os-title-bar{background:#000;color:#fff;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-radius:6px;margin-bottom:14px}
+    .os-title-bar span{font-size:13px;font-weight:700;letter-spacing:1px}
+    .status-pill{background:${st.bg};color:${st.color};font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px}
 
-    table { width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; }
-    table thead { background:#000; }
-    table th { padding:10px 12px; text-align:left; font-size:11px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; }
-    table th:nth-child(3), table th:nth-child(4), table th:nth-child(5) { text-align:right; }
-    table td { padding:9px 12px; border-bottom:1px solid #f0f0f0; font-size:13px; }
-    table td:nth-child(3), table td:nth-child(4), table td:nth-child(5) { text-align:right; }
+    /* Seções info */
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .info-box{border:1px solid #ddd;border-radius:6px;overflow:hidden}
+    .info-box-title{background:#000;color:#fff;font-size:10px;font-weight:700;padding:5px 10px;text-transform:uppercase;letter-spacing:1px}
+    .info-box-body{padding:10px}
+    .info-row{display:flex;gap:8px;margin-bottom:4px;font-size:12px}
+    .info-label{color:#888;font-weight:700;min-width:65px;text-transform:uppercase;font-size:10px}
+    .info-val{font-weight:700;color:#000}
 
-    .subtotal-row td { background:#f5f5f5; font-weight:700; font-size:13px; }
-    .mob-row td { background:#f0f0f0; font-weight:700; font-size:13px; color:#555; }
-    .total-row td { background:#000; color:#fff; font-size:16px; font-weight:900; padding:13px 12px; }
+    /* Descricao breve */
+    .desc-box{border:1px solid #fde68a;background:#fffbeb;border-radius:6px;padding:9px 12px;margin-bottom:14px;font-size:12px;color:#374151}
+    .desc-box strong{display:block;font-size:10px;text-transform:uppercase;color:#b45309;margin-bottom:3px}
 
-    .obs-box { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px; font-size:13px; color:#374151; line-height:1.6; margin-top:14px; }
+    /* Tabelas */
+    .section-head{background:#000;color:#fff;text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;padding:7px;text-transform:uppercase;margin-bottom:0}
+    table{width:100%;border-collapse:collapse}
+    table th{background:#f0f0f0;padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;color:#333;border:1px solid #ddd}
+    table td{padding:7px 10px;border:1px solid #e5e5e5;font-size:12px;vertical-align:middle}
+    table tr:nth-child(even) td{background:#fafafa}
 
-    .resp-box {
-      background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;
-      padding:14px 18px; margin-top:14px;
-      display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
-    }
-    .resp-item label { font-size:10px; color:#6b7280; font-weight:700; text-transform:uppercase; display:block; margin-bottom:3px; }
-    .resp-item span { font-size:14px; font-weight:800; color:#111; }
-    .resp-item span.verde { color:#059669; }
+    /* Subtotais */
+    .sub-table{width:100%;border-collapse:collapse;margin-top:0}
+    .sub-table td{padding:5px 10px;font-size:12px;border:1px solid #e5e5e5}
+    .sub-table .sub-label{color:#555;text-align:right}
+    .sub-table .sub-val{text-align:right;font-weight:700;width:120px}
+    .sub-table .total-row td{background:#000;color:#fff;font-size:15px;font-weight:900;padding:10px}
 
-    .footer {
-      margin-top:28px; padding-top:16px;
-      border-top:2px solid #000;
-      display:flex; justify-content:space-between; align-items:flex-end;
-    }
-    .footer-left p { font-size:11px; color:#999; line-height:1.8; }
-    .assinatura { text-align:center; }
-    .assinatura .linha { border-top:1px solid #999; width:200px; margin:0 auto 5px; padding-top:5px; }
-    .assinatura p { font-size:11px; color:#888; }
+    /* Mecanico */
+    .mec-box{border:1.5px solid #bbf7d0;background:#f0fdf4;border-radius:6px;padding:10px 14px;margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .mec-item label{font-size:9px;text-transform:uppercase;color:#6b7280;font-weight:700;display:block;margin-bottom:2px}
+    .mec-item span{font-size:13px;font-weight:800;color:#111}
+    .mec-item span.verde{color:#059669}
 
-    .print-btn { display:block; margin:0 auto 20px; padding:13px 36px; background:#000; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
-    .wpp-note { text-align:center; font-size:12px; color:#888; margin-bottom:24px; }
+    /* Garantia */
+    .garantia-box{border:1.5px solid #86efac;background:#f0fdf4;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11.5px;color:#166534;line-height:1.7}
+    .garantia-box strong{font-size:12px;display:block;margin-bottom:3px}
 
-    .garantia-box {
-      background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px;
-      padding:12px 16px; margin-top:14px; font-size:12px; color:#166534; line-height:1.7;
-    }
-    .garantia-box strong { font-size:13px; display:block; margin-bottom:4px; }
+    /* Termo */
+    .termo-box{border:1px solid #e2e8f0;border-left:4px solid #000;background:#f8fafc;border-radius:6px;padding:10px 14px;margin-top:8px;font-size:11px;color:#374151;line-height:1.75}
+    .termo-box strong{display:block;font-size:11px;font-weight:800;margin-bottom:4px;text-transform:uppercase;color:#000}
 
-    .termo-box {
-      background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #000;
-      border-radius:8px; padding:12px 16px; margin-top:12px;
-      font-size:11.5px; color:#374151; line-height:1.8;
-    }
-    .termo-box strong { display:block; font-size:12px; margin-bottom:5px; color:#000; text-transform:uppercase; letter-spacing:0.5px; }
+    /* Rodapé */
+    .footer{margin-top:20px;padding-top:12px;border-top:2px solid #000;display:flex;justify-content:space-between;align-items:flex-end}
+    .footer p{font-size:11px;color:#888;line-height:1.8}
+    .assinatura{text-align:center}
+    .assinatura .linha{border-top:1px solid #aaa;width:200px;margin:0 auto 4px;padding-top:5px}
+    .assinatura p{font-size:11px;color:#888}
+
+    .print-btn{display:block;margin:0 auto 18px;padding:12px 32px;background:#000;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+    .wpp-note{text-align:center;font-size:12px;color:#888;margin-bottom:20px}
   </style>
 </head>
 <body>
   <button class="print-btn no-print" onclick="window.print()">Salvar como PDF / Enviar WhatsApp</button>
   <p class="wpp-note no-print">Salve como PDF e envie pelo WhatsApp para o cliente.</p>
 
-  <!-- CABECALHO PRETO COM LOGO -->
+  <!-- CABECALHO -->
   <div class="header">
-    <div class="logo-wrap">
-      <img src="${logoUrl}" alt="Logo" class="logo-img" onerror="this.style.display='none'" />
-      <div class="logo-text">
-        <h1>Lima Oficina Mecanica</h1>
-        <p>Servicos Automotivos</p>
-        <p class="telefone">(41) 9 9595-5516</p>
-      </div>
+    <div class="header-left">
+      <h1>Lima Oficina Mecanica</h1>
+      <p>(41) 9 9595-5516 &nbsp;|&nbsp; Servicos Automotivos</p>
+      <p style="margin-top:6px;font-size:11px;color:#888">Data de emissao: <strong>${hoje}</strong></p>
     </div>
-    <div class="os-badge">
-      <div class="os-numero">${ordem.numero}</div>
-      <div class="os-data">Emitido em: ${hoje}</div>
-      <div class="status-badge">${st.label}</div>
-    </div>
+    <img src="${logoUrl}" class="logo-img" alt="Logo" onerror="this.style.display='none'" />
+  </div>
+
+  <!-- BARRA OS + STATUS -->
+  <div class="os-title-bar">
+    <span>${ordem.numero}</span>
+    <span class="status-pill">${st.label}</span>
   </div>
 
   <!-- CLIENTE + VEICULO -->
-  <div class="grid2">
-    <div class="section">
-      <div class="section-title">Dados do Cliente</div>
-      <div class="field"><label>Nome</label><span>${ordem.clienteNome || '—'}</span></div>
-      <div class="field"><label>Telefone</label><span>${ordem.clienteTelefone || '—'}</span></div>
+  <div class="info-grid">
+    <div class="info-box">
+      <div class="info-box-title">Dados do Cliente</div>
+      <div class="info-box-body">
+        <div class="info-row"><span class="info-label">Nome</span><span class="info-val">${ordem.clienteNome || '—'}</span></div>
+        <div class="info-row"><span class="info-label">Telefone</span><span class="info-val">${ordem.clienteTelefone || '—'}</span></div>
+      </div>
     </div>
-    <div class="section">
-      <div class="section-title">Dados do Veiculo</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div class="field"><label>Placa</label><span>${ordem.placa || '—'}</span></div>
-        <div class="field"><label>Modelo</label><span>${ordem.modelo || '—'}</span></div>
-        <div class="field"><label>Ano</label><span>${ordem.ano || '—'}</span></div>
-        <div class="field"><label>Cor</label><span>${ordem.cor || '—'}</span></div>
+    <div class="info-box">
+      <div class="info-box-title">Dados do Veiculo</div>
+      <div class="info-box-body">
+        <div class="info-row"><span class="info-label">Placa</span><span class="info-val">${ordem.placa || '—'}</span></div>
+        <div class="info-row"><span class="info-label">Modelo</span><span class="info-val">${ordem.modelo || '—'}</span></div>
+        <div class="info-row"><span class="info-label">Ano</span><span class="info-val">${ordem.ano || '—'}</span><span class="info-label" style="margin-left:10px">Cor</span><span class="info-val">${ordem.cor || '—'}</span></div>
       </div>
     </div>
   </div>
 
-  <!-- SERVICOS / PECAS -->
-  <div style="margin-bottom:14px">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:36px">#</th>
-          <th>Descricao do Servico / Peca</th>
-          <th style="width:50px">Qtd</th>
-          <th style="width:100px">Unitario</th>
-          <th style="width:110px">Total</th>
-        </tr>
-      </thead>
-      <tbody>${itensHTML}</tbody>
-      <tfoot>
-        ${totalPecas > 0 ? `<tr class="subtotal-row"><td colspan="4">Subtotal Pecas</td><td>${fmt(totalPecas)}</td></tr>` : ''}
-        ${maoDeObra > 0 ? `<tr class="mob-row"><td colspan="4">Mao de Obra (${ordem.funcionario || 'Mecanico'})</td><td>${fmt(maoDeObra)}</td></tr>` : ''}
-        <tr class="total-row"><td colspan="4">TOTAL GERAL</td><td>${fmt(totalGeral)}</td></tr>
-      </tfoot>
-    </table>
-  </div>
+  ${(ordem.descBreve || ordem.descricao) ? `
+  <div class="desc-box">
+    <strong>Descricao do Servico</strong>
+    ${ordem.descBreve ? `<span style="font-weight:700">${ordem.descBreve}</span>` : ''}
+    ${ordem.descricao ? `<div style="color:#555;margin-top:3px">${ordem.descricao}</div>` : ''}
+  </div>` : ''}
 
-  ${ordem.descricao ? `<div class="obs-box"><strong>Obs:</strong> ${ordem.descricao}</div>` : ''}
+  <!-- TABELA PECAS -->
+  <div class="section-head">P R O D U T O S</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:42px">Qtde</th>
+        <th style="width:42px">Uni.</th>
+        <th style="width:52px">Cod.</th>
+        <th>Descricao</th>
+        <th style="width:110px;text-align:right">Valor Unit.</th>
+        <th style="width:110px;text-align:right">Valor</th>
+      </tr>
+    </thead>
+    <tbody>${pecasRows}</tbody>
+  </table>
+  <table class="sub-table">
+    <tr><td class="sub-label">Produtos</td><td class="sub-val">${fmt2(totalPecas)}</td></tr>
+    <tr><td class="sub-label">Sub-Total</td><td class="sub-val">${fmt2(totalPecas)}</td></tr>
+  </table>
+
+  <!-- TABELA SERVICO / MAO DE OBRA -->
+  ${maoDeObra > 0 || ordem.servico ? `
+  <div class="section-head" style="margin-top:16px">S E R V I C O S</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:42px">Qtde</th>
+        <th>Descricao</th>
+        <th style="width:120px">Mecanico</th>
+        <th style="width:110px;text-align:right">Valor Unit.</th>
+        <th style="width:110px;text-align:right">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>${ordem.servico || 'Mao de Obra'}</td>
+        <td>${ordem.funcionario || '—'}</td>
+        <td style="text-align:right">${fmt(maoDeObra)}</td>
+        <td style="text-align:right"><strong>${fmt(maoDeObra)}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <table class="sub-table">
+    <tr><td class="sub-label">Total Servicos</td><td class="sub-val">${fmt2(maoDeObra)}</td></tr>
+    <tr><td class="sub-label">Servicos</td><td class="sub-val">${fmt2(maoDeObra)}</td></tr>
+  </table>` : ''}
+
+  <!-- TOTAL GERAL -->
+  <table class="sub-table" style="margin-top:4px">
+    <tr class="total-row">
+      <td style="text-align:right">Total ${fmt2(totalGeral)}</td>
+    </tr>
+  </table>
 
   <!-- MECANICO RESPONSAVEL -->
   ${ordem.funcionario ? `
-  <div class="resp-box">
-    <div class="resp-item">
-      <label>Mecanico Responsavel pelo Servico</label>
-      <span>${ordem.funcionario}</span>
-    </div>
-    ${tempoStr ? `<div class="resp-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
-    ${maoDeObra > 0 ? `<div class="resp-item"><label>Mao de Obra</label><span class="verde">${fmt(maoDeObra)}</span></div>` : ''}
+  <div class="mec-box">
+    <div class="mec-item"><label>Mecanico Responsavel pelo Servico</label><span>${ordem.funcionario}</span></div>
+    ${tempoStr ? `<div class="mec-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
+    ${maoDeObra > 0 ? `<div class="mec-item"><label>Mao de Obra</label><span class="verde">${fmt2(maoDeObra)}</span></div>` : ''}
   </div>` : ''}
 
-  <!-- GARANTIA E VALIDADE -->
+  <!-- GARANTIA -->
   <div class="garantia-box">
     <strong>Garantia e Validade do Orcamento</strong>
     Garantia de <strong>3 (tres) meses</strong> para todos os servicos aprovados e executados pela Lima Oficina Mecanica, contados a partir da data de conclusao do servico.<br>
     A validade deste orcamento e de <strong>7 (sete) dias uteis</strong> a partir da data de emissao. Apos esse prazo, os valores poderao ser revisados.
   </div>
 
-  <!-- TERMO DE RESPONSABILIDADE -->
+  <!-- TERMO -->
   <div class="termo-box">
     <strong>Termo de Responsabilidade e Seguranca</strong>
-    A Lima Oficina Mecanica possui sistema de <strong>monitoramento por cameras</strong> em todas as dependencias do estabelecimento, com gravacao contínua de imagens e registros fotograficos.<br>
-    Realizamos um <strong>checklist detalhado do estado do veiculo</strong> no momento da entrada — incluindo lataria, vidros, pneus, acessorios e itens internos — com fotos e registros documentados.<br>
+    A Lima Oficina Mecanica possui sistema de <strong>monitoramento por cameras</strong> em todas as dependencias do estabelecimento, com gravacao continua de imagens e registros fotograficos.
+    Realizamos um <strong>checklist detalhado do estado do veiculo</strong> no momento da entrada — incluindo lataria, vidros, pneus, acessorios e itens internos — com fotos e registros documentados.
     Em caso de qualquer divergencia relacionada ao estado do veiculo, as gravacoes e registros fotograficos ficam disponiveis para conferencia. Nosso compromisso e com a transparencia e a seguranca do seu patrimonio.
   </div>
 
   <!-- RODAPE -->
   <div class="footer">
-    <div class="footer-left">
-      <p><strong>Lima Oficina Mecanica</strong> · (41) 9 9595-5516</p>
-      <p>Sistema criado por <strong>Elizandra Lima</strong></p>
-      <p>Criado por Elizandra Cardoso · © ${new Date().getFullYear()}</p>
+    <div>
+      <p><strong>Lima Oficina Mecanica</strong> &nbsp;|&nbsp; (41) 9 9595-5516</p>
+      <p>Criado por Elizandra Cardoso &nbsp;·&nbsp; © ${new Date().getFullYear()}</p>
+      <p style="margin-top:2px;color:#bbb;font-size:10px">Sistema criado por Elizandra Lima</p>
     </div>
     <div class="assinatura">
       <div class="linha"></div>
@@ -300,7 +309,7 @@ export default function OrdemServico() {
   const [form, setForm] = useState(emptyForm())
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [busca, setBusca] = useState('')
-  const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, valor: '' })
+  const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -315,7 +324,7 @@ export default function OrdemServico() {
     setForm({
       clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone,
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
-      servico: ordem.servico, descricao: ordem.descricao || '',
+      servico: ordem.servico, descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
       funcionario: ordem.funcionario || '', valor: ordem.valor || '',
       maoDeObra: ordem.maoDeObra || '', status: ordem.status,
       itens: ordem.itens || [],
@@ -333,7 +342,7 @@ export default function OrdemServico() {
   function adicionarItem() {
     if (!novoItem.desc || !novoItem.valor) return
     setForm(f => ({ ...f, itens: [...(f.itens || []), { ...novoItem, id: Date.now() }] }))
-    setNovoItem({ desc: '', qtd: 1, valor: '' })
+    setNovoItem({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
   }
 
   function removerItem(id) {
@@ -657,41 +666,67 @@ export default function OrdemServico() {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Observações / Descrição</label>
-              <textarea rows={2} value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Detalhes, peças necessárias, defeitos relatados..." />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Descrição Breve do Serviço</label>
+                <input
+                  value={form.descBreve}
+                  onChange={e => setForm(f => ({ ...f, descBreve: e.target.value.slice(0, 60) }))}
+                  placeholder="Ex: Troca de bobina e velas (máx. 60 caracteres)"
+                  maxLength={60}
+                />
+                <small style={{ color: 'var(--text-light)', fontSize: 11 }}>{(form.descBreve || '').length}/60</small>
+              </div>
+              <div className="form-group">
+                <label>Observações / Descrição Detalhada</label>
+                <textarea rows={2} value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Detalhes, defeitos relatados..." />
+              </div>
             </div>
 
             <p className="os-section-title">📦 Itens / Peças</p>
             <div className="os-itens-add">
               <input
-                placeholder="Descrição do item / peça"
+                placeholder="Descrição da peça"
                 value={novoItem.desc}
                 onChange={e => setNovoItem(n => ({ ...n, desc: e.target.value }))}
                 style={{ flex: 3 }}
               />
               <input
+                placeholder="Uni. (UN/PC)"
+                value={novoItem.uni}
+                onChange={e => setNovoItem(n => ({ ...n, uni: e.target.value }))}
+                style={{ flex: 0.8 }}
+              />
+              <input
+                placeholder="Cód."
+                value={novoItem.cod}
+                onChange={e => setNovoItem(n => ({ ...n, cod: e.target.value }))}
+                style={{ flex: 0.8 }}
+              />
+              <input
                 type="number" min="1" placeholder="Qtd"
                 value={novoItem.qtd}
                 onChange={e => setNovoItem(n => ({ ...n, qtd: e.target.value }))}
-                style={{ flex: 1 }}
+                style={{ flex: 0.7 }}
               />
               <input
                 type="number" min="0" step="0.01" placeholder="Valor unit."
                 value={novoItem.valor}
                 onChange={e => setNovoItem(n => ({ ...n, valor: e.target.value }))}
-                style={{ flex: 1.5 }}
+                style={{ flex: 1.2 }}
               />
               <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 14px' }} onClick={adicionarItem}>+ Add</button>
             </div>
 
             {form.itens && form.itens.length > 0 && (
               <table style={{ marginBottom: 12, fontSize: 13 }}>
-                <thead><tr><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
+                <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
                 <tbody>
                   {form.itens.map(it => (
                     <tr key={it.id}>
                       <td>{it.desc}</td>
+                      <td>{it.uni || 'UN'}</td>
+                      <td>{it.cod || '—'}</td>
                       <td>{it.qtd}</td>
                       <td>R$ {Number(it.valor).toFixed(2).replace('.', ',')}</td>
                       <td><strong>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
