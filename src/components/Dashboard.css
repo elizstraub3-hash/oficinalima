@@ -3,7 +3,7 @@
   background: #000;
   border-radius: 16px;
   padding: 24px 28px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -47,8 +47,8 @@
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   border: 2px solid #f59e0b;
   border-radius: 14px;
-  padding: 18px 24px;
-  margin-bottom: 24px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -60,18 +60,229 @@
   50% { box-shadow: 0 0 0 6px rgba(245,158,11,0.15); }
 }
 
-.dash-almoco-icon { font-size: 32px; }
+.dash-almoco-icon { font-size: 30px; }
 
 .dash-almoco strong {
   display: block;
-  font-size: 16px;
+  font-size: 15px;
   color: #92400e;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .dash-almoco p {
   font-size: 13px;
   color: #b45309;
+}
+
+.dash-almoco-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dash-almoco-btn:hover { background: #d97706; }
+
+/* === ALERTAS DINÂMICOS === */
+.dash-alertas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dash-alerta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 4px solid;
+}
+
+.dash-alerta-danger {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.dash-alerta-warning {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.dash-alerta-info {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.dash-alerta-icon { font-size: 20px; flex-shrink: 0; }
+
+.dash-alerta-texto { flex: 1; line-height: 1.4; }
+
+.dash-alerta-close {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.5;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.dash-alerta-close:hover { opacity: 1; background: rgba(0,0,0,0.08); }
+
+/* === CHECKLIST === */
+.dash-checklist {
+  margin-bottom: 20px;
+}
+
+.dash-checklist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.dash-checklist-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.dash-checklist-sub {
+  font-size: 12px;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+/* Anel de progresso SVG */
+.dash-progress-ring {
+  width: 56px;
+  height: 56px;
+  transform: rotate(-90deg);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.dash-checklist-progress {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.dash-progress-bg {
+  fill: none;
+  stroke: #f0f0f0;
+  stroke-width: 3.5;
+}
+
+.dash-progress-fill {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+.dash-progress-pct {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 800;
+  color: #000;
+}
+
+/* Lista do checklist */
+.dash-checklist-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.dash-check-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dash-check-item.done {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.dash-check-item.done .dash-check-label {
+  text-decoration: line-through;
+  color: var(--text-light);
+}
+
+.dash-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #d1d5db;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dash-checkbox.checked {
+  background: #000;
+  border-color: #000;
+}
+
+.dash-check-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  transition: color 0.15s;
+}
+
+.dash-check-pending {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f59e0b;
+  background: #fef3c7;
+  border-radius: 20px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* === CARDS === */
@@ -189,7 +400,7 @@
   border-radius: 20px;
 }
 
-/* === DICA === */
+/* === MÓDULOS === */
 .dash-tip h3 {
   font-size: 15px;
   margin-bottom: 12px;

@@ -12,8 +12,7 @@ function getAvisoAlmoco() {
   const h = new Date().getHours()
   const m = new Date().getMinutes()
   const minutos = h * 60 + m
-  if (minutos >= 690 && minutos < 780) return true  // 11:30 às 13:00
-  return false
+  return minutos >= 720 && minutos < 810 // 12:00 às 13:30
 }
 
 function getFraseMotivacional() {
@@ -28,18 +27,108 @@ function getFraseMotivacional() {
   return frases[new Date().getDay() % frases.length]
 }
 
+const CHECKLIST_KEY = 'ol_checklist_'
+const ITEMS_FIXOS = [
+  { id: 'abrir', label: 'Abrir a oficina 🔑', icon: '🔑' },
+  { id: 'cafe', label: 'Tomar café ☕', icon: '☕' },
+  { id: 'escritorio', label: 'Arrumar o escritório 🗂️', icon: '🗂️' },
+  { id: 'pecas', label: 'Verificar peças para pedir 🔩', icon: '🔩' },
+  { id: 'contas', label: 'Verificar contas a pagar 💳', icon: '💳' },
+  { id: 'orcamentos', label: 'Conferir orçamentos com os mecânicos 📋', icon: '📋' },
+]
+
+function getTodayKey() {
+  return CHECKLIST_KEY + new Date().toISOString().split('T')[0]
+}
+
+function loadChecked() {
+  return JSON.parse(localStorage.getItem(getTodayKey()) || '[]')
+}
+
+function saveChecked(arr) {
+  localStorage.setItem(getTodayKey(), JSON.stringify(arr))
+}
+
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+
+function calcAlertas() {
+  const agora = Date.now()
+  const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  const contas = JSON.parse(localStorage.getItem('ol_contas') || '[]')
+  const hoje = new Date()
+  const diaHoje = hoje.getDate()
+  const alertas = []
+
+  // Carros com mais de 5h em serviço
+  ordens.filter(o => o.status === 'em_andamento' && o.inicio).forEach(o => {
+    const elapsed = agora - o.inicio
+    if (elapsed > 5 * 3600 * 1000) {
+      const horas = Math.floor(elapsed / 3600000)
+      alertas.push({
+        id: `os5h_${o.id}`,
+        tipo: 'danger',
+        icone: '⏰',
+        texto: `OS #${o.numero} — ${o.clienteNome || 'Cliente'} (${o.modelo || 'veículo'}) está há ${horas}h em serviço. Verifique o status com o mecânico ${o.funcionario ? '(' + o.funcionario + ')' : ''}!`,
+      })
+    }
+  })
+
+  // Carros há mais de 3 dias na oficina
+  ordens.filter(o => !['concluido', 'cancelado'].includes(o.status) && o.criadoEm).forEach(o => {
+    const dias = Math.floor((agora - o.criadoEm) / (86400 * 1000))
+    if (dias >= 3) {
+      alertas.push({
+        id: `os3d_${o.id}`,
+        tipo: 'warning',
+        icone: '🚗',
+        texto: `OS #${o.numero} — ${o.clienteNome || 'Cliente'} (${o.modelo || 'veículo'}) está na oficina há ${dias} dias. Verifique o andamento com o mecânico ${o.funcionario ? '(' + o.funcionario + ')' : ''}!`,
+      })
+    }
+  })
+
+  // Contas vencendo hoje
+  contas.filter(c => c.status === 'pendente' && Number(c.vencimento) === diaHoje).forEach(c => {
+    alertas.push({
+      id: `conta_${c.id}`,
+      tipo: 'info',
+      icone: '📄',
+      texto: `Conta vence HOJE: ${c.descricao}${c.descBreve ? ' — ' + c.descBreve : ''} · ${fmt(c.valor)}. Não esqueça de pagar!`,
+    })
+  })
+
+  // Orçamentos pendentes — lembrar de verificar com mecânicos
+  const orcamentos = ordens.filter(o => o.status === 'orcamento')
+  if (orcamentos.length > 0) {
+    alertas.push({
+      id: 'orcamentos_pendentes',
+      tipo: 'info',
+      icone: '📋',
+      texto: `Você tem ${orcamentos.length} orçamento(s) aguardando aprovação. Confira peça por peça com os mecânicos responsáveis!`,
+    })
+  }
+
+  return alertas
+}
 
 export default function Dashboard({ setPage }) {
   const [stats, setStats] = useState({ receita: 0, gastos: 0, ordens: 0, contasPendentes: 0, clientes: 0 })
   const [pecas, setPecas] = useState([])
   const [totalComissao, setTotalComissao] = useState(0)
   const [agora, setAgora] = useState(new Date())
+  const [checked, setChecked] = useState(loadChecked)
+  const [alertas, setAlertas] = useState([])
+  const [alertasDismissed, setAlertasDismissed] = useState([])
+  const [almoco, setAlmoco] = useState(getAvisoAlmoco())
+  const [almocoConcluido, setAlmocoConcluido] = useState(
+    localStorage.getItem('ol_almoco_' + new Date().toISOString().split('T')[0]) === '1'
+  )
   const saudacao = getSaudacao()
-  const almoco = getAvisoAlmoco()
 
   useEffect(() => {
-    const id = setInterval(() => setAgora(new Date()), 60000)
+    const id = setInterval(() => {
+      setAgora(new Date())
+      setAlmoco(getAvisoAlmoco())
+    }, 30000)
     return () => clearInterval(id)
   }, [])
 
@@ -56,12 +145,33 @@ export default function Dashboard({ setPage }) {
     const clientes = JSON.parse(localStorage.getItem('ol_clientes') || '[]').length
     setStats({ receita, gastos, ordens: ordensAtivas, contasPendentes, clientes })
 
-    // notinhas de peças com comissão
     const todasPecas = gastosArr.filter(g => g.categoria === 'Peças').sort((a, b) => b.id - a.id).slice(0, 10)
     setPecas(todasPecas)
     const comTotal = gastosArr.filter(g => g.categoria === 'Peças' && g.comissao).reduce((s, g) => s + Number(g.comissao), 0)
     setTotalComissao(comTotal)
+
+    setAlertas(calcAlertas())
   }, [])
+
+  function toggleCheck(id) {
+    const novo = checked.includes(id) ? checked.filter(x => x !== id) : [...checked, id]
+    setChecked(novo)
+    saveChecked(novo)
+  }
+
+  function dismissAlertas(id) {
+    setAlertasDismissed(prev => [...prev, id])
+  }
+
+  function concluirAlmoco() {
+    const key = 'ol_almoco_' + new Date().toISOString().split('T')[0]
+    localStorage.setItem(key, '1')
+    setAlmocoConcluido(true)
+  }
+
+  const totalChecked = checked.filter(id => ITEMS_FIXOS.some(i => i.id === id)).length
+  const todosFeitos = totalChecked === ITEMS_FIXOS.length
+  const alertasVisiveis = alertas.filter(a => !alertasDismissed.includes(a.id))
 
   const cards = [
     { label: 'Receita Hoje', value: fmt(stats.receita), icon: '💰', color: '#10b981', page: 'caixa' },
@@ -90,16 +200,71 @@ export default function Dashboard({ setPage }) {
       </div>
 
       {/* === AVISO DE ALMOÇO === */}
-      {almoco && (
+      {almoco && !almocoConcluido && (
         <div className="dash-almoco">
           <span className="dash-almoco-icon">🍽️</span>
-          <div>
-            <strong>Leandra, está na hora da pausa para o almoço!</strong>
+          <div style={{ flex: 1 }}>
+            <strong>Leandra, está na hora da pausa para o almoço! (12:00 – 13:30)</strong>
             <p>Você merece descansar — tire sua hora de almoço tranquila. Volte renovada! ☕😊</p>
           </div>
-          <span className="dash-almoco-icon">⏰</span>
+          <button className="dash-almoco-btn" onClick={concluirAlmoco}>✔ Retornei</button>
         </div>
       )}
+
+      {/* === ALERTAS DINÂMICOS === */}
+      {alertasVisiveis.length > 0 && (
+        <div className="dash-alertas">
+          {alertasVisiveis.map(a => (
+            <div key={a.id} className={`dash-alerta dash-alerta-${a.tipo}`}>
+              <span className="dash-alerta-icon">{a.icone}</span>
+              <span className="dash-alerta-texto">{a.texto}</span>
+              <button className="dash-alerta-close" onClick={() => dismissAlertas(a.id)} title="Dispensar">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* === CHECKLIST === */}
+      <div className="dash-checklist card">
+        <div className="dash-checklist-header">
+          <div>
+            <h2 className="dash-checklist-title">
+              {saudacao.texto}, Leandra! Vamos fazer o checklist? {todosFeitos ? '🎉' : '📝'}
+            </h2>
+            <p className="dash-checklist-sub">
+              {todosFeitos
+                ? 'Tudo concluído! Ótimo começo de dia! 🌟'
+                : `${totalChecked} de ${ITEMS_FIXOS.length} itens concluídos`}
+            </p>
+          </div>
+          <div className="dash-checklist-progress">
+            <svg viewBox="0 0 36 36" className="dash-progress-ring">
+              <path className="dash-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path
+                className="dash-progress-fill"
+                strokeDasharray={`${(totalChecked / ITEMS_FIXOS.length) * 100}, 100`}
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+              />
+            </svg>
+            <span className="dash-progress-pct">{Math.round((totalChecked / ITEMS_FIXOS.length) * 100)}%</span>
+          </div>
+        </div>
+
+        <ul className="dash-checklist-list">
+          {ITEMS_FIXOS.map(item => {
+            const done = checked.includes(item.id)
+            return (
+              <li key={item.id} className={`dash-check-item ${done ? 'done' : ''}`} onClick={() => toggleCheck(item.id)}>
+                <span className={`dash-checkbox ${done ? 'checked' : ''}`}>
+                  {done ? '✔' : ''}
+                </span>
+                <span className="dash-check-label">{item.label}</span>
+                {!done && <span className="dash-check-pending">Pendente</span>}
+              </li>
+            )
+          })}
+        </ul>
+      </div>
 
       {/* === CARDS === */}
       <div className="dash-cards">
@@ -117,7 +282,7 @@ export default function Dashboard({ setPage }) {
       </div>
 
       <div className="dash-bottom-grid">
-        {/* === NOTINHAS DE PEÇAS + COMISSÃO === */}
+        {/* === NOTINHAS DE PEÇAS === */}
         <div className="card dash-pecas">
           <div className="dash-pecas-header">
             <h3>🔩 Notinhas de Peças</h3>
@@ -165,7 +330,7 @@ export default function Dashboard({ setPage }) {
           )}
         </div>
 
-        {/* === DICA === */}
+        {/* === MÓDULOS === */}
         <div className="dash-tip card">
           <h3>📌 Módulos do Sistema</h3>
           <ul>
