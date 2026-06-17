@@ -1,0 +1,100 @@
+.timer-legenda {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.leg-item {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.leg-item.green { color: #10b981; }
+.leg-item.yellow { color: #f59e0b; }
+.leg-item.red { color: #ef4444; }
+
+.timer-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.timer-card {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  background: #fafafa;
+  transition: box-shadow 0.2s;
+}
+
+.timer-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.timer-placa {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 1px;
+  background: #1a1a2e;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
+.timer-display {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: monospace;
+  letter-spacing: 2px;
+}
+
+.timer-green { color: #10b981; }
+.timer-yellow { color: #f59e0b; }
+.timer-red { color: #ef4444; }
+
+.timer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.timer-info div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-concluir {
+  flex: 1;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-concluir:hover {
+  background: #059669;
+}
