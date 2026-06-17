@@ -1,0 +1,201 @@
+import { useState } from 'react'
+import Modal from './Modal.jsx'
+import './Contas.css'
+
+const KEY = 'ol_contas'
+const CATS = ['Fixo', 'Variável', 'Imposto', 'Funcionários', 'Outros']
+
+function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
+function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
+const empty = () => ({ descricao: '', valor: '', vencimento: '', status: 'pendente', categoria: 'Fixo', obs: '' })
+const fmt = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
+
+export default function Contas() {
+  const [items, setItems] = useState(load)
+  const [modal, setModal] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(empty())
+
+  function refresh() { setItems(load()) }
+  function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
+  function openEdit(item) {
+    setEditing(item.id)
+    setForm({ descricao: item.descricao, valor: item.valor, vencimento: item.vencimento, status: item.status, categoria: item.categoria, obs: item.obs || '' })
+    setModal(true)
+  }
+
+  function handleSave(e) {
+    e.preventDefault()
+    if (!form.descricao || !form.valor) return
+    const arr = load()
+    if (editing) {
+      const idx = arr.findIndex(x => x.id === editing)
+      arr[idx] = { ...arr[idx], ...form, valor: parseFloat(form.valor) }
+    } else {
+      arr.push({ ...form, id: nextId(arr), valor: parseFloat(form.valor) })
+    }
+    save(arr)
+    setModal(false)
+    refresh()
+  }
+
+  function handleDelete(id) {
+    if (!confirm('Excluir esta conta?')) return
+    save(load().filter(x => x.id !== id))
+    refresh()
+  }
+
+  function toggleStatus(id) {
+    const arr = load()
+    const idx = arr.findIndex(x => x.id === id)
+    arr[idx].status = arr[idx].status === 'pago' ? 'pendente' : 'pago'
+    save(arr)
+    refresh()
+  }
+
+  const pendentes = items.filter(c => c.status === 'pendente')
+  const pagas = items.filter(c => c.status === 'pago')
+  const totalPendente = pendentes.reduce((s, c) => s + Number(c.valor), 0)
+  const totalPago = pagas.reduce((s, c) => s + Number(c.valor), 0)
+  const totalGeral = items.reduce((s, c) => s + Number(c.valor), 0)
+
+  function renderTable(list) {
+    return (
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map(c => (
+            <tr key={c.id}>
+              <td>
+                <strong>{c.descricao}</strong>
+                {c.obs && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{c.obs}</div>}
+              </td>
+              <td><span className="badge badge-gray">{c.categoria}</span></td>
+              <td>{c.vencimento ? `Dia ${c.vencimento}` : '—'}</td>
+              <td><strong style={{ color: c.status === 'pago' ? '#10b981' : '#ef4444' }}>{fmt(c.valor)}</strong></td>
+              <td>
+                <button
+                  className={`status-conta ${c.status}`}
+                  onClick={() => toggleStatus(c.id)}
+                  title="Clique para alternar status"
+                >
+                  {c.status === 'pago' ? '✅ Pago' : '⏳ Pendente'}
+                </button>
+              </td>
+              <td>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="btn-edit" onClick={() => openEdit(c)}>✏️</button>
+                  <button className="btn-danger" onClick={() => handleDelete(c.id)}>🗑️</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>📄 Contas da Oficina</h1>
+        <button className="btn-primary" onClick={openAdd}>+ Nova Conta</button>
+      </div>
+
+      <div className="contas-resumo">
+        <div className="contas-card pendente">
+          <span className="resumo-label">⏳ A Pagar</span>
+          <strong>{fmt(totalPendente)}</strong>
+          <small>{pendentes.length} conta(s)</small>
+        </div>
+        <div className="contas-card pago">
+          <span className="resumo-label">✅ Pagas</span>
+          <strong>{fmt(totalPago)}</strong>
+          <small>{pagas.length} conta(s)</small>
+        </div>
+        <div className="contas-card total">
+          <span className="resumo-label">📊 Total Mensal</span>
+          <strong>{fmt(totalGeral)}</strong>
+          <small>{items.length} conta(s)</small>
+        </div>
+      </div>
+
+      {pendentes.length > 0 && (
+        <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #ef4444' }}>
+          <h3 style={{ marginBottom: 16, color: '#ef4444' }}>⏳ Pendentes ({pendentes.length})</h3>
+          {renderTable(pendentes)}
+        </div>
+      )}
+
+      {pagas.length > 0 && (
+        <div className="card" style={{ borderLeft: '4px solid #10b981' }}>
+          <h3 style={{ marginBottom: 16, color: '#10b981' }}>✅ Pagas ({pagas.length})</h3>
+          {renderTable(pagas)}
+        </div>
+      )}
+
+      {items.length === 0 && (
+        <div className="card">
+          <div className="empty-state">
+            <div className="empty-icon">📄</div>
+            <p>Nenhuma conta cadastrada.</p>
+          </div>
+        </div>
+      )}
+
+      {modal && (
+        <Modal title={editing ? 'Editar Conta' : 'Nova Conta'} onClose={() => setModal(false)}>
+          <form onSubmit={handleSave}>
+            <div className="form-group">
+              <label>Descrição *</label>
+              <input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Aluguel, Energia Elétrica..." required />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Valor (R$) *</label>
+                <input type="number" min="0.01" step="0.01" value={form.valor} onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} placeholder="0,00" required />
+              </div>
+              <div className="form-group">
+                <label>Dia do Vencimento</label>
+                <input type="number" min="1" max="31" value={form.vencimento} onChange={e => setForm(f => ({ ...f, vencimento: e.target.value }))} placeholder="Ex: 10" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Categoria</label>
+                <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                  <option value="pendente">Pendente</option>
+                  <option value="pago">Pago</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Observações</label>
+              <textarea rows={2} value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Informações adicionais..." />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
+              <button type="submit" className="btn-primary">{editing ? 'Salvar' : 'Adicionar'}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  )
+}

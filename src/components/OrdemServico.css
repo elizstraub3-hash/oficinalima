@@ -1,0 +1,121 @@
+.os-status-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.os-status-chip {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-main);
+}
+
+.os-status-chip:hover {
+  border-color: #e63946;
+  color: #e63946;
+}
+
+.os-status-chip.active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: white;
+}
+
+.os-numero {
+  color: #3b82f6;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.os-timer {
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.os-timer-green { color: #10b981; }
+.os-timer-yellow { color: #f59e0b; }
+.os-timer-red { color: #ef4444; }
+
+.os-row:hover td {
+  background: #f0f4ff !important;
+}
+
+.os-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.os-section-title:first-child {
+  margin-top: 0;
+}
+
+.os-detail-box {
+  max-width: 640px;
+}
+
+.os-detail-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.os-detail-status-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.os-detail-status-btn:hover {
+  opacity: 0.85;
+}
+
+.os-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.os-detail-section {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.os-detail-section h4 {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.os-detail-section p {
+  font-size: 14px;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
