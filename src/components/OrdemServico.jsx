@@ -168,38 +168,51 @@ function gerarPDF(ordem) {
 
     .print-btn { display:block; margin:0 auto 20px; padding:13px 36px; background:#000; color:white; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; }
     .wpp-note { text-align:center; font-size:12px; color:#888; margin-bottom:24px; }
+
+    .garantia-box {
+      background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px;
+      padding:12px 16px; margin-top:14px; font-size:12px; color:#166534; line-height:1.7;
+    }
+    .garantia-box strong { font-size:13px; display:block; margin-bottom:4px; }
+
+    .termo-box {
+      background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #000;
+      border-radius:8px; padding:12px 16px; margin-top:12px;
+      font-size:11.5px; color:#374151; line-height:1.8;
+    }
+    .termo-box strong { display:block; font-size:12px; margin-bottom:5px; color:#000; text-transform:uppercase; letter-spacing:0.5px; }
   </style>
 </head>
 <body>
-  <button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF / Enviar WhatsApp</button>
+  <button class="print-btn no-print" onclick="window.print()">Salvar como PDF / Enviar WhatsApp</button>
   <p class="wpp-note no-print">Salve como PDF e envie pelo WhatsApp para o cliente.</p>
 
-  <!-- CABEÇALHO PRETO COM LOGO -->
+  <!-- CABECALHO PRETO COM LOGO -->
   <div class="header">
     <div class="logo-wrap">
       <img src="${logoUrl}" alt="Logo" class="logo-img" onerror="this.style.display='none'" />
       <div class="logo-text">
         <h1>Oficina Lima</h1>
-        <p>Serviços Automotivos</p>
-        <p class="telefone">📞 (41) 9 9595-5516</p>
+        <p>Servicos Automotivos</p>
+        <p class="telefone">(41) 9 9595-5516</p>
       </div>
     </div>
     <div class="os-badge">
       <div class="os-numero">${ordem.numero}</div>
       <div class="os-data">Emitido em: ${hoje}</div>
-      <div class="status-badge">${st.icon} ${st.label}</div>
+      <div class="status-badge">${st.label}</div>
     </div>
   </div>
 
-  <!-- CLIENTE + VEÍCULO -->
+  <!-- CLIENTE + VEICULO -->
   <div class="grid2">
     <div class="section">
-      <div class="section-title">👤 Dados do Cliente</div>
+      <div class="section-title">Dados do Cliente</div>
       <div class="field"><label>Nome</label><span>${ordem.clienteNome || '—'}</span></div>
       <div class="field"><label>Telefone</label><span>${ordem.clienteTelefone || '—'}</span></div>
     </div>
     <div class="section">
-      <div class="section-title">🚗 Dados do Veículo</div>
+      <div class="section-title">Dados do Veiculo</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <div class="field"><label>Placa</label><span>${ordem.placa || '—'}</span></div>
         <div class="field"><label>Modelo</label><span>${ordem.modelo || '—'}</span></div>
@@ -209,45 +222,61 @@ function gerarPDF(ordem) {
     </div>
   </div>
 
-  <!-- SERVIÇOS / PEÇAS -->
+  <!-- SERVICOS / PECAS -->
   <div style="margin-bottom:14px">
     <table>
       <thead>
         <tr>
           <th style="width:36px">#</th>
-          <th>Descrição do Serviço / Peça</th>
+          <th>Descricao do Servico / Peca</th>
           <th style="width:50px">Qtd</th>
-          <th style="width:100px">Unitário</th>
+          <th style="width:100px">Unitario</th>
           <th style="width:110px">Total</th>
         </tr>
       </thead>
       <tbody>${itensHTML}</tbody>
       <tfoot>
-        ${totalPecas > 0 ? `<tr class="subtotal-row"><td colspan="4">Subtotal Peças</td><td>${fmt(totalPecas)}</td></tr>` : ''}
-        ${maoDeObra > 0 ? `<tr class="mob-row"><td colspan="4">🔧 Mão de Obra (${ordem.funcionario || 'Mecânico'})</td><td>${fmt(maoDeObra)}</td></tr>` : ''}
+        ${totalPecas > 0 ? `<tr class="subtotal-row"><td colspan="4">Subtotal Pecas</td><td>${fmt(totalPecas)}</td></tr>` : ''}
+        ${maoDeObra > 0 ? `<tr class="mob-row"><td colspan="4">Mao de Obra (${ordem.funcionario || 'Mecanico'})</td><td>${fmt(maoDeObra)}</td></tr>` : ''}
         <tr class="total-row"><td colspan="4">TOTAL GERAL</td><td>${fmt(totalGeral)}</td></tr>
       </tfoot>
     </table>
   </div>
 
-  ${ordem.descricao ? `<div class="obs-box">📝 <strong>Obs:</strong> ${ordem.descricao}</div>` : ''}
+  ${ordem.descricao ? `<div class="obs-box"><strong>Obs:</strong> ${ordem.descricao}</div>` : ''}
 
-  <!-- RESPONSÁVEL + TEMPO -->
+  <!-- MECANICO RESPONSAVEL -->
   ${ordem.funcionario ? `
   <div class="resp-box">
     <div class="resp-item">
-      <label>👷 Responsável</label>
+      <label>Mecanico Responsavel pelo Servico</label>
       <span>${ordem.funcionario}</span>
     </div>
-    ${tempoStr ? `<div class="resp-item"><label>⏱️ Tempo de Serviço</label><span>${tempoStr}</span></div>` : ''}
-    ${maoDeObra > 0 ? `<div class="resp-item"><label>💰 Mão de Obra</label><span class="verde">${fmt(maoDeObra)}</span></div>` : ''}
+    ${tempoStr ? `<div class="resp-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
+    ${maoDeObra > 0 ? `<div class="resp-item"><label>Mao de Obra</label><span class="verde">${fmt(maoDeObra)}</span></div>` : ''}
   </div>` : ''}
 
-  <!-- RODAPÉ -->
+  <!-- GARANTIA E VALIDADE -->
+  <div class="garantia-box">
+    <strong>Garantia e Validade do Orcamento</strong>
+    Garantia de <strong>3 (tres) meses</strong> para todos os servicos aprovados e executados pela Oficina Lima, contados a partir da data de conclusao do servico.<br>
+    A validade deste orcamento e de <strong>7 (sete) dias uteis</strong> a partir da data de emissao. Apos esse prazo, os valores poderao ser revisados.
+  </div>
+
+  <!-- TERMO DE RESPONSABILIDADE -->
+  <div class="termo-box">
+    <strong>Termo de Responsabilidade e Seguranca</strong>
+    A Oficina Lima possui sistema de <strong>monitoramento por cameras</strong> em todas as dependencias do estabelecimento, com gravacao contínua de imagens e registros fotograficos.<br>
+    Realizamos um <strong>checklist detalhado do estado do veiculo</strong> no momento da entrada — incluindo lataria, vidros, pneus, acessorios e itens internos — com fotos e registros documentados.<br>
+    Em caso de qualquer divergencia relacionada ao estado do veiculo, as gravacoes e registros fotograficos ficam disponiveis para conferencia. Nosso compromisso e com a transparencia e a seguranca do seu patrimonio.
+  </div>
+
+  <!-- RODAPE -->
   <div class="footer">
     <div class="footer-left">
       <p><strong>Oficina Lima</strong> · (41) 9 9595-5516</p>
-      <p>Criado por <strong>Elizandra Cardoso</strong> · © ${new Date().getFullYear()}</p>
+      <p>Sistema criado por <strong>Elizandra Lima</strong></p>
+      <p>Criado por Elizandra Cardoso · © ${new Date().getFullYear()}</p>
     </div>
     <div class="assinatura">
       <div class="linha"></div>
