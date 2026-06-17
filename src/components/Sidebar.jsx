@@ -30,7 +30,7 @@ function exportData() {
   URL.revokeObjectURL(url)
 }
 
-function importData(file, onDone) {
+function importData(file) {
   const reader = new FileReader()
   reader.onload = e => {
     try {
@@ -47,63 +47,81 @@ function importData(file, onDone) {
 }
 
 export default function Sidebar({ page, setPage, onLogout }) {
+  const [open, setOpen] = useState(false)
+
   function handleImport(e) {
     const file = e.target.files[0]
     if (file) importData(file)
     e.target.value = ''
   }
 
+  function navigate(id) {
+    setPage(id)
+    setOpen(false)
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-img-wrap">
-          <img
-            src="/logo da oficina.png"
-            alt="Logo"
-            className="sidebar-logo-img"
-            onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block' }}
-          />
-          <span className="sidebar-logo-icon" style={{ display: 'none' }}>🔧</span>
+    <>
+      {/* Botão hamburguer — só aparece no mobile */}
+      <button className="sidebar-toggle" onClick={() => setOpen(o => !o)} aria-label="Menu">
+        <span className="sidebar-toggle-icon">{open ? '✕' : '☰'}</span>
+        <span className="sidebar-toggle-label">Lima Oficina</span>
+      </button>
+
+      {/* Overlay escuro no mobile quando menu aberto */}
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
+
+      <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-img-wrap">
+            <img
+              src="/logo da oficina.png"
+              alt="Logo"
+              className="sidebar-logo-img"
+              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block' }}
+            />
+            <span className="sidebar-logo-icon" style={{ display: 'none' }}>🔧</span>
+          </div>
+          <div>
+            <strong>Lima Oficina Mecanica</strong>
+            <small>Painel Admin</small>
+            <div className="sidebar-phone">📞 (41) 9 9595-5516</div>
+          </div>
         </div>
-        <div>
-          <strong>Lima Oficina Mecanica</strong>
-          <small>Painel Admin</small>
-          <div className="sidebar-phone">📞 (41) 9 9595-5516</div>
+
+        <nav className="sidebar-nav">
+          {MENU.map((item, i) =>
+            item.separator ? (
+              <div key={i} className="nav-separator">{item.label}</div>
+            ) : (
+              <button
+                key={item.id}
+                className={`nav-item ${page === item.id ? 'active' : ''}`}
+                onClick={() => navigate(item.id)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            )
+          )}
+        </nav>
+
+        <div className="sidebar-io">
+          <button className="io-btn" onClick={exportData} title="Exportar todos os dados">
+            ⬇️ Exportar dados
+          </button>
+          <label className="io-btn import-label" title="Importar backup">
+            ⬆️ Importar dados
+            <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+          </label>
         </div>
-      </div>
 
-      <nav className="sidebar-nav">
-        {MENU.map((item, i) =>
-          item.separator ? (
-            <div key={i} className="nav-separator">{item.label}</div>
-          ) : (
-            <button
-              key={item.id}
-              className={`nav-item ${page === item.id ? 'active' : ''}`}
-              onClick={() => setPage(item.id)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </button>
-          )
-        )}
-      </nav>
-
-      <div className="sidebar-io">
-        <button className="io-btn" onClick={exportData} title="Exportar todos os dados">
-          ⬇️ Exportar dados
-        </button>
-        <label className="io-btn import-label" title="Importar backup">
-          ⬆️ Importar dados
-          <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
-        </label>
-      </div>
-
-      <div className="sidebar-footer">
-        <button className="logout-btn" onClick={onLogout}>
-          <span>🚪</span> Sair
-        </button>
-      </div>
-    </aside>
+        <div className="sidebar-footer">
+          <button className="logout-btn" onClick={onLogout}>
+            <span>🚪</span> Sair
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

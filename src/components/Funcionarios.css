@@ -176,3 +176,16 @@
 
 .status-btn.ativo  { color: #065f46; background: #d1fae5; }
 .status-btn.inativo { color: #6b7280; background: #f3f4f6; }
+
+@media (max-width: 768px) {
+  .func-stats { gap: 8px; }
+  .func-stat { padding: 12px 14px; font-size: 18px; }
+  .func-resumo-grid { grid-template-columns: repeat(3, 1fr); }
+  .func-card-header { flex-wrap: wrap; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .func-resumo-grid { grid-template-columns: repeat(2, 1fr); }
+  .func-os-table { font-size: 11px; }
+  .func-os-table th, .func-os-table td { padding: 7px 8px; }
+}
