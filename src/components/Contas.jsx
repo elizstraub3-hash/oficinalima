@@ -8,7 +8,7 @@ const CATS = ['Fixo', 'Variável', 'Imposto', 'Funcionários', 'Outros']
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ descricao: '', valor: '', vencimento: '', status: 'pendente', categoria: 'Fixo', obs: '' })
+const empty = () => ({ descricao: '', descBreve: '', valor: '', vencimento: '', status: 'pendente', categoria: 'Fixo', obs: '' })
 const fmt = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
 
 export default function Contas() {
@@ -21,7 +21,7 @@ export default function Contas() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ descricao: item.descricao, valor: item.valor, vencimento: item.vencimento, status: item.status, categoria: item.categoria, obs: item.obs || '' })
+    setForm({ descricao: item.descricao, descBreve: item.descBreve || '', valor: item.valor, vencimento: item.vencimento, status: item.status, categoria: item.categoria, obs: item.obs || '' })
     setModal(true)
   }
 
@@ -78,6 +78,7 @@ export default function Contas() {
             <tr key={c.id}>
               <td>
                 <strong>{c.descricao}</strong>
+                {c.descBreve && <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2, fontWeight: 600 }}>{c.descBreve}</div>}
                 {c.obs && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{c.obs}</div>}
               </td>
               <td><span className="badge badge-gray">{c.categoria}</span></td>
@@ -159,6 +160,15 @@ export default function Contas() {
             <div className="form-group">
               <label>Descrição *</label>
               <input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Aluguel, Energia Elétrica..." required />
+            </div>
+            <div className="form-group">
+              <label>Descrição Breve <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>({(form.descBreve || '').length}/50)</span></label>
+              <input
+                value={form.descBreve}
+                onChange={e => setForm(f => ({ ...f, descBreve: e.target.value.slice(0, 50) }))}
+                placeholder="Resumo rápido (máx. 50 caracteres)"
+                maxLength={50}
+              />
             </div>
             <div className="form-row">
               <div className="form-group">

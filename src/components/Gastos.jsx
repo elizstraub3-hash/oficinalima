@@ -8,7 +8,7 @@ const CATS = ['Peças', 'Posto', 'Mercado', 'Alimentação', 'Ferramentas', 'EPI
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ descricao: '', categoria: 'Peças', valor: '', fornecedor: '', nota: '', data: new Date().toISOString().split('T')[0] })
+const empty = () => ({ descricao: '', descBreve: '', categoria: 'Peças', valor: '', comissao: '', fornecedor: '', nota: '', data: new Date().toISOString().split('T')[0] })
 
 const fmt = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
 
@@ -24,7 +24,7 @@ export default function Gastos() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ descricao: item.descricao, categoria: item.categoria, valor: item.valor, fornecedor: item.fornecedor || '', nota: item.nota || '', data: item.data })
+    setForm({ descricao: item.descricao, descBreve: item.descBreve || '', categoria: item.categoria, valor: item.valor, comissao: item.comissao || '', fornecedor: item.fornecedor || '', nota: item.nota || '', data: item.data })
     setModal(true)
   }
 
@@ -125,11 +125,17 @@ export default function Gastos() {
               {[...filtered].reverse().map(g => (
                 <tr key={g.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{new Date(g.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                  <td><strong>{g.descricao}</strong></td>
+                  <td>
+                    <strong>{g.descricao}</strong>
+                    {g.descBreve && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{g.descBreve}</div>}
+                  </td>
                   <td><span className="badge badge-gray">{g.categoria}</span></td>
                   <td style={{ color: 'var(--text-light)' }}>{g.fornecedor || '—'}</td>
                   <td style={{ color: 'var(--text-light)', fontSize: 13 }}>{g.nota || '—'}</td>
-                  <td><strong style={{ color: '#ef4444' }}>{fmt(g.valor)}</strong></td>
+                  <td>
+                    <strong style={{ color: '#ef4444' }}>{fmt(g.valor)}</strong>
+                    {g.comissao ? <div style={{ fontSize: 11, color: '#8b5cf6', fontWeight: 600 }}>Comissão: {fmt(g.comissao)}</div> : null}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn-edit" onClick={() => openEdit(g)}>✏️</button>
@@ -150,6 +156,15 @@ export default function Gastos() {
               <label>Descrição *</label>
               <input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Filtro de óleo, gasolina..." required />
             </div>
+            <div className="form-group">
+              <label>Descrição Breve <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>({(form.descBreve || '').length}/50)</span></label>
+              <input
+                value={form.descBreve}
+                onChange={e => setForm(f => ({ ...f, descBreve: e.target.value.slice(0, 50) }))}
+                placeholder="Resumo rápido (máx. 50 caracteres)"
+                maxLength={50}
+              />
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Categoria</label>
@@ -162,6 +177,12 @@ export default function Gastos() {
                 <input type="number" min="0.01" step="0.01" value={form.valor} onChange={e => setForm(f => ({ ...f, valor: e.target.value }))} placeholder="0,00" required />
               </div>
             </div>
+            {form.categoria === 'Peças' && (
+              <div className="form-group">
+                <label>💜 Comissão sobre esta peça (R$)</label>
+                <input type="number" min="0" step="0.01" value={form.comissao} onChange={e => setForm(f => ({ ...f, comissao: e.target.value }))} placeholder="Valor da comissão..." />
+              </div>
+            )}
             <div className="form-row">
               <div className="form-group">
                 <label>Fornecedor / Loja</label>
