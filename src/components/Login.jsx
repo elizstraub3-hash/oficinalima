@@ -31,7 +31,7 @@ export default function Login({ onLogin }) {
           <div className="login-logo-wrap">
             <img
               src="/logo da oficina.png"
-              alt="Oficina Lima"
+              alt="Lima Oficina Mecanica"
               className="login-logo-img"
               onError={e => {
                 e.target.style.display = 'none'
@@ -40,7 +40,7 @@ export default function Login({ onLogin }) {
             />
             <span className="login-logo-fallback" style={{ display: 'none' }}>🔧</span>
           </div>
-          <h1>Oficina Lima</h1>
+          <h1>Lima Oficina Mecanica</h1>
           <p className="login-sub">Painel Administrativo</p>
           <div className="login-phone">
             📞 {TELEFONE}

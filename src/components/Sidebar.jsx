@@ -40,7 +40,7 @@ function importData(file, onDone) {
       alert('✅ Dados importados com sucesso! A página será recarregada.')
       window.location.reload()
     } catch {
-      alert('❌ Arquivo inválido. Certifique-se de importar um backup da Oficina Lima.')
+      alert('❌ Arquivo inválido. Certifique-se de importar um backup da Lima Oficina Mecanica.')
     }
   }
   reader.readAsText(file)
@@ -66,7 +66,7 @@ export default function Sidebar({ page, setPage, onLogout }) {
           <span className="sidebar-logo-icon" style={{ display: 'none' }}>🔧</span>
         </div>
         <div>
-          <strong>Oficina Lima</strong>
+          <strong>Lima Oficina Mecanica</strong>
           <small>Painel Admin</small>
           <div className="sidebar-phone">📞 (41) 9 9595-5516</div>
         </div>

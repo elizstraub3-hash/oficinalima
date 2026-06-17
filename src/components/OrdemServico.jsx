@@ -86,7 +86,7 @@ function gerarPDF(ordem) {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>${ordem.numero} – Oficina Lima</title>
+  <title>${ordem.numero} – Lima Oficina Mecanica</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: Arial, sans-serif; color: #111; background: white; padding: 36px; font-size: 13px; }
@@ -104,7 +104,7 @@ function gerarPDF(ordem) {
     }
     .logo-wrap { display:flex; align-items:center; gap:14px; }
     .logo-img {
-      width: 64px; height: 64px;
+      width: 90px; height: 90px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.2);
       object-fit: contain;
@@ -192,7 +192,7 @@ function gerarPDF(ordem) {
     <div class="logo-wrap">
       <img src="${logoUrl}" alt="Logo" class="logo-img" onerror="this.style.display='none'" />
       <div class="logo-text">
-        <h1>Oficina Lima</h1>
+        <h1>Lima Oficina Mecanica</h1>
         <p>Servicos Automotivos</p>
         <p class="telefone">(41) 9 9595-5516</p>
       </div>
@@ -259,14 +259,14 @@ function gerarPDF(ordem) {
   <!-- GARANTIA E VALIDADE -->
   <div class="garantia-box">
     <strong>Garantia e Validade do Orcamento</strong>
-    Garantia de <strong>3 (tres) meses</strong> para todos os servicos aprovados e executados pela Oficina Lima, contados a partir da data de conclusao do servico.<br>
+    Garantia de <strong>3 (tres) meses</strong> para todos os servicos aprovados e executados pela Lima Oficina Mecanica, contados a partir da data de conclusao do servico.<br>
     A validade deste orcamento e de <strong>7 (sete) dias uteis</strong> a partir da data de emissao. Apos esse prazo, os valores poderao ser revisados.
   </div>
 
   <!-- TERMO DE RESPONSABILIDADE -->
   <div class="termo-box">
     <strong>Termo de Responsabilidade e Seguranca</strong>
-    A Oficina Lima possui sistema de <strong>monitoramento por cameras</strong> em todas as dependencias do estabelecimento, com gravacao contínua de imagens e registros fotograficos.<br>
+    A Lima Oficina Mecanica possui sistema de <strong>monitoramento por cameras</strong> em todas as dependencias do estabelecimento, com gravacao contínua de imagens e registros fotograficos.<br>
     Realizamos um <strong>checklist detalhado do estado do veiculo</strong> no momento da entrada — incluindo lataria, vidros, pneus, acessorios e itens internos — com fotos e registros documentados.<br>
     Em caso de qualquer divergencia relacionada ao estado do veiculo, as gravacoes e registros fotograficos ficam disponiveis para conferencia. Nosso compromisso e com a transparencia e a seguranca do seu patrimonio.
   </div>
@@ -274,7 +274,7 @@ function gerarPDF(ordem) {
   <!-- RODAPE -->
   <div class="footer">
     <div class="footer-left">
-      <p><strong>Oficina Lima</strong> · (41) 9 9595-5516</p>
+      <p><strong>Lima Oficina Mecanica</strong> · (41) 9 9595-5516</p>
       <p>Sistema criado por <strong>Elizandra Lima</strong></p>
       <p>Criado por Elizandra Cardoso · © ${new Date().getFullYear()}</p>
     </div>
