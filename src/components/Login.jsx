@@ -30,7 +30,7 @@ export default function Login({ onLogin }) {
         <div className="login-header">
           <div className="login-logo-wrap">
             <img
-              src="/logo.png"
+              src="/logo da oficina.png"
               alt="Oficina Lima"
               className="login-logo-img"
               onError={e => {

@@ -53,7 +53,7 @@ function gerarPDF(ordem) {
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
   const hoje = new Date().toLocaleDateString('pt-BR')
   const st = STATUS[ordem.status]
-  const logoUrl = window.location.origin + '/logo.png'
+  const logoUrl = window.location.origin + '/logo da oficina.png'
 
   const tempoStr = (() => {
     if (ordem.inicio && ordem.fim) {

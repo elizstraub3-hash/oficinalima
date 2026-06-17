@@ -58,7 +58,7 @@ export default function Sidebar({ page, setPage, onLogout }) {
       <div className="sidebar-logo">
         <div className="sidebar-logo-img-wrap">
           <img
-            src="/logo.png"
+            src="/logo da oficina.png"
             alt="Logo"
             className="sidebar-logo-img"
             onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='block' }}
