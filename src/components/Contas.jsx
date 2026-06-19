@@ -106,11 +106,60 @@ export default function Contas() {
     )
   }
 
+  const hoje = new Date().getDate()
+  const diasParaVencer = hoje <= 30 ? 30 - hoje : 0
+
   return (
     <div>
       <div className="page-header">
         <h1>📄 Contas da Oficina</h1>
         <button className="btn-primary" onClick={openAdd}>+ Nova Conta</button>
+      </div>
+
+      {/* Aviso mensalidade do painel */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+        borderRadius: 14,
+        padding: '20px 24px',
+        marginBottom: 20,
+        color: 'white',
+        display: 'flex',
+        gap: 20,
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+      }}>
+        <div style={{ fontSize: 36, flexShrink: 0 }}>💻</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>
+            Mensalidade do Painel Lima Oficina
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7 }}>
+            O sistema custa <strong style={{ color: '#4ade80' }}>R$ 60,00/mês</strong>, com vencimento todo dia <strong style={{ color: '#fbbf24' }}>30</strong>.
+            {diasParaVencer > 0
+              ? <> Faltam <strong style={{ color: '#fbbf24' }}>{diasParaVencer} dia(s)</strong> para o próximo vencimento.</>
+              : <> O vencimento é <strong style={{ color: '#f87171' }}>hoje</strong>!</>
+            }
+            {' '}Caso o pagamento não ocorra no dia, entraremos em contato.
+          </div>
+          <div style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>💚 PIX (5% desconto)</div>
+              <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: 1 }}>10595735983</div>
+              <div style={{ fontSize: 12, color: '#4ade80', fontWeight: 700, marginTop: 2 }}>R$ 57,00 no PIX</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>👩‍💻 Suporte / Recebedor</div>
+              <div style={{ fontWeight: 800, fontSize: 14 }}>Elizandra Cardoso de Lima</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Desenvolvadora do sistema</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>📅 Vencimento</div>
+              <div style={{ fontWeight: 800, fontSize: 20, color: '#fbbf24' }}>Dia 30</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Todo mês</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="contas-resumo">
