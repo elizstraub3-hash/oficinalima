@@ -275,7 +275,6 @@ function gerarPDF(ordem) {
   <div class="mec-box">
     ${servicosArr.length > 0 ? `<div class="mec-item"><label>Mecanico(s) Responsavel(is)</label><span>${[...new Set(servicosArr.map(sv => sv.funcionario).filter(Boolean))].join(', ') || '—'}</span></div>` : ''}
     ${tempoStr ? `<div class="mec-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
-    ${totalMob > 0 ? `<div class="mec-item"><label>Total Mao de Obra</label><span class="verde">${fmt2(totalMob)}</span></div>` : ''}
   </div>` : ''}
 
   <!-- GARANTIA -->
