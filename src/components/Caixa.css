@@ -84,6 +84,15 @@
 .valor-cell.saida { color: #ef4444; }
 
 /* Divisão mão de obra */
+.caixa-pecas-split {
+  background: white;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  border-top: 4px solid #ef4444;
+}
+
 .caixa-mob-split {
   background: white;
   border-radius: 14px;

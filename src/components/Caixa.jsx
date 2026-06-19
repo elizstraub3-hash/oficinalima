@@ -50,6 +50,9 @@ export default function Caixa() {
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 
   const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]')
+  const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
+  const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)
 
   // Helpers de data
   const hoje = new Date()
@@ -139,6 +142,58 @@ export default function Caixa() {
             <small>{ordensMes.length} OS</small>
           </div>
         </div>
+      </div>
+
+      {/* Gasto e Lucro com Peças */}
+      <div className="caixa-pecas-split">
+        <div className="mob-split-title">🔩 Controle de Peças (Notinhas)</div>
+        <div className="mob-split-grid">
+          <div className="mob-split-item" style={{ background: '#fef2f2', borderColor: '#fca5a5' }}>
+            <span className="mob-split-label">🛒 Gasto Total com Peças</span>
+            <strong style={{ color: '#ef4444', fontSize: 18, fontWeight: 800 }}>{fmt(totalGastoPecas)}</strong>
+          </div>
+          <div className="mob-split-item" style={{ background: '#f0fdf4', borderColor: '#6ee7b7' }}>
+            <span className="mob-split-label">📈 Lucro com Peças</span>
+            <strong style={{ color: '#059669', fontSize: 18, fontWeight: 800 }}>{fmt(totalLucroPecas)}</strong>
+          </div>
+          <div className="mob-split-item" style={{ background: '#eff6ff', borderColor: '#93c5fd' }}>
+            <span className="mob-split-label">📊 Margem Média</span>
+            <strong style={{ color: '#2563eb', fontSize: 18, fontWeight: 800 }}>
+              {totalGastoPecas > 0 ? ((totalLucroPecas / totalGastoPecas) * 100).toFixed(0) : 0}%
+            </strong>
+          </div>
+        </div>
+        {notinhas.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 8 }}>Últimas Notinhas</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Peça</th>
+                  <th>Fornecedor</th>
+                  <th>Qtd</th>
+                  <th>Custo Total</th>
+                  <th>Venda Total</th>
+                  <th>Lucro</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...notinhas].reverse().slice(0, 10).map(n => (
+                  <tr key={n.id}>
+                    <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>{n.data}</span></td>
+                    <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{n.fornecedor || '—'}</td>
+                    <td>{n.qtd}</td>
+                    <td><strong style={{ color: '#ef4444' }}>{fmt(n.totalCusto)}</strong></td>
+                    <td>{n.precoVenda > 0 ? <strong style={{ color: '#3b82f6' }}>{fmt(n.precoVenda * n.qtd)}</strong> : '—'}</td>
+                    <td><strong style={{ color: n.lucro >= 0 ? '#059669' : '#ef4444' }}>{fmt(n.lucro)}</strong></td>
+                    <td><span style={{ background: '#ede9fe', color: '#7c3aed', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{(n.porcLucro || 0).toFixed(0)}%</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Divisão mão de obra */}

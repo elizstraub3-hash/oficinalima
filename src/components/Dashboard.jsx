@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
 
+const KEY_NOTINHAS = 'ol_notinhas'
+function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
+function saveNotinhas(d) { localStorage.setItem(KEY_NOTINHAS, JSON.stringify(d)) }
+function nextNotinhaId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
+const emptyNotinha = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '' })
+
 // Horário da oficina: 8h–12h / 13h30–18h
 function getSaudacao() {
   const h = new Date().getHours()
@@ -156,8 +162,49 @@ export default function Dashboard({ setPage }) {
   const [almocoConcluido, setAlmocoConcluido] = useState(
     localStorage.getItem('ol_almoco_' + new Date().toISOString().split('T')[0]) === '1'
   )
+  const [notinhas, setNotinhas] = useState(loadNotinhas)
+  const [notinhaForm, setNotinhaForm] = useState(emptyNotinha())
+  const [notinhaOpen, setNotinhaOpen] = useState(false)
   const saudacao = getSaudacao()
   const fraseCtx = getFraseContextual(checked, agora)
+
+  const todayStr = new Date().toISOString().split('T')[0]
+  const notinhasHoje = notinhas.filter(n => n.data === todayStr)
+  const totalGastoHoje = notinhasHoje.reduce((s, n) => s + (n.totalCusto || 0), 0)
+  const totalLucroHoje = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
+
+  const custoCalc = (parseFloat(notinhaForm.custoUnit) || 0) * (parseInt(notinhaForm.qtd) || 1)
+  const vendaCalc = (parseFloat(notinhaForm.precoVenda) || 0) * (parseInt(notinhaForm.qtd) || 1)
+  const lucroCalc = vendaCalc - custoCalc
+  const porcCalc = custoCalc > 0 ? ((lucroCalc / custoCalc) * 100) : 0
+
+  function salvarNotinha(e) {
+    e.preventDefault()
+    if (!notinhaForm.desc || !notinhaForm.custoUnit) return
+    const arr = loadNotinhas()
+    arr.push({
+      ...notinhaForm,
+      id: nextNotinhaId(arr),
+      qtd: parseInt(notinhaForm.qtd) || 1,
+      custoUnit: parseFloat(notinhaForm.custoUnit) || 0,
+      precoVenda: parseFloat(notinhaForm.precoVenda) || 0,
+      totalCusto: custoCalc,
+      lucro: lucroCalc,
+      porcLucro: porcCalc,
+      data: todayStr,
+    })
+    saveNotinhas(arr)
+    setNotinhas(loadNotinhas())
+    setNotinhaForm(emptyNotinha())
+    setNotinhaOpen(false)
+  }
+
+  function removerNotinha(id) {
+    if (!confirm('Remover esta notinha?')) return
+    const arr = loadNotinhas().filter(n => n.id !== id)
+    saveNotinhas(arr)
+    setNotinhas(arr)
+  }
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -323,47 +370,102 @@ export default function Dashboard({ setPage }) {
         <div className="card dash-pecas">
           <div className="dash-pecas-header">
             <h3>🔩 Notinhas de Peças</h3>
-            <button className="btn-link" onClick={() => setPage('gastos')}>Ver todas →</button>
+            <button className="btn-primary" style={{ fontSize: 13, padding: '7px 14px' }} onClick={() => setNotinhaOpen(v => !v)}>
+              {notinhaOpen ? '✕ Fechar' : '+ Adicionar Notinha'}
+            </button>
           </div>
 
-          <div className="dash-comissao-total">
-            <span>💜 Total de Comissões:</span>
-            <strong>{fmt(totalComissao)}</strong>
-          </div>
-
-          {pecas.length === 0 ? (
-            <div className="empty-state" style={{ padding: '24px 0' }}>
-              <div className="empty-icon" style={{ fontSize: 32 }}>🔩</div>
-              <p>Nenhuma peça registrada ainda.</p>
+          {/* Lembrete animado */}
+          {notinhasHoje.length === 0 ? (
+            <div className="dash-notinha-lembrete">
+              <span>📝</span>
+              <span>Leandra, chegou alguma notinha de peças hoje? Vai lá adicionar, não podemos esquecer! 😄</span>
             </div>
           ) : (
-            <table className="pecas-table">
-              <thead>
-                <tr>
-                  <th>Peça / Descrição</th>
-                  <th>Fornecedor</th>
-                  <th>Valor</th>
-                  <th>Comissão</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pecas.map(g => (
-                  <tr key={g.id}>
-                    <td>
-                      <strong>{g.descricao}</strong>
-                      {g.descBreve && <div style={{ fontSize: 11, color: 'var(--text-light)' }}>{g.descBreve}</div>}
-                    </td>
-                    <td style={{ color: 'var(--text-light)', fontSize: 13 }}>{g.fornecedor || '—'}</td>
-                    <td><strong style={{ color: '#ef4444' }}>{fmt(g.valor)}</strong></td>
-                    <td>
-                      {g.comissao
-                        ? <span className="comissao-badge">{fmt(g.comissao)}</span>
-                        : <span style={{ color: 'var(--text-light)', fontSize: 12 }}>—</span>}
-                    </td>
+            <div className="dash-notinha-resumo">
+              <div className="notinha-resumo-item vermelho">
+                <span>🛒 Gasto com Peças Hoje</span>
+                <strong>{fmt(totalGastoHoje)}</strong>
+              </div>
+              <div className="notinha-resumo-item verde">
+                <span>📈 Lucro com Peças Hoje</span>
+                <strong>{fmt(totalLucroHoje)}</strong>
+              </div>
+            </div>
+          )}
+
+          {/* Formulário rápido */}
+          {notinhaOpen && (
+            <form className="dash-notinha-form" onSubmit={salvarNotinha}>
+              <div className="notinha-form-row">
+                <div className="form-group" style={{ flex: 3 }}>
+                  <label>Peça / Descrição *</label>
+                  <input value={notinhaForm.desc} onChange={e => setNotinhaForm(f => ({ ...f, desc: e.target.value }))} placeholder="Ex: Filtro de óleo, pastilha de freio..." required />
+                </div>
+                <div className="form-group" style={{ flex: 2 }}>
+                  <label>Fornecedor</label>
+                  <input value={notinhaForm.fornecedor} onChange={e => setNotinhaForm(f => ({ ...f, fornecedor: e.target.value }))} placeholder="Nome da loja/fornecedor" />
+                </div>
+              </div>
+              <div className="notinha-form-row">
+                <div className="form-group">
+                  <label>Qtd</label>
+                  <input type="number" min="1" value={notinhaForm.qtd} onChange={e => setNotinhaForm(f => ({ ...f, qtd: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Custo Unit. (R$) *</label>
+                  <input type="number" min="0" step="0.01" value={notinhaForm.custoUnit} onChange={e => setNotinhaForm(f => ({ ...f, custoUnit: e.target.value }))} placeholder="Quanto pagou" required />
+                </div>
+                <div className="form-group">
+                  <label>Preço de Venda (R$)</label>
+                  <input type="number" min="0" step="0.01" value={notinhaForm.precoVenda} onChange={e => setNotinhaForm(f => ({ ...f, precoVenda: e.target.value }))} placeholder="Quanto vai cobrar" />
+                </div>
+              </div>
+              {(custoCalc > 0 || vendaCalc > 0) && (
+                <div className="dash-notinha-calc">
+                  <span>💸 Custo total: <strong style={{ color: '#ef4444' }}>{fmt(custoCalc)}</strong></span>
+                  <span>💰 Venda total: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc)}</strong></span>
+                  <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)} ({porcCalc.toFixed(0)}%)</strong></span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+                <button type="button" className="btn-secondary" onClick={() => setNotinhaOpen(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary">✔ Salvar Notinha</button>
+              </div>
+            </form>
+          )}
+
+          {/* Lista de notinhas de hoje */}
+          {notinhasHoje.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 8 }}>Notinhas de Hoje</div>
+              <table className="pecas-table">
+                <thead>
+                  <tr>
+                    <th>Peça</th>
+                    <th>Fornecedor</th>
+                    <th>Custo</th>
+                    <th>Venda</th>
+                    <th>Lucro</th>
+                    <th>%</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {notinhasHoje.map(n => (
+                    <tr key={n.id}>
+                      <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>Qtd: {n.qtd}</span></td>
+                      <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{n.fornecedor || '—'}</td>
+                      <td><strong style={{ color: '#ef4444' }}>{fmt(n.totalCusto)}</strong></td>
+                      <td>{n.precoVenda > 0 ? <strong style={{ color: '#3b82f6' }}>{fmt(n.precoVenda * n.qtd)}</strong> : <span style={{ color: 'var(--text-light)' }}>—</span>}</td>
+                      <td>{n.lucro > 0 ? <strong style={{ color: '#10b981' }}>{fmt(n.lucro)}</strong> : <span style={{ color: '#ef4444' }}>{fmt(n.lucro)}</span>}</td>
+                      <td><span className="comissao-badge">{n.porcLucro.toFixed(0)}%</span></td>
+                      <td><button className="btn-danger" style={{ padding: '4px 8px' }} onClick={() => removerNotinha(n.id)}>🗑️</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

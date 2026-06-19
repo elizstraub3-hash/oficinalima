@@ -429,6 +429,72 @@
   .dash-check-item { padding: 10px 10px; }
 }
 
+/* === NOTINHAS DE PEÇAS === */
+.dash-notinha-lembrete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 12px;
+  animation: pulse-yellow 2s ease-in-out infinite;
+}
+
+.dash-notinha-resumo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.notinha-resumo-item {
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notinha-resumo-item span { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.notinha-resumo-item.vermelho { background: #fef2f2; border: 1.5px solid #fca5a5; }
+.notinha-resumo-item.vermelho strong { font-size: 17px; font-weight: 800; color: #ef4444; }
+.notinha-resumo-item.verde { background: #f0fdf4; border: 1.5px solid #6ee7b7; }
+.notinha-resumo-item.verde strong { font-size: 17px; font-weight: 800; color: #059669; }
+
+.dash-notinha-form {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.notinha-form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.notinha-form-row .form-group { margin-bottom: 0; min-width: 100px; flex: 1; }
+
+.dash-notinha-calc {
+  display: flex;
+  gap: 16px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
 /* === MÓDULOS === */
 .dash-tip h3 {
   font-size: 15px;
