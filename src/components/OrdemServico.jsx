@@ -876,22 +876,29 @@ export default function OrdemServico({ setPage }) {
             {/* Status — rodapé obrigatório */}
             <div className={`os-status-footer ${statusError ? 'os-status-error' : ''}`}>
               <div className="os-status-footer-label">
-                {statusError
-                  ? '⚠️ Selecione um STATUS antes de continuar!'
-                  : '📌 STATUS DA OS *'}
+                {statusError ? '⚠️ Selecione um STATUS antes de continuar!' : '📌 STATUS DA OS *'}
               </div>
-              <div className="os-status-select">
-                {Object.entries(STATUS).map(([k, v]) => (
-                  <button
-                    type="button"
-                    key={k}
-                    className={`os-status-opt ${form.status === k ? 'active' : ''}`}
-                    style={form.status === k ? { background: v.color, borderColor: v.color, color: 'white' } : {}}
-                    onClick={() => { setForm(f => ({ ...f, status: k })); setStatusError(false) }}
-                  >
-                    {v.icon} {v.label}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={form.status}
+                  onChange={e => { setForm(f => ({ ...f, status: e.target.value })); setStatusError(false) }}
+                  className="os-status-select-dd"
+                  style={form.status ? { background: STATUS[form.status]?.color, color: '#fff', borderColor: STATUS[form.status]?.color } : {}}
+                >
+                  <option value="">— Selecione o status —</option>
+                  {Object.entries(STATUS).map(([k, v]) => (
+                    <option key={k} value={k}>{v.icon} {v.label}</option>
+                  ))}
+                </select>
+                {form.status && (
+                  <div className="os-status-timer-info">
+                    {form.status === 'em_andamento'
+                      ? '⏱️ O cronômetro vai iniciar agora ao salvar — o tempo de serviço começa a contar!'
+                      : form.status === 'concluido' || form.status === 'cancelado'
+                        ? '🏁 O cronômetro será encerrado ao salvar.'
+                        : '⏸️ O cronômetro só começa quando o status for alterado para "Em Serviço".'}
+                  </div>
+                )}
               </div>
             </div>
 
