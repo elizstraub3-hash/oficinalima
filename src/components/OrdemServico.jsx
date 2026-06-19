@@ -578,18 +578,28 @@ export default function OrdemServico({ setPage }) {
               <button className="modal-close" onClick={() => setViewing(null)}>✕</button>
             </div>
             <div className="modal-body">
-              {/* Troca de status inline */}
-              <div className="os-flow">
-                {Object.entries(STATUS).map(([k, v]) => (
-                  <button
-                    key={k}
-                    className={`os-flow-btn ${viewing.status === k ? 'active' : ''}`}
-                    style={viewing.status === k ? { background: v.color, borderColor: v.color, color: 'white' } : {}}
-                    onClick={() => handleChangeStatus(viewing.id, k)}
+              {/* Troca de status — dropdown */}
+              <div className="os-status-footer" style={{ marginBottom: 16 }}>
+                <div className="os-status-footer-label">📌 STATUS DA OS</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    value={viewing.status}
+                    onChange={e => handleChangeStatus(viewing.id, e.target.value)}
+                    className="os-status-select-dd"
+                    style={viewing.status ? { background: STATUS[viewing.status]?.color, color: '#fff', borderColor: STATUS[viewing.status]?.color } : {}}
                   >
-                    {v.icon} {v.label}
-                  </button>
-                ))}
+                    {Object.entries(STATUS).map(([k, v]) => (
+                      <option key={k} value={k}>{v.icon} {v.label}</option>
+                    ))}
+                  </select>
+                  <div className="os-status-timer-info">
+                    {viewing.status === 'em_andamento'
+                      ? '⏱️ Cronômetro rodando — tempo de serviço contando agora.'
+                      : viewing.status === 'concluido' || viewing.status === 'cancelado'
+                        ? '🏁 Serviço encerrado.'
+                        : '⏸️ O cronômetro só conta quando o status for "Em Serviço".'}
+                  </div>
+                </div>
               </div>
 
               <div className="os-detail-grid">
