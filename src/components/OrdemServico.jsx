@@ -349,16 +349,22 @@ export default function OrdemServico() {
     setForm(f => ({ ...f, itens: f.itens.filter(it => it.id !== id) }))
   }
 
-  function calcTotal() {
-    if (!form.itens || !form.itens.length) return ''
+  function calcTotalPecas() {
+    if (!form.itens || !form.itens.length) return 0
     return form.itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
+  }
+
+  function calcTotal() {
+    const pecas = calcTotalPecas()
+    const mob = parseFloat(form.maoDeObra) || 0
+    return pecas + mob
   }
 
   function handleSave(e) {
     e.preventDefault()
     if (!form.clienteNome || !form.placa) return
     const arr = load()
-    const total = calcTotal() || parseFloat(form.valor) || 0
+    const total = calcTotal() || 0
     if (editing) {
       const idx = arr.findIndex(x => x.id === editing)
       const old = arr[idx]
@@ -414,6 +420,7 @@ export default function OrdemServico() {
 
   const counts = Object.keys(STATUS).reduce((acc, s) => { acc[s] = ordens.filter(o => o.status === s).length; return acc }, {})
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+  const totalPecasForm = calcTotalPecas()
   const totalItensForm = calcTotal()
 
   return (
@@ -719,22 +726,24 @@ export default function OrdemServico() {
             </div>
 
             {form.itens && form.itens.length > 0 && (
-              <table style={{ marginBottom: 12, fontSize: 13 }}>
-                <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
-                <tbody>
-                  {form.itens.map(it => (
-                    <tr key={it.id}>
-                      <td>{it.desc}</td>
-                      <td>{it.uni || 'UN'}</td>
-                      <td>{it.cod || '—'}</td>
-                      <td>{it.qtd}</td>
-                      <td>R$ {Number(it.valor).toFixed(2).replace('.', ',')}</td>
-                      <td><strong>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
-                      <td><button type="button" className="btn-danger" onClick={() => removerItem(it.id)}>✕</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{ maxHeight: 260, overflowY: 'auto', marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                <table style={{ fontSize: 13, marginBottom: 0 }}>
+                  <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
+                  <tbody>
+                    {form.itens.map(it => (
+                      <tr key={it.id}>
+                        <td>{it.desc}</td>
+                        <td>{it.uni || 'UN'}</td>
+                        <td>{it.cod || '—'}</td>
+                        <td>{it.qtd}</td>
+                        <td>R$ {Number(it.valor).toFixed(2).replace('.', ',')}</td>
+                        <td><strong>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
+                        <td><button type="button" className="btn-danger" onClick={() => removerItem(it.id)}>✕</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             <div className="form-row">
@@ -744,19 +753,26 @@ export default function OrdemServico() {
                   type="number" min="0" step="0.01"
                   value={form.maoDeObra}
                   onChange={e => setForm(f => ({ ...f, maoDeObra: e.target.value }))}
-                  placeholder="Valor da mão de obra do mecânico..."
+                  placeholder="Valor da mão de obra..."
                 />
               </div>
               <div className="form-group">
-                <label>Valor Total (R$) {form.itens?.length > 0 ? '— calculado automaticamente' : ''}</label>
-                <input
-                  type="number" min="0" step="0.01"
-                  value={totalItensForm !== '' ? (totalItensForm + (parseFloat(form.maoDeObra) || 0)) || '' : form.valor}
-                  onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
-                  placeholder="0,00"
-                  readOnly={form.itens?.length > 0}
-                  style={form.itens?.length > 0 ? { background: '#f3f4f6', fontWeight: 700 } : {}}
-                />
+                <label>Valor Total (calculado automaticamente)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {totalPecasForm > 0 && (
+                    <small style={{ color: 'var(--text-light)', fontSize: 12 }}>
+                      Peças: R$ {totalPecasForm.toFixed(2).replace('.', ',')} &nbsp;+&nbsp; Mão de obra: R$ {(parseFloat(form.maoDeObra) || 0).toFixed(2).replace('.', ',')}
+                    </small>
+                  )}
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={totalItensForm > 0 ? totalItensForm.toFixed(2) : form.valor}
+                    onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
+                    placeholder="0,00"
+                    readOnly={totalItensForm > 0}
+                    style={{ background: '#f3f4f6', fontWeight: 700, fontSize: 16, color: '#10b981' }}
+                  />
+                </div>
               </div>
             </div>
 
