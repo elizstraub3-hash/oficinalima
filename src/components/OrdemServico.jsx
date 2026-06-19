@@ -24,14 +24,17 @@ const STATUS = {
 }
 
 function formatMs(ms) {
-  if (!ms || ms < 0) return '—'
+  if (!ms || ms < 0) return '0:00:00'
   const total = Math.floor(ms / 1000)
   const dias = Math.floor(total / 86400)
   const h    = Math.floor((total % 86400) / 3600)
   const m    = Math.floor((total % 3600) / 60)
-  if (dias > 0) return `${dias}d ${h}h ${m}min`
-  if (h > 0)    return `${h}h ${m}min`
-  return `${m}min`
+  const s    = total % 60
+  const mm   = String(m).padStart(2, '0')
+  const ss   = String(s).padStart(2, '0')
+  if (dias > 0) return `${dias}d ${h}:${mm}:${ss}`
+  if (h > 0)    return `${h}:${mm}:${ss}`
+  return `0:${mm}:${ss}`
 }
 
 function LiveTimer({ inicio }) {
