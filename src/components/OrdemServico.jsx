@@ -236,8 +236,7 @@ function gerarPDF(ordem) {
   </table>
 
   <!-- TABELA SERVICO / MAO DE OBRA -->
-  ${servicosArr.length > 0 ? `
-  <div class="section-head" style="margin-top:16px">S E R V I C O S</div>
+  <div class="section-head" style="margin-top:16px">S E R V I C O S  /  M Ã O  D E  O B R A</div>
   <table>
     <thead>
       <tr>
@@ -248,23 +247,26 @@ function gerarPDF(ordem) {
       </tr>
     </thead>
     <tbody>
-      ${servicosArr.map(sv => `
+      ${servicosArr.length > 0
+        ? servicosArr.map(sv => `
       <tr>
         <td>1</td>
         <td>${sv.desc || 'Mao de Obra'}</td>
         <td>${sv.funcionario || '—'}</td>
         <td style="text-align:right"><strong>${fmt(sv.maoDeObra)}</strong></td>
-      </tr>`).join('')}
+      </tr>`).join('')
+        : `<tr><td colspan="4" style="text-align:center;color:#aaa;padding:14px">Nenhum servico informado</td></tr>`
+      }
     </tbody>
   </table>
-  <table class="sub-table">
-    <tr><td class="sub-label">Total Servicos</td><td class="sub-val">${fmt2(totalMob)}</td></tr>
-  </table>` : ''}
 
-  <!-- TOTAL GERAL -->
-  <table class="sub-table" style="margin-top:4px">
+  <!-- RESUMO TOTAIS -->
+  <table class="sub-table" style="margin-top:0">
+    <tr><td class="sub-label">📦 Total Peças / Produtos</td><td class="sub-val">${fmt2(totalPecas)}</td></tr>
+    <tr><td class="sub-label">🔧 Total Mão de Obra / Serviços</td><td class="sub-val">${fmt2(totalMob)}</td></tr>
     <tr class="total-row">
-      <td style="text-align:right">Total ${fmt2(totalGeral)}</td>
+      <td style="text-align:right;font-size:14px">💰 TOTAL GERAL</td>
+      <td style="text-align:right;width:120px;font-size:16px;font-weight:900">${fmt2(totalGeral)}</td>
     </tr>
   </table>
 
