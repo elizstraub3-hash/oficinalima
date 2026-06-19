@@ -109,7 +109,8 @@ function gerarPDF(ordem) {
     .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #000;padding-bottom:14px;margin-bottom:14px}
     .header-left h1{font-size:18px;font-weight:900;color:#000;letter-spacing:0.5px}
     .header-left p{font-size:11px;color:#555;margin-top:2px}
-    .logo-img{width:80px;height:80px;object-fit:contain;border-radius:50%;border:2px solid #ddd;background:#f9f9f9}
+    .logo-wrap{width:90px;height:90px;background:#000;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .logo-img{width:78px;height:78px;object-fit:contain;border-radius:8px;filter:brightness(0) invert(1)}
 
     /* Título OS */
     .os-title-bar{background:#000;color:#fff;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-radius:6px;margin-bottom:14px}
@@ -179,7 +180,7 @@ function gerarPDF(ordem) {
       <p>(41) 9 9595-5516 &nbsp;|&nbsp; Servicos Automotivos</p>
       <p style="margin-top:6px;font-size:11px;color:#888">Data de emissao: <strong>${hoje}</strong></p>
     </div>
-    <img src="${logoUrl}" class="logo-img" alt="Logo" onerror="this.style.display='none'" />
+    <div class="logo-wrap"><img src="${logoUrl}" class="logo-img" alt="Logo" onerror="this.parentElement.style.display='none'" /></div>
   </div>
 
   <!-- BARRA OS + STATUS -->
@@ -399,12 +400,12 @@ export default function OrdemServico({ setPage }) {
     return calcTotalPecas() + calcTotalMob()
   }
 
-  function handleSave(e) {
-    e.preventDefault()
-    if (!form.status) { setStatusError(true); return }
-    if (!form.clienteNome || !form.placa) return
+  function _doSave() {
+    if (!form.status) { setStatusError(true); return null }
+    if (!form.clienteNome || !form.placa) return null
     const arr = load()
     const total = calcTotal() || 0
+    let savedOrdem = null
     if (editing) {
       const idx = arr.findIndex(x => x.id === editing)
       const old = arr[idx]
@@ -412,12 +413,15 @@ export default function OrdemServico({ setPage }) {
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
       if ((form.status === 'concluido' || form.status === 'cancelado') && !fim) fim = Date.now()
       arr[idx] = { ...old, ...form, valor: total, maoDeObra: calcTotalMob(), inicio, fim }
+      savedOrdem = arr[idx]
     } else {
-      arr.push({
+      const novaOrdem = {
         ...form, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: calcTotalMob(),
         inicio: form.status === 'em_andamento' ? Date.now() : null,
         fim: null, data: new Date().toISOString().split('T')[0],
-      })
+      }
+      arr.push(novaOrdem)
+      savedOrdem = novaOrdem
       if (form.clienteNome) {
         const clis = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
         if (!clis.find(c => c.nome.toLowerCase() === form.clienteNome.toLowerCase())) {
@@ -429,6 +433,18 @@ export default function OrdemServico({ setPage }) {
     save(arr)
     setModal(false)
     refresh()
+    return savedOrdem
+  }
+
+  function handleSave(e) {
+    e.preventDefault()
+    _doSave()
+  }
+
+  function handleSaveAndPDF(e) {
+    e.preventDefault()
+    const ordem = _doSave()
+    if (ordem) gerarPDF(ordem)
   }
 
   function handleChangeStatus(id, novoStatus) {
@@ -882,6 +898,7 @@ export default function OrdemServico({ setPage }) {
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
               <button type="submit" className="btn-primary">{editing ? 'Salvar' : 'Criar OS'}</button>
+              <button type="button" className="btn-pdf-lg" onClick={handleSaveAndPDF}>📄 Salvar e Enviar PDF</button>
             </div>
           </form>
         </Modal>
