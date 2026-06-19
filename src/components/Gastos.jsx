@@ -3,7 +3,22 @@ import Modal from './Modal.jsx'
 import './Gastos.css'
 
 const KEY = 'ol_gastos'
-const CATS = ['Peças', 'Posto', 'Mercado', 'Alimentação', 'Ferramentas', 'EPI', 'Material de Limpeza', 'Outros']
+
+const CATS_INFO = [
+  { nome: 'Peças',                  icon: '🔩', ex: 'Filtro, pastilha, correia, vela...' },
+  { nome: 'Café / Alimentação',     icon: '☕', ex: 'Café da manhã, pão, lanche da equipe, almoço...' },
+  { nome: 'Combustível / Posto',    icon: '⛽', ex: 'Gasolina, etanol, diesel da moto ou carro da oficina...' },
+  { nome: 'Pintura / Manutenção',   icon: '🎨', ex: 'Tinta para parede, conserto de porta, reforma...' },
+  { nome: 'Material de Limpeza',    icon: '🧹', ex: 'Detergente, pano, vassoura, produto de limpeza...' },
+  { nome: 'Material de Escritório', icon: '🖊️', ex: 'Papel, caneta, impressão, pasta, agenda...' },
+  { nome: 'Ferramentas',            icon: '🔧', ex: 'Chave, soquete, alicate, equipamento novo...' },
+  { nome: 'EPI / Uniformes',        icon: '🦺', ex: 'Luvas, óculos, uniforme, bota de segurança...' },
+  { nome: 'Conta Fixa',             icon: '💡', ex: 'Luz, água, internet, telefone, gás...' },
+  { nome: 'Compras Gerais',         icon: '🛒', ex: 'Supermercado, itens variados para a oficina...' },
+  { nome: 'Frete / Entrega',        icon: '📦', ex: 'Motoboy, entrega de peças, frete de compra...' },
+  { nome: 'Outros',                 icon: '📝', ex: 'Qualquer outro gasto da oficina...' },
+]
+const CATS = CATS_INFO.map(c => c.nome)
 
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
@@ -75,15 +90,18 @@ export default function Gastos() {
           <strong>{fmt(items.reduce((s, g) => s + Number(g.valor), 0))}</strong>
         </div>
         <div className="gastos-cats">
-          {porCategoria.map(x => (
-            <button
-              key={x.cat}
-              className={`cat-chip ${filtrocat === x.cat ? 'active' : ''}`}
-              onClick={() => setFiltrocat(filtrocat === x.cat ? 'todos' : x.cat)}
-            >
-              {x.cat}: <strong>{fmt(x.total)}</strong>
-            </button>
-          ))}
+          {porCategoria.map(x => {
+            const info = CATS_INFO.find(c => c.nome === x.cat)
+            return (
+              <button
+                key={x.cat}
+                className={`cat-chip ${filtrocat === x.cat ? 'active' : ''}`}
+                onClick={() => setFiltrocat(filtrocat === x.cat ? 'todos' : x.cat)}
+              >
+                {info?.icon} {x.cat}: <strong>{fmt(x.total)}</strong>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -129,7 +147,7 @@ export default function Gastos() {
                     <strong>{g.descricao}</strong>
                     {g.descBreve && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{g.descBreve}</div>}
                   </td>
-                  <td><span className="badge badge-gray">{g.categoria}</span></td>
+                  <td><span className="badge badge-gray">{CATS_INFO.find(c => c.nome === g.categoria)?.icon} {g.categoria}</span></td>
                   <td style={{ color: 'var(--text-light)' }}>{g.fornecedor || '—'}</td>
                   <td style={{ color: 'var(--text-light)', fontSize: 13 }}>{g.nota || '—'}</td>
                   <td>
@@ -169,8 +187,9 @@ export default function Gastos() {
               <div className="form-group">
                 <label>Categoria</label>
                 <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}>
-                  {CATS.map(c => <option key={c}>{c}</option>)}
+                  {CATS_INFO.map(c => <option key={c.nome} value={c.nome}>{c.icon} {c.nome}</option>)}
                 </select>
+                {(() => { const info = CATS_INFO.find(c => c.nome === form.categoria); return info ? <small style={{ color: 'var(--text-light)', fontSize: 11, marginTop: 4, display: 'block' }}>Ex: {info.ex}</small> : null })()}
               </div>
               <div className="form-group">
                 <label>Valor (R$) *</label>

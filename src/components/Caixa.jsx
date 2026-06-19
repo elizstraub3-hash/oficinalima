@@ -51,6 +51,31 @@ export default function Caixa() {
 
   const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
   const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]')
+  const gastos = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
+
+  // Gastos do mês atual
+  const mesAtual = hojeStr.slice(0, 7)
+  const gastosMes = gastos.filter(g => (g.data || '').startsWith(mesAtual))
+  const totalGastosMes = gastosMes.reduce((s, g) => s + Number(g.valor || 0), 0)
+  const receitaMes = somaValor(ordensMes)
+  const entradaMes = entries.filter(e => e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
+  const totalEntradasMes = receitaMes + entradaMes
+
+  // Categorias de gastos do mês
+  const gastosPorCat = gastosMes.reduce((acc, g) => {
+    acc[g.categoria] = (acc[g.categoria] || 0) + Number(g.valor || 0)
+    return acc
+  }, {})
+
+  // Alerta de gastos
+  const porcGastos = totalEntradasMes > 0 ? (totalGastosMes / totalEntradasMes) * 100 : 0
+  const alertaGasto = (() => {
+    if (totalGastosMes === 0) return null
+    if (porcGastos >= 80) return { tipo: 'danger', msg: '🚨 Atenção, Leandra! Os gastos estão MAIORES do que está entrando! Corte os gastos urgente — a oficina precisa de cuidado!' }
+    if (porcGastos >= 60) return { tipo: 'danger', msg: '⚠️ Leandra, está entrando dinheiro sim, mas vocês estão gastando MUITO! Vale sentar e rever o que pode cortar!' }
+    if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Leandra. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
+    return { tipo: 'ok', msg: '✅ Ótimo controle, Leandra! Os gastos estão saudáveis este mês. Continue assim!' }
+  })()
   const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
   const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)
 
@@ -121,6 +146,48 @@ export default function Caixa() {
           <strong>{fmt(saldo)}</strong>
         </div>
       </div>
+
+      {/* Alerta de gastos inteligente */}
+      {alertaGasto && (
+        <div className={`caixa-alerta-gasto ${alertaGasto.tipo}`}>
+          <span>{alertaGasto.msg}</span>
+          {totalEntradasMes > 0 && (
+            <span className="caixa-alerta-porc">{porcGastos.toFixed(0)}% da receita gasto</span>
+          )}
+        </div>
+      )}
+
+      {/* Gastos da oficina deste mês */}
+      {gastosMes.length > 0 && (
+        <div className="caixa-gastos-oficina">
+          <div className="mob-split-title">🧾 Gastos da Oficina — {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
+          <div className="caixa-gastos-barra">
+            <div style={{ flex: 1 }}>
+              <div className="caixa-barra-label">Receita do mês</div>
+              <div className="caixa-barra-val verde">{fmt(totalEntradasMes)}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="caixa-barra-label">Gastos do mês</div>
+              <div className="caixa-barra-val vermelho">{fmt(totalGastosMes)}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="caixa-barra-label">Saldo</div>
+              <div className={`caixa-barra-val ${totalEntradasMes - totalGastosMes >= 0 ? 'verde' : 'vermelho'}`}>{fmt(totalEntradasMes - totalGastosMes)}</div>
+            </div>
+          </div>
+          <div className="caixa-gastos-cats">
+            {Object.entries(gastosPorCat).sort((a,b) => b[1]-a[1]).map(([cat, val]) => (
+              <div key={cat} className="caixa-gasto-cat-item">
+                <span className="caixa-gasto-cat-nome">{cat}</span>
+                <div className="caixa-gasto-cat-barra-wrap">
+                  <div className="caixa-gasto-cat-barra" style={{ width: `${Math.min((val / totalGastosMes) * 100, 100)}%` }} />
+                </div>
+                <span className="caixa-gasto-cat-val">{fmt(val)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Resumo OS por período */}
       <div className="caixa-periodo">
