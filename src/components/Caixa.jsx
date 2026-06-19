@@ -50,12 +50,50 @@ export default function Caixa() {
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 
   const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-  const totalMaoDeObra = ordens.reduce((s, o) => {
+
+  // Helpers de data
+  const hoje = new Date()
+  const hojeStr = hoje.toISOString().split('T')[0]
+  const semanaInicio = new Date(hoje); semanaInicio.setDate(hoje.getDate() - hoje.getDay())
+  const semanaStr = semanaInicio.toISOString().split('T')[0]
+  const mesStr = hojeStr.slice(0, 7)
+
+  function ordensDoPeriodo(de) {
+    return ordens.filter(o => {
+      const d = o.data || (o.inicio ? new Date(o.inicio).toISOString().split('T')[0] : null)
+      return d && d >= de
+    })
+  }
+
+  function somaValor(arr) { return arr.reduce((s, o) => s + Number(o.valor || 0), 0) }
+  function somaMob(arr) {
+    return arr.reduce((s, o) => {
+      if (o.servicos && o.servicos.length) return s + o.servicos.reduce((ss, sv) => ss + (parseFloat(sv.maoDeObra) || 0), 0)
+      return s + (parseFloat(o.maoDeObra) || 0)
+    }, 0)
+  }
+
+  const totalMaoDeObra = somaMob(ordens)
+
+  // Resumo por período
+  const ordensHoje = ordensDoPeriodo(hojeStr)
+  const ordensSemana = ordensDoPeriodo(semanaStr)
+  const ordensMes = ordensDoPeriodo(mesStr + '-01')
+
+  // Por funcionário: agrupa servicos[]
+  const porFuncionario = {}
+  ordens.forEach(o => {
     if (o.servicos && o.servicos.length) {
-      return s + o.servicos.reduce((ss, sv) => ss + (parseFloat(sv.maoDeObra) || 0), 0)
+      o.servicos.forEach(sv => {
+        if (!sv.funcionario) return
+        if (!porFuncionario[sv.funcionario]) porFuncionario[sv.funcionario] = 0
+        porFuncionario[sv.funcionario] += parseFloat(sv.maoDeObra) || 0
+      })
+    } else if (o.funcionario && o.maoDeObra) {
+      if (!porFuncionario[o.funcionario]) porFuncionario[o.funcionario] = 0
+      porFuncionario[o.funcionario] += parseFloat(o.maoDeObra) || 0
     }
-    return s + (parseFloat(o.maoDeObra) || 0)
-  }, 0)
+  })
 
   return (
     <div>
@@ -81,6 +119,28 @@ export default function Caixa() {
         </div>
       </div>
 
+      {/* Resumo OS por período */}
+      <div className="caixa-periodo">
+        <div className="periodo-title">📅 Faturamento em OS</div>
+        <div className="periodo-grid">
+          <div className="periodo-item">
+            <span className="periodo-label">Hoje</span>
+            <strong>{fmt(somaValor(ordensHoje))}</strong>
+            <small>{ordensHoje.length} OS</small>
+          </div>
+          <div className="periodo-item">
+            <span className="periodo-label">Esta Semana</span>
+            <strong>{fmt(somaValor(ordensSemana))}</strong>
+            <small>{ordensSemana.length} OS</small>
+          </div>
+          <div className="periodo-item">
+            <span className="periodo-label">Este Mês</span>
+            <strong>{fmt(somaValor(ordensMes))}</strong>
+            <small>{ordensMes.length} OS</small>
+          </div>
+        </div>
+      </div>
+
       {/* Divisão mão de obra */}
       <div className="caixa-mob-split">
         <div className="mob-split-title">🔧 Divisão de Mão de Obra (Total OS)</div>
@@ -90,14 +150,35 @@ export default function Caixa() {
             <strong>{fmt(totalMaoDeObra)}</strong>
           </div>
           <div className="mob-split-item oficina">
-            <span className="mob-split-label">50% Oficina</span>
+            <span className="mob-split-label">💼 Fica na Oficina (50%)</span>
             <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
           </div>
           <div className="mob-split-item mecanico">
-            <span className="mob-split-label">50% Mecânico</span>
+            <span className="mob-split-label">👷 Pagar Mecânicos (50%)</span>
             <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
           </div>
         </div>
+
+        {/* Por funcionário */}
+        {Object.keys(porFuncionario).length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 8 }}>
+              Detalhamento por Mecânico
+            </div>
+            <div className="mob-func-grid">
+              {Object.entries(porFuncionario).map(([nome, total]) => (
+                <div key={nome} className="mob-func-item">
+                  <div className="mob-func-avatar">{nome.charAt(0).toUpperCase()}</div>
+                  <div>
+                    <div className="mob-func-nome">{nome}</div>
+                    <div className="mob-func-total">Total gerado: {fmt(total)}</div>
+                    <div className="mob-func-pagar">A pagar (50%): <strong style={{ color: '#2563eb' }}>{fmt(total * 0.5)}</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card">

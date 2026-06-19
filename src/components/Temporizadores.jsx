@@ -44,15 +44,20 @@ function TimerCell({ inicio }) {
   )
 }
 
+function loadOrdens() {
+  return JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'em_andamento' && o.inicio)
+}
+
 export default function Temporizadores() {
   const [ativos, setAtivos] = useState(load)
+  const [ordensAtivas, setOrdensAtivas] = useState(loadOrdens)
   const [hist, setHist] = useState(loadHist)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(empty())
   const [funcionarios] = useState(() => JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => f.status === 'ativo'))
   const [servicos] = useState(() => JSON.parse(localStorage.getItem('ol_servicos') || '[]'))
 
-  function refresh() { setAtivos(load()); setHist(loadHist()) }
+  function refresh() { setAtivos(load()); setHist(loadHist()); setOrdensAtivas(loadOrdens()) }
 
   function handleAdd(e) {
     e.preventDefault()
@@ -106,14 +111,41 @@ export default function Temporizadores() {
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 16 }}>🚗 Carros em Atendimento ({ativos.length})</h3>
-        {ativos.length === 0 ? (
+        <h3 style={{ marginBottom: 16 }}>🚗 Carros em Atendimento ({ativos.length + ordensAtivas.length})</h3>
+        {ativos.length === 0 && ordensAtivas.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🚗</div>
             <p>Nenhum carro em atendimento no momento.</p>
           </div>
         ) : (
           <div className="timer-cards">
+            {/* OS Em Serviço */}
+            {ordensAtivas.map(o => {
+              const servicoDesc = o.servicos && o.servicos.length
+                ? o.servicos.map(sv => sv.desc).filter(Boolean).join(', ')
+                : (o.servico || '')
+              const mecDesc = o.servicos && o.servicos.length
+                ? [...new Set(o.servicos.map(sv => sv.funcionario).filter(Boolean))].join(', ')
+                : (o.funcionario || '')
+              return (
+                <div key={`os-${o.id}`} className="timer-card timer-card-os">
+                  <div className="timer-os-badge">OS {o.numero}</div>
+                  <div className="timer-header">
+                    <div className="timer-placa">{o.placa}</div>
+                    <TimerCell inicio={o.inicio} />
+                  </div>
+                  <div className="timer-info">
+                    <div><span>👤</span> {o.clienteNome}</div>
+                    {o.modelo && <div><span>🚗</span> {o.modelo} {o.ano}</div>}
+                    {servicoDesc && <div><span>🔧</span> {servicoDesc}</div>}
+                    {mecDesc && <div><span>👷</span> {mecDesc}</div>}
+                    <div><span>🕐</span> Entrada: {new Date(o.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                  <div className="timer-os-note">Gerencie esta OS em Ordens de Serviço</div>
+                </div>
+              )
+            })}
+            {/* Timers manuais */}
             {ativos.map(t => (
               <div key={t.id} className="timer-card">
                 <div className="timer-header">
