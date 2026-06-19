@@ -47,8 +47,9 @@ function LiveTimer({ inicio }) {
 
 const emptyForm = () => ({
   clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
-  servico: '', descricao: '', descBreve: '', funcionario: '', valor: '', maoDeObra: '', status: 'orcamento',
+  descricao: '', descBreve: '', valor: '', status: 'orcamento',
   itens: [],
+  servicos: [],
 })
 
 // ─── Gerador de PDF ──────────────────────────────────────────────────────────
@@ -74,8 +75,13 @@ function gerarPDF(ordem) {
 
   const itens      = ordem.itens && ordem.itens.length > 0 ? ordem.itens : []
   const totalPecas = itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
-  const maoDeObra  = Number(ordem.maoDeObra || 0)
-  const totalGeral = totalPecas + maoDeObra || Number(ordem.valor || 0)
+  const servicosArr = ordem.servicos && ordem.servicos.length > 0
+    ? ordem.servicos
+    : (Number(ordem.maoDeObra || 0) > 0
+        ? [{ id: 0, desc: ordem.servico || 'Mao de Obra', funcionario: ordem.funcionario || '', maoDeObra: ordem.maoDeObra }]
+        : [])
+  const totalMob   = servicosArr.reduce((s, sv) => s + (parseFloat(sv.maoDeObra) || 0), 0)
+  const totalGeral = totalPecas + totalMob || Number(ordem.valor || 0)
 
   const pecasRows = itens.length > 0
     ? itens.map((it, i) => `
@@ -229,31 +235,29 @@ function gerarPDF(ordem) {
   </table>
 
   <!-- TABELA SERVICO / MAO DE OBRA -->
-  ${maoDeObra > 0 || ordem.servico ? `
+  ${servicosArr.length > 0 ? `
   <div class="section-head" style="margin-top:16px">S E R V I C O S</div>
   <table>
     <thead>
       <tr>
         <th style="width:42px">Qtde</th>
         <th>Descricao</th>
-        <th style="width:120px">Mecanico</th>
-        <th style="width:110px;text-align:right">Valor Unit.</th>
+        <th style="width:140px">Mecanico</th>
         <th style="width:110px;text-align:right">Valor</th>
       </tr>
     </thead>
     <tbody>
+      ${servicosArr.map(sv => `
       <tr>
         <td>1</td>
-        <td>${ordem.servico || 'Mao de Obra'}</td>
-        <td>${ordem.funcionario || '—'}</td>
-        <td style="text-align:right">${fmt(maoDeObra)}</td>
-        <td style="text-align:right"><strong>${fmt(maoDeObra)}</strong></td>
-      </tr>
+        <td>${sv.desc || 'Mao de Obra'}</td>
+        <td>${sv.funcionario || '—'}</td>
+        <td style="text-align:right"><strong>${fmt(sv.maoDeObra)}</strong></td>
+      </tr>`).join('')}
     </tbody>
   </table>
   <table class="sub-table">
-    <tr><td class="sub-label">Total Servicos</td><td class="sub-val">${fmt2(maoDeObra)}</td></tr>
-    <tr><td class="sub-label">Servicos</td><td class="sub-val">${fmt2(maoDeObra)}</td></tr>
+    <tr><td class="sub-label">Total Servicos</td><td class="sub-val">${fmt2(totalMob)}</td></tr>
   </table>` : ''}
 
   <!-- TOTAL GERAL -->
@@ -264,11 +268,11 @@ function gerarPDF(ordem) {
   </table>
 
   <!-- MECANICO RESPONSAVEL -->
-  ${ordem.funcionario ? `
+  ${servicosArr.length > 0 || tempoStr ? `
   <div class="mec-box">
-    <div class="mec-item"><label>Mecanico Responsavel pelo Servico</label><span>${ordem.funcionario}</span></div>
+    ${servicosArr.length > 0 ? `<div class="mec-item"><label>Mecanico(s) Responsavel(is)</label><span>${[...new Set(servicosArr.map(sv => sv.funcionario).filter(Boolean))].join(', ') || '—'}</span></div>` : ''}
     ${tempoStr ? `<div class="mec-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
-    ${maoDeObra > 0 ? `<div class="mec-item"><label>Mao de Obra</label><span class="verde">${fmt2(maoDeObra)}</span></div>` : ''}
+    ${totalMob > 0 ? `<div class="mec-item"><label>Total Mao de Obra</label><span class="verde">${fmt2(totalMob)}</span></div>` : ''}
   </div>` : ''}
 
   <!-- GARANTIA -->
@@ -316,6 +320,7 @@ export default function OrdemServico() {
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [busca, setBusca] = useState('')
   const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
+  const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -327,13 +332,16 @@ export default function OrdemServico() {
 
   function openEdit(ordem) {
     setEditing(ordem.id)
+    const legacyServicos = (!ordem.servicos || !ordem.servicos.length) && Number(ordem.maoDeObra || 0) > 0
+      ? [{ id: Date.now(), desc: ordem.servico || 'Mao de Obra', funcionario: ordem.funcionario || '', maoDeObra: String(ordem.maoDeObra) }]
+      : (ordem.servicos || [])
     setForm({
       clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone,
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
-      servico: ordem.servico, descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
-      funcionario: ordem.funcionario || '', valor: ordem.valor || '',
-      maoDeObra: ordem.maoDeObra || '', status: ordem.status,
+      descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
+      valor: ordem.valor || '', status: ordem.status,
       itens: ordem.itens || [],
+      servicos: legacyServicos,
     })
     setViewing(null)
     setModal(true)
@@ -355,15 +363,28 @@ export default function OrdemServico() {
     setForm(f => ({ ...f, itens: f.itens.filter(it => it.id !== id) }))
   }
 
+  function adicionarServico() {
+    if (!novoServico.desc && !novoServico.maoDeObra) return
+    setForm(f => ({ ...f, servicos: [...(f.servicos || []), { ...novoServico, id: Date.now() }] }))
+    setNovoServico({ desc: '', funcionario: '', maoDeObra: '' })
+  }
+
+  function removerServico(id) {
+    setForm(f => ({ ...f, servicos: f.servicos.filter(sv => sv.id !== id) }))
+  }
+
   function calcTotalPecas() {
     if (!form.itens || !form.itens.length) return 0
     return form.itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
   }
 
+  function calcTotalMob() {
+    if (!form.servicos || !form.servicos.length) return 0
+    return form.servicos.reduce((s, sv) => s + (parseFloat(sv.maoDeObra) || 0), 0)
+  }
+
   function calcTotal() {
-    const pecas = calcTotalPecas()
-    const mob = parseFloat(form.maoDeObra) || 0
-    return pecas + mob
+    return calcTotalPecas() + calcTotalMob()
   }
 
   function handleSave(e) {
@@ -377,10 +398,10 @@ export default function OrdemServico() {
       let inicio = old.inicio, fim = old.fim
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
       if ((form.status === 'concluido' || form.status === 'cancelado') && !fim) fim = Date.now()
-      arr[idx] = { ...old, ...form, valor: total, maoDeObra: parseFloat(form.maoDeObra) || 0, inicio, fim }
+      arr[idx] = { ...old, ...form, valor: total, maoDeObra: calcTotalMob(), inicio, fim }
     } else {
       arr.push({
-        ...form, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: parseFloat(form.maoDeObra) || 0,
+        ...form, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: calcTotalMob(),
         inicio: form.status === 'em_andamento' ? Date.now() : null,
         fim: null, data: new Date().toISOString().split('T')[0],
       })
@@ -427,6 +448,7 @@ export default function OrdemServico() {
   const counts = Object.keys(STATUS).reduce((acc, s) => { acc[s] = ordens.filter(o => o.status === s).length; return acc }, {})
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
   const totalPecasForm = calcTotalPecas()
+  const totalMobForm = calcTotalMob()
   const totalItensForm = calcTotal()
 
   return (
@@ -645,21 +667,7 @@ export default function OrdemServico() {
               </div>
             </div>
 
-            <p className="os-section-title">🔧 Serviço e Status</p>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Tipo de Serviço</label>
-                <input list="servicos-list" value={form.servico} onChange={e => setForm(f => ({ ...f, servico: e.target.value }))} placeholder="Selecione ou digite..." />
-                <datalist id="servicos-list">{servicos.map(s => <option key={s.id} value={s.nome} />)}</datalist>
-              </div>
-              <div className="form-group">
-                <label>Responsável</label>
-                <select value={form.funcionario} onChange={e => setForm(f => ({ ...f, funcionario: e.target.value }))}>
-                  <option value="">Selecione...</option>
-                  {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome} – {f.cargo}</option>)}
-                </select>
-              </div>
-            </div>
+            <p className="os-section-title">🔧 Serviços e Status</p>
 
             {/* Seletor visual de status */}
             <div className="form-group">
@@ -732,7 +740,7 @@ export default function OrdemServico() {
             </div>
 
             {form.itens && form.itens.length > 0 && (
-              <div style={{ maxHeight: 260, overflowY: 'auto', marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <div style={{ marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
                 <table style={{ fontSize: 13, marginBottom: 0 }}>
                   <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
                   <tbody>
@@ -752,33 +760,67 @@ export default function OrdemServico() {
               </div>
             )}
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>💰 Mão de Obra (R$)</label>
+            <p className="os-section-title">🔧 Serviços / Mão de Obra</p>
+            <div className="os-itens-add">
+              <input
+                list="servicos-list"
+                placeholder="Descrição do serviço"
+                value={novoServico.desc}
+                onChange={e => setNovoServico(n => ({ ...n, desc: e.target.value }))}
+                style={{ flex: 3 }}
+              />
+              <datalist id="servicos-list">{servicos.map(s => <option key={s.id} value={s.nome} />)}</datalist>
+              <select
+                value={novoServico.funcionario}
+                onChange={e => setNovoServico(n => ({ ...n, funcionario: e.target.value }))}
+                style={{ flex: 2 }}
+              >
+                <option value="">Mecânico...</option>
+                {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+              </select>
+              <input
+                type="number" min="0" step="0.01" placeholder="Mão de obra R$"
+                value={novoServico.maoDeObra}
+                onChange={e => setNovoServico(n => ({ ...n, maoDeObra: e.target.value }))}
+                style={{ flex: 1.5 }}
+              />
+              <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 14px' }} onClick={adicionarServico}>+ Add</button>
+            </div>
+
+            {form.servicos && form.servicos.length > 0 && (
+              <div style={{ marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                <table style={{ fontSize: 13, marginBottom: 0 }}>
+                  <thead><tr><th>Serviço</th><th>Mecânico</th><th>Mão de Obra</th><th></th></tr></thead>
+                  <tbody>
+                    {form.servicos.map(sv => (
+                      <tr key={sv.id}>
+                        <td>{sv.desc || '—'}</td>
+                        <td>{sv.funcionario || '—'}</td>
+                        <td><strong style={{ color: '#059669' }}>R$ {(parseFloat(sv.maoDeObra) || 0).toFixed(2).replace('.', ',')}</strong></td>
+                        <td><button type="button" className="btn-danger" onClick={() => removerServico(sv.id)}>✕</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Valor Total (calculado automaticamente)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {(totalPecasForm > 0 || totalMobForm > 0) && (
+                  <small style={{ color: 'var(--text-light)', fontSize: 12 }}>
+                    Peças: R$ {totalPecasForm.toFixed(2).replace('.', ',')} &nbsp;+&nbsp; Mão de obra: R$ {totalMobForm.toFixed(2).replace('.', ',')}
+                  </small>
+                )}
                 <input
                   type="number" min="0" step="0.01"
-                  value={form.maoDeObra}
-                  onChange={e => setForm(f => ({ ...f, maoDeObra: e.target.value }))}
-                  placeholder="Valor da mão de obra..."
+                  value={totalItensForm > 0 ? totalItensForm.toFixed(2) : form.valor}
+                  onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
+                  placeholder="0,00"
+                  readOnly={totalItensForm > 0}
+                  style={{ background: '#f3f4f6', fontWeight: 700, fontSize: 16, color: '#10b981' }}
                 />
-              </div>
-              <div className="form-group">
-                <label>Valor Total (calculado automaticamente)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {totalPecasForm > 0 && (
-                    <small style={{ color: 'var(--text-light)', fontSize: 12 }}>
-                      Peças: R$ {totalPecasForm.toFixed(2).replace('.', ',')} &nbsp;+&nbsp; Mão de obra: R$ {(parseFloat(form.maoDeObra) || 0).toFixed(2).replace('.', ',')}
-                    </small>
-                  )}
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={totalItensForm > 0 ? totalItensForm.toFixed(2) : form.valor}
-                    onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
-                    placeholder="0,00"
-                    readOnly={totalItensForm > 0}
-                    style={{ background: '#f3f4f6', fontWeight: 700, fontSize: 16, color: '#10b981' }}
-                  />
-                </div>
               </div>
             </div>
 

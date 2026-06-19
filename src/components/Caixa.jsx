@@ -47,7 +47,15 @@ export default function Caixa() {
   const totalSaida = filtered.filter(e => e.tipo === 'saida').reduce((s, e) => s + e.valor, 0)
   const saldo = totalEntrada - totalSaida
 
-  const fmt = v => `R$ ${v.toFixed(2).replace('.', ',')}`
+  const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+
+  const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  const totalMaoDeObra = ordens.reduce((s, o) => {
+    if (o.servicos && o.servicos.length) {
+      return s + o.servicos.reduce((ss, sv) => ss + (parseFloat(sv.maoDeObra) || 0), 0)
+    }
+    return s + (parseFloat(o.maoDeObra) || 0)
+  }, 0)
 
   return (
     <div>
@@ -70,6 +78,25 @@ export default function Caixa() {
         <div className={`resumo-card ${saldo >= 0 ? 'blue' : 'red'} saldo`}>
           <span className="resumo-label">Saldo</span>
           <strong>{fmt(saldo)}</strong>
+        </div>
+      </div>
+
+      {/* Divisão mão de obra */}
+      <div className="caixa-mob-split">
+        <div className="mob-split-title">🔧 Divisão de Mão de Obra (Total OS)</div>
+        <div className="mob-split-grid">
+          <div className="mob-split-item total">
+            <span className="mob-split-label">Total Mão de Obra</span>
+            <strong>{fmt(totalMaoDeObra)}</strong>
+          </div>
+          <div className="mob-split-item oficina">
+            <span className="mob-split-label">50% Oficina</span>
+            <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
+          </div>
+          <div className="mob-split-item mecanico">
+            <span className="mob-split-label">50% Mecânico</span>
+            <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
+          </div>
         </div>
       </div>
 

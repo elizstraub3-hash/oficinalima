@@ -82,3 +82,55 @@
 
 .valor-cell.entrada { color: #10b981; }
 .valor-cell.saida { color: #ef4444; }
+
+/* Divisão mão de obra */
+.caixa-mob-split {
+  background: white;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+  border-top: 4px solid #7c3aed;
+}
+
+.mob-split-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 14px;
+}
+
+.mob-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.mob-split-item {
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1.5px solid;
+}
+
+.mob-split-item.total { background: #f5f3ff; border-color: #c4b5fd; }
+.mob-split-item.oficina { background: #ecfdf5; border-color: #6ee7b7; }
+.mob-split-item.mecanico { background: #eff6ff; border-color: #93c5fd; }
+
+.mob-split-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.mob-split-item.total strong { font-size: 18px; font-weight: 800; color: #7c3aed; }
+.mob-split-item.oficina strong { font-size: 18px; font-weight: 800; color: #059669; }
+.mob-split-item.mecanico strong { font-size: 18px; font-weight: 800; color: #2563eb; }
+
+@media (max-width: 600px) {
+  .caixa-resumo { grid-template-columns: 1fr; }
+  .mob-split-grid { grid-template-columns: 1fr; }
+}
