@@ -24,11 +24,14 @@ const STATUS = {
 }
 
 function formatMs(ms) {
+  if (!ms || ms < 0) return '—'
   const total = Math.floor(ms / 1000)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  const dias = Math.floor(total / 86400)
+  const h    = Math.floor((total % 86400) / 3600)
+  const m    = Math.floor((total % 3600) / 60)
+  if (dias > 0) return `${dias}d ${h}h ${m}min`
+  if (h > 0)    return `${h}h ${m}min`
+  return `${m}min`
 }
 
 function LiveTimer({ inicio }) {
@@ -59,9 +62,12 @@ function gerarPDF(ordem) {
   const tempoStr = (() => {
     if (ordem.inicio && ordem.fim) {
       const ms = ordem.fim - ordem.inicio
-      const h = Math.floor(ms / 3600000)
-      const m = Math.floor((ms % 3600000) / 60000)
-      return h > 0 ? `${h}h ${m}min` : `${m}min`
+      const dias = Math.floor(ms / 86400000)
+      const h    = Math.floor((ms % 86400000) / 3600000)
+      const m    = Math.floor((ms % 3600000) / 60000)
+      if (dias > 0) return `${dias}d ${h}h ${m}min`
+      if (h > 0)    return `${h}h ${m}min`
+      return `${m}min`
     }
     return null
   })()

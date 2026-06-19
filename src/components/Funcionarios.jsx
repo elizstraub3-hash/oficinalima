@@ -12,9 +12,12 @@ const CARGOS = ['Mecânico', 'Eletricista', 'Atendente', 'Gerente', 'Auxiliar', 
 function formatMs(ms) {
   if (!ms || ms < 0) return '—'
   const total = Math.floor(ms / 1000)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  return h > 0 ? `${h}h ${m}min` : `${m}min`
+  const dias = Math.floor(total / 86400)
+  const h    = Math.floor((total % 86400) / 3600)
+  const m    = Math.floor((total % 3600) / 60)
+  if (dias > 0) return `${dias}d ${h}h ${m}min`
+  if (h > 0)    return `${h}h ${m}min`
+  return `${m}min`
 }
 
 function calcResumoFuncionario(nome) {
