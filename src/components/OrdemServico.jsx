@@ -630,7 +630,7 @@ export default function OrdemServico() {
 
       {/* Modal criar / editar */}
       {modal && (
-        <Modal title={editing ? `Editar ${form.numero || 'OS'}` : 'Nova Ordem de Serviço'} onClose={() => setModal(false)}>
+        <Modal title={editing ? `Editar ${form.numero || 'OS'}` : 'Nova Ordem de Serviço'} onClose={() => setModal(false)} wide>
           <form onSubmit={handleSave}>
             <p className="os-section-title">👤 Dados do Cliente</p>
             <div className="form-row">
@@ -710,33 +710,41 @@ export default function OrdemServico() {
                 placeholder="Descrição da peça"
                 value={novoItem.desc}
                 onChange={e => setNovoItem(n => ({ ...n, desc: e.target.value }))}
-                style={{ flex: 3 }}
+                className="os-item-desc"
               />
-              <input
-                placeholder="Uni. (UN/PC)"
+              <select
                 value={novoItem.uni}
                 onChange={e => setNovoItem(n => ({ ...n, uni: e.target.value }))}
-                style={{ flex: 0.8 }}
-              />
+                className="os-item-uni"
+              >
+                <option>UN</option>
+                <option>PC</option>
+                <option>KG</option>
+                <option>LT</option>
+                <option>MT</option>
+                <option>JG</option>
+                <option>PAR</option>
+              </select>
               <input
                 placeholder="Cód."
                 value={novoItem.cod}
                 onChange={e => setNovoItem(n => ({ ...n, cod: e.target.value }))}
-                style={{ flex: 0.8 }}
+                className="os-item-cod"
               />
-              <input
-                type="number" min="1" placeholder="Qtd"
+              <select
                 value={novoItem.qtd}
                 onChange={e => setNovoItem(n => ({ ...n, qtd: e.target.value }))}
-                style={{ flex: 0.7 }}
-              />
+                className="os-item-qtd"
+              >
+                {[1,2,3,4,5,6,7,8,9,10,12,15,20,24,50,100].map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
               <input
-                type="number" min="0" step="0.01" placeholder="Valor unit."
+                type="number" min="0" step="0.01" placeholder="Valor unit. R$"
                 value={novoItem.valor}
                 onChange={e => setNovoItem(n => ({ ...n, valor: e.target.value }))}
-                style={{ flex: 1.2 }}
+                className="os-item-valor"
               />
-              <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 14px' }} onClick={adicionarItem}>+ Add</button>
+              <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 16px' }} onClick={adicionarItem}>+ Add</button>
             </div>
 
             {form.itens && form.itens.length > 0 && (
@@ -805,23 +813,28 @@ export default function OrdemServico() {
               </div>
             )}
 
-            <div className="form-group">
-              <label>Valor Total (calculado automaticamente)</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {(totalPecasForm > 0 || totalMobForm > 0) && (
-                  <small style={{ color: 'var(--text-light)', fontSize: 12 }}>
-                    Peças: R$ {totalPecasForm.toFixed(2).replace('.', ',')} &nbsp;+&nbsp; Mão de obra: R$ {totalMobForm.toFixed(2).replace('.', ',')}
-                  </small>
-                )}
+            <div className="os-totais-box">
+              <div className="os-total-linha">
+                <span>📦 Total Peças</span>
+                <strong style={{ color: '#3b82f6' }}>R$ {totalPecasForm.toFixed(2).replace('.', ',')}</strong>
+              </div>
+              <div className="os-total-linha">
+                <span>🔧 Total Mão de Obra</span>
+                <strong style={{ color: '#7c3aed' }}>R$ {totalMobForm.toFixed(2).replace('.', ',')}</strong>
+              </div>
+              <div className="os-total-linha os-total-geral">
+                <span>💰 TOTAL GERAL</span>
+                <strong>R$ {totalItensForm > 0 ? totalItensForm.toFixed(2).replace('.', ',') : (parseFloat(form.valor) || 0).toFixed(2).replace('.', ',')}</strong>
+              </div>
+              {totalItensForm === 0 && (
                 <input
                   type="number" min="0" step="0.01"
-                  value={totalItensForm > 0 ? totalItensForm.toFixed(2) : form.valor}
+                  value={form.valor}
                   onChange={e => setForm(f => ({ ...f, valor: e.target.value }))}
-                  placeholder="0,00"
-                  readOnly={totalItensForm > 0}
-                  style={{ background: '#f3f4f6', fontWeight: 700, fontSize: 16, color: '#10b981' }}
+                  placeholder="Ou informe o valor manualmente..."
+                  style={{ marginTop: 8, width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 14 }}
                 />
-              </div>
+              )}
             </div>
 
             <div className="modal-actions">
