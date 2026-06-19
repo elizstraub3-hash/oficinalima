@@ -108,6 +108,57 @@
 
 .os-section-title:first-child { margin-top: 0; }
 
+/* Status no rodapé do form */
+.os-status-footer {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.os-status-footer.os-status-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.os-status-footer-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+.os-status-error .os-status-footer-label {
+  color: #ef4444;
+  font-size: 13px;
+}
+
+/* Aviso pré-OS */
+.os-pre-aviso {
+  display: flex;
+  gap: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 18px;
+  align-items: flex-start;
+}
+
+.os-pre-aviso-icon { font-size: 32px; flex-shrink: 0; }
+
+.os-pre-aviso strong { display: block; font-size: 16px; color: #92400e; margin-bottom: 8px; }
+.os-pre-aviso p { font-size: 13px; color: #78350f; line-height: 1.6; }
+
 /* Linha de adição de itens */
 .os-itens-add {
   display: flex;

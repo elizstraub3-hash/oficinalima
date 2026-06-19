@@ -106,7 +106,7 @@ export default function App() {
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
-        {page === 'ordens'        && <OrdemServico />}
+        {page === 'ordens'        && <OrdemServico setPage={setPage} />}
         {page === 'clientes'      && <Clientes />}
         {page === 'caixa'         && <Caixa />}
         {page === 'gastos'        && <Gastos />}

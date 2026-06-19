@@ -47,7 +47,7 @@ function LiveTimer({ inicio }) {
 
 const emptyForm = () => ({
   clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
-  descricao: '', descBreve: '', valor: '', status: 'orcamento',
+  descricao: '', descBreve: '', valor: '', status: '',
   itens: [],
   servicos: [],
 })
@@ -311,14 +311,16 @@ function gerarPDF(ordem) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function OrdemServico() {
+export default function OrdemServico({ setPage }) {
   const [ordens, setOrdens] = useState(load)
   const [modal, setModal] = useState(false)
+  const [preModal, setPreModal] = useState(false)
   const [viewing, setViewing] = useState(null)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm())
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [busca, setBusca] = useState('')
+  const [statusError, setStatusError] = useState(false)
   const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
   const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
 
@@ -328,10 +330,12 @@ export default function OrdemServico() {
 
   function refresh() { setOrdens(load()) }
 
-  function openAdd() { setEditing(null); setForm(emptyForm()); setViewing(null); setModal(true) }
+  function openAdd() { setEditing(null); setForm(emptyForm()); setViewing(null); setStatusError(false); setPreModal(true) }
+  function confirmarNovaOS() { setPreModal(false); setModal(true) }
 
   function openEdit(ordem) {
     setEditing(ordem.id)
+    setStatusError(false)
     const legacyServicos = (!ordem.servicos || !ordem.servicos.length) && Number(ordem.maoDeObra || 0) > 0
       ? [{ id: Date.now(), desc: ordem.servico || 'Mao de Obra', funcionario: ordem.funcionario || '', maoDeObra: String(ordem.maoDeObra) }]
       : (ordem.servicos || [])
@@ -349,7 +353,15 @@ export default function OrdemServico() {
 
   function selectCliente(nome) {
     const c = clientes.find(x => x.nome === nome)
-    if (c) setForm(f => ({ ...f, clienteNome: c.nome, clienteTelefone: c.telefone || '' }))
+    if (c) setForm(f => ({
+      ...f,
+      clienteNome: c.nome,
+      clienteTelefone: c.telefone || '',
+      placa: c.placa || f.placa,
+      modelo: c.modelo || f.modelo,
+      ano: c.ano || f.ano,
+      cor: c.cor || f.cor,
+    }))
     else setForm(f => ({ ...f, clienteNome: nome }))
   }
 
@@ -389,6 +401,7 @@ export default function OrdemServico() {
 
   function handleSave(e) {
     e.preventDefault()
+    if (!form.status) { setStatusError(true); return }
     if (!form.clienteNome || !form.placa) return
     const arr = load()
     const total = calcTotal() || 0
@@ -629,6 +642,31 @@ export default function OrdemServico() {
       )}
 
       {/* Modal criar / editar */}
+      {/* Aviso antes de abrir nova OS */}
+      {preModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setPreModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <h2>📋 Nova Ordem de Serviço</h2>
+              <button className="modal-close" onClick={() => setPreModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="os-pre-aviso">
+                <div className="os-pre-aviso-icon">⭐</div>
+                <div>
+                  <strong>Leandra, cadastre o cliente antes!</strong>
+                  <p>É de <strong>extrema importância</strong> que o cliente seja cadastrado no painel de <strong>Clientes</strong> com o veículo dele antes de abrir uma OS.<br /><br />Assim o sistema preenche os dados automaticamente e mantém o histórico completo do cliente!</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+                <button className="btn-secondary" onClick={() => { setPreModal(false); setPage && setPage('clientes') }}>👤 Ir para Clientes</button>
+                <button className="btn-primary" onClick={confirmarNovaOS}>Continuar mesmo assim →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modal && (
         <Modal title={editing ? `Editar ${form.numero || 'OS'}` : 'Nova Ordem de Serviço'} onClose={() => setModal(false)} wide>
           <form onSubmit={handleSave}>
@@ -668,24 +706,6 @@ export default function OrdemServico() {
             </div>
 
             <p className="os-section-title">🔧 Serviços e Status</p>
-
-            {/* Seletor visual de status */}
-            <div className="form-group">
-              <label>Status</label>
-              <div className="os-status-select">
-                {Object.entries(STATUS).map(([k, v]) => (
-                  <button
-                    type="button"
-                    key={k}
-                    className={`os-status-opt ${form.status === k ? 'active' : ''}`}
-                    style={form.status === k ? { background: v.color, borderColor: v.color, color: 'white' } : {}}
-                    onClick={() => setForm(f => ({ ...f, status: k }))}
-                  >
-                    {v.icon} {v.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div className="form-row">
               <div className="form-group">
@@ -835,6 +855,28 @@ export default function OrdemServico() {
                   style={{ marginTop: 8, width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 14 }}
                 />
               )}
+            </div>
+
+            {/* Status — rodapé obrigatório */}
+            <div className={`os-status-footer ${statusError ? 'os-status-error' : ''}`}>
+              <div className="os-status-footer-label">
+                {statusError
+                  ? '⚠️ Selecione um STATUS antes de continuar!'
+                  : '📌 STATUS DA OS *'}
+              </div>
+              <div className="os-status-select">
+                {Object.entries(STATUS).map(([k, v]) => (
+                  <button
+                    type="button"
+                    key={k}
+                    className={`os-status-opt ${form.status === k ? 'active' : ''}`}
+                    style={form.status === k ? { background: v.color, borderColor: v.color, color: 'white' } : {}}
+                    onClick={() => { setForm(f => ({ ...f, status: k })); setStatusError(false) }}
+                  >
+                    {v.icon} {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="modal-actions">

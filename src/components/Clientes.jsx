@@ -6,7 +6,7 @@ const KEY = 'ol_clientes'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ nome: '', telefone: '', email: '', cpf: '', endereco: '', obs: '' })
+const empty = () => ({ nome: '', telefone: '', email: '', cpf: '', endereco: '', obs: '', placa: '', modelo: '', ano: '', cor: '' })
 
 export default function Clientes() {
   const [items, setItems] = useState(load)
@@ -19,7 +19,7 @@ export default function Clientes() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ nome: item.nome, telefone: item.telefone, email: item.email || '', cpf: item.cpf || '', endereco: item.endereco || '', obs: item.obs || '' })
+    setForm({ nome: item.nome, telefone: item.telefone, email: item.email || '', cpf: item.cpf || '', endereco: item.endereco || '', obs: item.obs || '', placa: item.placa || '', modelo: item.modelo || '', ano: item.ano || '', cor: item.cor || '' })
     setModal(true)
   }
 
@@ -75,8 +75,8 @@ export default function Clientes() {
                 <th>Nome</th>
                 <th>Telefone</th>
                 <th>CPF</th>
+                <th>Veículo</th>
                 <th>E-mail</th>
-                <th>Endereço</th>
                 <th></th>
               </tr>
             </thead>
@@ -91,8 +91,12 @@ export default function Clientes() {
                   </td>
                   <td>{c.telefone || '—'}</td>
                   <td>{c.cpf || '—'}</td>
+                  <td>
+                    {c.placa
+                      ? <span><strong style={{ fontFamily: 'monospace', color: '#3b82f6' }}>{c.placa}</strong>{c.modelo ? ` · ${c.modelo}` : ''}{c.ano ? ` (${c.ano})` : ''}</span>
+                      : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                  </td>
                   <td>{c.email || '—'}</td>
-                  <td style={{ color: 'var(--text-light)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.endereco || '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn-edit" onClick={() => openEdit(c)}>✏️ Editar</button>
@@ -134,6 +138,27 @@ export default function Clientes() {
             <div className="form-group">
               <label>Observações</label>
               <textarea rows={2} value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Notas sobre o cliente..." />
+            </div>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '14px 0 8px', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>🚗 Veículo do Cliente</p>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Placa</label>
+                <input value={form.placa} onChange={e => setForm(f => ({ ...f, placa: e.target.value.toUpperCase() }))} placeholder="ABC-1234" maxLength={8} />
+              </div>
+              <div className="form-group">
+                <label>Modelo / Marca</label>
+                <input value={form.modelo} onChange={e => setForm(f => ({ ...f, modelo: e.target.value }))} placeholder="Ex: Fiat Uno" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Ano</label>
+                <input value={form.ano} onChange={e => setForm(f => ({ ...f, ano: e.target.value }))} placeholder="Ex: 2020" maxLength={4} />
+              </div>
+              <div className="form-group">
+                <label>Cor</label>
+                <input value={form.cor} onChange={e => setForm(f => ({ ...f, cor: e.target.value }))} placeholder="Ex: Branco" />
+              </div>
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
