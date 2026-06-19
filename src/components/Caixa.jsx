@@ -53,33 +53,7 @@ export default function Caixa() {
   const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]')
   const gastos = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
 
-  // Gastos do mês atual
-  const mesAtual = hojeStr.slice(0, 7)
-  const gastosMes = gastos.filter(g => (g.data || '').startsWith(mesAtual))
-  const totalGastosMes = gastosMes.reduce((s, g) => s + Number(g.valor || 0), 0)
-  const receitaMes = somaValor(ordensMes)
-  const entradaMes = entries.filter(e => e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
-  const totalEntradasMes = receitaMes + entradaMes
-
-  // Categorias de gastos do mês
-  const gastosPorCat = gastosMes.reduce((acc, g) => {
-    acc[g.categoria] = (acc[g.categoria] || 0) + Number(g.valor || 0)
-    return acc
-  }, {})
-
-  // Alerta de gastos
-  const porcGastos = totalEntradasMes > 0 ? (totalGastosMes / totalEntradasMes) * 100 : 0
-  const alertaGasto = (() => {
-    if (totalGastosMes === 0) return null
-    if (porcGastos >= 80) return { tipo: 'danger', msg: '🚨 Atenção, Leandra! Os gastos estão MAIORES do que está entrando! Corte os gastos urgente — a oficina precisa de cuidado!' }
-    if (porcGastos >= 60) return { tipo: 'danger', msg: '⚠️ Leandra, está entrando dinheiro sim, mas vocês estão gastando MUITO! Vale sentar e rever o que pode cortar!' }
-    if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Leandra. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
-    return { tipo: 'ok', msg: '✅ Ótimo controle, Leandra! Os gastos estão saudáveis este mês. Continue assim!' }
-  })()
-  const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
-  const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)
-
-  // Helpers de data
+  // Helpers de data (devem vir antes de qualquer uso)
   const hoje = new Date()
   const hojeStr = hoje.toISOString().split('T')[0]
   const semanaInicio = new Date(hoje); semanaInicio.setDate(hoje.getDate() - hoje.getDay())
@@ -107,6 +81,32 @@ export default function Caixa() {
   const ordensHoje = ordensDoPeriodo(hojeStr)
   const ordensSemana = ordensDoPeriodo(semanaStr)
   const ordensMes = ordensDoPeriodo(mesStr + '-01')
+
+  // Gastos do mês atual
+  const mesAtual = hojeStr.slice(0, 7)
+  const gastosMes = gastos.filter(g => (g.data || '').startsWith(mesAtual))
+  const totalGastosMes = gastosMes.reduce((s, g) => s + Number(g.valor || 0), 0)
+  const receitaMes = somaValor(ordensMes)
+  const entradaMes = entries.filter(e => e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
+  const totalEntradasMes = receitaMes + entradaMes
+
+  // Categorias de gastos do mês
+  const gastosPorCat = gastosMes.reduce((acc, g) => {
+    acc[g.categoria] = (acc[g.categoria] || 0) + Number(g.valor || 0)
+    return acc
+  }, {})
+
+  // Alerta de gastos
+  const porcGastos = totalEntradasMes > 0 ? (totalGastosMes / totalEntradasMes) * 100 : 0
+  const alertaGasto = (() => {
+    if (totalGastosMes === 0) return null
+    if (porcGastos >= 80) return { tipo: 'danger', msg: '🚨 Atenção, Leandra! Os gastos estão MAIORES do que está entrando! Corte os gastos urgente — a oficina precisa de cuidado!' }
+    if (porcGastos >= 60) return { tipo: 'danger', msg: '⚠️ Leandra, está entrando dinheiro sim, mas vocês estão gastando MUITO! Vale sentar e rever o que pode cortar!' }
+    if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Leandra. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
+    return { tipo: 'ok', msg: '✅ Ótimo controle, Leandra! Os gastos estão saudáveis este mês. Continue assim!' }
+  })()
+  const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
+  const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)
 
   // Por funcionário: agrupa servicos[]
   const porFuncionario = {}
