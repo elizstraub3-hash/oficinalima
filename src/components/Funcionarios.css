@@ -6,7 +6,7 @@
 }
 
 .func-stat {
-  background: white;
+  background: #141414;
   border-radius: 12px;
   padding: 16px 20px;
   display: flex;
@@ -48,7 +48,7 @@
 
 /* Card do funcionário */
 .func-card {
-  background: white;
+  background: #141414;
   border-radius: 14px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
@@ -123,7 +123,7 @@
 .func-toggle {
   width: 100%;
   padding: 10px 22px;
-  background: #fafafa;
+  background: #1a1a1a;
   border: none;
   border-top: 1px solid #f0f0f0;
   font-size: 12px;
@@ -134,7 +134,7 @@
   transition: background 0.15s;
 }
 
-.func-toggle:hover { background: #f0f0f0; }
+.func-toggle:hover { background: #1f1f1f; }
 
 /* Tabela de OS do funcionário */
 .func-os-table {
@@ -161,7 +161,7 @@
 }
 
 .func-os-table tr:last-child td { border-bottom: none; }
-.func-os-table tr:hover td { background: #fafafa; }
+.func-os-table tr:hover td { background: #1a1a1a; }
 
 /* Status buttons */
 .status-btn {
@@ -175,7 +175,7 @@
 }
 
 .status-btn.ativo  { color: #065f46; background: #d1fae5; }
-.status-btn.inativo { color: #6b7280; background: #f3f4f6; }
+.status-btn.inativo { color: #6b7280; background: #1f1f1f; }
 
 @media (max-width: 768px) {
   .func-stats { gap: 8px; }

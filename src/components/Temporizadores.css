@@ -23,7 +23,7 @@
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 18px;
-  background: #fafafa;
+  background: #1a1a1a;
   transition: box-shadow 0.2s;
 }
 
@@ -101,7 +101,7 @@
 
 .timer-card-os {
   border-color: #3b82f6;
-  background: #eff6ff;
+  background: #0f1929;
 }
 
 .timer-os-badge {

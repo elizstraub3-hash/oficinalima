@@ -121,7 +121,7 @@
 }
 
 .dash-alerta-info {
-  background: #eff6ff;
+  background: #0f1929;
   border-color: #3b82f6;
   color: #1e40af;
 }
@@ -224,19 +224,19 @@
   padding: 12px 14px;
   border-radius: 10px;
   border: 1.5px solid #e5e7eb;
-  background: #fafafa;
+  background: #1a1a1a;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
   user-select: none;
 }
 
 .dash-check-item:hover {
-  background: #f3f4f6;
+  background: #1f1f1f;
   border-color: #d1d5db;
 }
 
 .dash-check-item.done {
-  background: #f0fdf4;
+  background: #0a1f0f;
   border-color: #bbf7d0;
 }
 
@@ -250,7 +250,7 @@
   height: 22px;
   border-radius: 6px;
   border: 2px solid #d1d5db;
-  background: white;
+  background: #141414;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,7 +294,7 @@
 }
 
 .dash-card {
-  background: white;
+  background: #141414;
   border-radius: 14px;
   padding: 20px;
   display: flex;
@@ -463,12 +463,12 @@
 .notinha-resumo-item span { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
 .notinha-resumo-item.vermelho { background: #fef2f2; border: 1.5px solid #fca5a5; }
 .notinha-resumo-item.vermelho strong { font-size: 17px; font-weight: 800; color: #ef4444; }
-.notinha-resumo-item.verde { background: #f0fdf4; border: 1.5px solid #6ee7b7; }
+.notinha-resumo-item.verde { background: #0a1f0f; border: 1.5px solid #6ee7b7; }
 .notinha-resumo-item.verde strong { font-size: 17px; font-weight: 800; color: #059669; }
 
 .dash-notinha-form {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: #1a1a1a;
+  border: 1.5px solid #2a2a2a;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
@@ -486,8 +486,8 @@
 .dash-notinha-calc {
   display: flex;
   gap: 16px;
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
+  background: #141414;
+  border: 1.5px solid #2a2a2a;
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;

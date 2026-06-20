@@ -9,7 +9,7 @@
   padding: 7px 14px;
   border-radius: 20px;
   border: 1.5px solid var(--border);
-  background: white;
+  background: #141414;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -59,7 +59,7 @@
   padding: 7px 14px;
   border-radius: 20px;
   border: 1.5px solid var(--border);
-  background: white;
+  background: #141414;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -85,7 +85,7 @@
   padding: 7px 14px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: white;
+  background: #141414;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -110,8 +110,8 @@
 
 /* Status no rodapé do form */
 .os-status-footer {
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
+  background: #1a1a1a;
+  border: 2px solid #333;
   border-radius: 12px;
   padding: 14px 16px;
   margin-top: 12px;
@@ -201,7 +201,7 @@
   border-radius: 8px;
   font-size: 13px;
   font-family: inherit;
-  background: white;
+  background: #141414;
   min-width: 0;
 }
 
@@ -219,8 +219,8 @@
 
 /* Totais da OS */
 .os-totais-box {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: #1a1a1a;
+  border: 1.5px solid #2a2a2a;
   border-radius: 12px;
   padding: 14px 18px;
   display: flex;
@@ -266,7 +266,7 @@
 }
 
 .os-detail-section {
-  background: #f9fafb;
+  background: #1a1a1a;
   border-radius: 10px;
   padding: 14px 16px;
 }
