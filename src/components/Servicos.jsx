@@ -76,19 +76,26 @@ export default function Servicos() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(s => (
-                <tr key={s.id}>
-                  <td><strong>{s.nome}</strong></td>
-                  <td style={{ color: 'var(--text-light)' }}>{s.descricao}</td>
-                  <td>{s.tempo ? `${s.tempo} min` : '—'}</td>
-                  <td><strong className="preco">R$ {Number(s.preco).toFixed(2).replace('.', ',')}</strong></td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button className="btn-edit" onClick={() => openEdit(s)}>✏️ Editar</button>
-                      <button className="btn-danger" onClick={() => handleDelete(s.id)}>🗑️</button>
-                    </div>
-                  </td>
-                </tr>
+              {filtered.map((s, i) => (
+                <>
+                  {i > 0 && (
+                    <tr key={`sep-${s.id}`}>
+                      <td colSpan={5} style={{ padding: 0, borderBottom: '1px solid #2a2a2a' }} />
+                    </tr>
+                  )}
+                  <tr key={s.id}>
+                    <td><strong style={{ color: '#f0f0f0' }}>{s.nome}</strong></td>
+                    <td style={{ color: '#888' }}>{s.descricao}</td>
+                    <td style={{ color: '#ccc' }}>{s.tempo ? `${s.tempo} min` : '—'}</td>
+                    <td><strong className="preco">R$ {Number(s.preco).toFixed(2).replace('.', ',')}</strong></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button className="btn-edit" onClick={() => openEdit(s)}>✏️ Editar</button>
+                        <button className="btn-danger" onClick={() => handleDelete(s.id)}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                </>
               ))}
             </tbody>
           </table>
