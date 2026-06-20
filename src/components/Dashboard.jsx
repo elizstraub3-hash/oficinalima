@@ -5,6 +5,7 @@ const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
 function saveNotinhas(d) { localStorage.setItem(KEY_NOTINHAS, JSON.stringify(d)) }
 function nextNotinhaId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
+const MARGEM_PECAS = 1.35 // 35% fixo sobre o custo
 const emptyNotinha = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '' })
 
 // Horário da oficina: 8h–12h / 13h30–18h
@@ -173,8 +174,12 @@ export default function Dashboard({ setPage }) {
   const totalGastoHoje = notinhasHoje.reduce((s, n) => s + (n.totalCusto || 0), 0)
   const totalLucroHoje = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
 
-  const custoCalc = (parseFloat(notinhaForm.custoUnit) || 0) * (parseInt(notinhaForm.qtd) || 1)
-  const vendaCalc = (parseFloat(notinhaForm.precoVenda) || 0) * (parseInt(notinhaForm.qtd) || 1)
+  const custoUnit = parseFloat(notinhaForm.custoUnit) || 0
+  const qtd = parseInt(notinhaForm.qtd) || 1
+  // Preço de venda = custo * 1.35, arredondado; campo editável sobrescreve
+  const precoAutoUnit = notinhaForm.precoVenda ? parseFloat(notinhaForm.precoVenda) : Math.round(custoUnit * MARGEM_PECAS)
+  const custoCalc = custoUnit * qtd
+  const vendaCalc = precoAutoUnit * qtd
   const lucroCalc = vendaCalc - custoCalc
   const porcCalc = custoCalc > 0 ? ((lucroCalc / custoCalc) * 100) : 0
 
@@ -185,9 +190,9 @@ export default function Dashboard({ setPage }) {
     arr.push({
       ...notinhaForm,
       id: nextNotinhaId(arr),
-      qtd: parseInt(notinhaForm.qtd) || 1,
-      custoUnit: parseFloat(notinhaForm.custoUnit) || 0,
-      precoVenda: parseFloat(notinhaForm.precoVenda) || 0,
+      qtd,
+      custoUnit,
+      precoVenda: precoAutoUnit,
       totalCusto: custoCalc,
       lucro: lucroCalc,
       porcLucro: porcCalc,
@@ -417,8 +422,18 @@ export default function Dashboard({ setPage }) {
                   <input type="number" min="0" step="0.01" value={notinhaForm.custoUnit} onChange={e => setNotinhaForm(f => ({ ...f, custoUnit: e.target.value }))} placeholder="Quanto pagou" required />
                 </div>
                 <div className="form-group">
-                  <label>Preço de Venda (R$)</label>
-                  <input type="number" min="0" step="0.01" value={notinhaForm.precoVenda} onChange={e => setNotinhaForm(f => ({ ...f, precoVenda: e.target.value }))} placeholder="Quanto vai cobrar" />
+                  <label>Preço de Venda Unit. (R$) <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>+35% automático</span></label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={notinhaForm.precoVenda || (custoUnit > 0 ? Math.round(custoUnit * MARGEM_PECAS) : '')}
+                    onChange={e => setNotinhaForm(f => ({ ...f, precoVenda: e.target.value }))}
+                    placeholder={custoUnit > 0 ? `R$ ${Math.round(custoUnit * MARGEM_PECAS)}` : 'Preenchido auto com +35%'}
+                  />
+                  {custoUnit > 0 && !notinhaForm.precoVenda && (
+                    <small style={{ color: '#10b981', fontSize: 11, marginTop: 3, display: 'block' }}>
+                      ✅ Valor sugerido: R$ {Math.round(custoUnit * MARGEM_PECAS)} (custo R$ {custoUnit.toFixed(0)} + 35%)
+                    </small>
+                  )}
                 </div>
               </div>
               {(custoCalc > 0 || vendaCalc > 0) && (

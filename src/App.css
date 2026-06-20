@@ -30,13 +30,14 @@ body {
 
 .app-layout {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
 .main-content {
   flex: 1;
-  margin-left: 250px;
-  padding: 32px;
+  margin-left: 0;
+  padding: 80px 32px 32px;
   min-height: 100vh;
   background: #f5f5f5;
 }
@@ -217,8 +218,7 @@ table tr:hover td { background: #fafafa; }
 /* ── RESPONSIVO ── */
 @media (max-width: 768px) {
   .main-content {
-    margin-left: 0;
-    padding: 68px 16px 24px; /* 52px topbar + gap */
+    padding: 72px 16px 24px;
   }
 
   .page-header {
