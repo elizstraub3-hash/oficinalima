@@ -45,7 +45,7 @@
 .os-timer-red    { color: #ef4444; }
 
 .os-row:hover td {
-  background: #f0f4ff !important;
+  background: #1a1f2e !important;
 }
 
 /* Seletor visual de status no form */
@@ -160,9 +160,9 @@
 .os-status-timer-info {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
+  color: #ccc;
+  background: #0f1929;
+  border: 1px solid #1e40af;
   border-radius: 8px;
   padding: 8px 12px;
   line-height: 1.4;
@@ -265,7 +265,7 @@
   margin-bottom: 8px;
 }
 
-.os-detail-section {
+.os-detail-section { color: #f0f0f0;
   background: #1a1a1a;
   border-radius: 10px;
   padding: 14px 16px;

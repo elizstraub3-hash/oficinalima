@@ -105,7 +105,7 @@
 
 /* Corpo do card */
 .login-body {
-  padding: 32px 36px 28px;
+  padding: 32px 36px 28px; background: #141414;
 }
 
 .password-wrap { position: relative; }
@@ -129,7 +129,7 @@
   margin-bottom: 12px;
   text-align: center;
   font-weight: 600;
-  background: #fff0f0;
+  background: rgba(230,57,70,0.1);
   padding: 8px;
   border-radius: 8px;
 }
@@ -159,4 +159,4 @@
   padding-bottom: 4px;
 }
 
-.login-footer strong { color: #000; }
+.login-footer strong { color: #aaa; }
