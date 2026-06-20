@@ -513,3 +513,24 @@
   color: var(--text-main);
   line-height: 1.4;
 }
+
+/* Tema escuro dashboard */
+.dash-card { background: #141414; border: 1px solid #2a2a2a; }
+.dash-card-label { color: #888; }
+.dash-check-item { background: #1a1a1a; border-color: #2a2a2a; color: #f0f0f0; }
+.dash-check-item:hover { background: #222; border-color: #333; }
+.dash-check-label { color: #f0f0f0; }
+.dash-checkbox { background: #0a0a0a; border-color: #444; }
+.dash-checklist-title { color: #f0f0f0; }
+.dash-checklist-sub { color: #888; }
+.dash-progress-bg { stroke: #333; }
+.dash-progress-pct { color: #fff; }
+.dash-notinha-form { background: #1a1a1a; border-color: #2a2a2a; }
+.dash-notinha-calc { background: #111; border-color: #2a2a2a; color: #f0f0f0; }
+.dash-comissao-total { background: #1a1225; border-color: #7c3aed; color: #c4b5fd; }
+.dash-tip ul li { color: #ccc; }
+.btn-link { color: #60a5fa; }
+.dash-bottom-grid .card { border-top: 1px solid #2a2a2a; }
+/* Separadores entre blocos */
+.dash-cards { border-bottom: 1px solid #2a2a2a; padding-bottom: 20px; margin-bottom: 20px; }
+.dash-checklist { border-bottom: 1px solid #2a2a2a; padding-bottom: 20px; }

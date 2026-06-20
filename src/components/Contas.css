@@ -49,3 +49,8 @@
   color: #92400e;
   background: #fef3c7;
 }
+
+/* Tema escuro contas */
+.contas-card { background: #141414; }
+.contas-card strong { color: #f0f0f0; }
+.contas-card small { color: #888; }

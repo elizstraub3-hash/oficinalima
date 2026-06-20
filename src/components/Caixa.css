@@ -328,3 +328,21 @@
   .mob-split-grid { grid-template-columns: 1fr; }
   .periodo-grid { grid-template-columns: 1fr; }
 }
+
+/* Separadores entre seções */
+.caixa-resumo { border-bottom: 1px solid #2a2a2a; padding-bottom: 20px; }
+.caixa-periodo { border-top: 1px solid #2a2a2a; }
+.caixa-mob-split { border-top: 1px solid #2a2a2a; }
+.caixa-pecas-split { border-top: 1px solid #2a2a2a; }
+.resumo-card strong { color: #f0f0f0; }
+.mob-split-title { color: #f0f0f0; }
+.mob-func-nome { color: #f0f0f0; }
+.mob-func-pagar { color: #ccc; }
+.periodo-title { color: #f0f0f0; }
+.caixa-filtros select { background: #1a1a1a; color: #f0f0f0; }
+.filtro-datas input { background: #1a1a1a; color: #f0f0f0; }
+.mob-split-item.total strong { color: #c4b5fd; }
+.mob-split-item.oficina strong { color: #4ade80; }
+.mob-split-item.mecanico strong { color: #60a5fa; }
+.periodo-item strong { color: #4ade80; }
+.periodo-item small { color: #888; }

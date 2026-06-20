@@ -70,3 +70,9 @@
   color: var(--text-light);
   margin-bottom: 16px;
 }
+
+/* Tema escuro gastos */
+.gastos-resumo { background: #141414; border: 1px solid #2a2a2a; }
+.cat-chip { background: #1a1a1a; color: #f0f0f0; border-color: #333; }
+.gastos-filtros select { background: #1a1a1a; color: #f0f0f0; }
+.gastos-subtotal { color: #888; }

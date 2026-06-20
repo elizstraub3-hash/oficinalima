@@ -313,3 +313,20 @@
 }
 
 .btn-pdf-lg:hover { background: #7c3aed; }
+
+/* Separadores e texto branco */
+.os-section-title { color: #888; border-bottom-color: #2a2a2a; }
+.os-status-footer { background: #1a1a1a; border-color: #333; }
+.os-status-footer-label { color: #888; }
+.os-status-timer-info { background: #0f1929; border-color: #1e40af; color: #93c5fd; }
+.os-itens-add input, .os-itens-add select { background: #1a1a1a; color: #f0f0f0; border-color: #333; }
+.os-totais-box { background: #1a1a1a; border-color: #2a2a2a; }
+.os-total-linha { color: #f0f0f0; border-bottom-color: #2a2a2a; }
+.os-detail-section { background: #1a1a1a; }
+.os-detail-section h4 { color: #888; }
+.os-detail-section p { color: #f0f0f0; }
+.os-status-chip { background: #1a1a1a; color: #f0f0f0; border-color: #333; }
+.os-status-chip:hover { border-color: #555; }
+.os-flow-btn { background: #1a1a1a; color: #f0f0f0; border-color: #333; }
+.os-status-select-dd { background: #1a1a1a; color: #f0f0f0; }
+.btn-pdf:hover { background: rgba(139,92,246,0.15); }

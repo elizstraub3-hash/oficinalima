@@ -189,3 +189,20 @@
   .func-os-table { font-size: 11px; }
   .func-os-table th, .func-os-table td { padding: 7px 8px; }
 }
+
+/* Tema escuro funcionários */
+.func-stat { background: #141414; border-color: #2a2a2a; }
+.func-stat div strong { color: #f0f0f0; }
+.func-card { background: #141414; border-color: #2a2a2a; }
+.func-card-header { border-bottom-color: #222; }
+.func-nome { color: #f0f0f0; }
+.func-resumo-item { border-right-color: #222; }
+.func-resumo-item.highlight { background: #1f1f1f; border-left-color: #fff; }
+.func-resumo-item strong { color: #f0f0f0; }
+.func-toggle { background: #111; border-top-color: #222; color: #888; }
+.func-toggle:hover { background: #1a1a1a; color: #f0f0f0; }
+.func-os-table td { border-bottom-color: #222; color: #f0f0f0; }
+.func-os-table tr:hover td { background: #1a1a1a; }
+.func-section-title { color: #888; }
+/* Separador entre seções */
+.func-cards-list > * + * { border-top: 1px solid #2a2a2a; margin-top: 4px; padding-top: 4px; }
