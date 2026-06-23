@@ -514,8 +514,8 @@ export default function OrdemServico({ setPage }) {
     if (!form.status) { setStatusError(true); return null }
     if (!form.clienteNome || !form.placa) return null
     if (form.status === 'concluido' && !CHECKLIST.every(item => (form.checklist?.[item.id] === 'ok' || form.checklist?.[item.id] === 'defeito'))) {
-      alert('⚠️ LEANDRA, levanta do lugar e vai vistoriar o carro antes de concluir a OS!\n\nTodos os itens da vistoria precisam ser marcados (OK ou Com defeito) para concluir.')
-      return null
+      const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
+      if (!ok) return null
     }
     // Deriva o mecânico responsável a partir dos serviços adicionados
     const mecDosServicos = (form.servicos || []).find(sv => sv.funcionario)?.funcionario || form.funcionario || ''
@@ -574,8 +574,8 @@ export default function OrdemServico({ setPage }) {
     const idx = arr.findIndex(x => x.id === id)
     const old = arr[idx]
     if (novoStatus === 'concluido' && !checklistCompleto(old)) {
-      alert('⚠️ LEANDRA, levanta do lugar e vai vistoriar o carro antes de concluir a OS!\n\nTodos os itens da vistoria precisam ser marcados (OK ou Com defeito) para concluir.')
-      return
+      const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
+      if (!ok) return
     }
     let inicio = old.inicio, fim = old.fim
     if (novoStatus === 'em_andamento' && !inicio) inicio = Date.now()
