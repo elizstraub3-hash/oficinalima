@@ -147,6 +147,31 @@ function gerarPDF(ordem) {
   const totalMob   = servicosArr.reduce((s, sv) => s + (parseFloat(sv.maoDeObra) || 0), 0)
   const totalGeral = totalPecas + totalMob || Number(ordem.valor || 0)
 
+  const checklistItems = [
+    { id: 'amassados',    label: 'Amassados / Arranhões' },
+    { id: 'parachoque',  label: 'Para-choque' },
+    { id: 'vidros',      label: 'Vidros / Para-brisa' },
+    { id: 'retrovisores',label: 'Retrovisores' },
+    { id: 'farois',      label: 'Faróis / Lanternas' },
+    { id: 'pneus',       label: 'Pneus' },
+    { id: 'bancos',      label: 'Bancos / Interior' },
+    { id: 'painel',      label: 'Painel (luzes)' },
+    { id: 'arcond',      label: 'Ar-condicionado' },
+    { id: 'som',         label: 'Som / Rádio' },
+    { id: 'macaco',      label: 'Macaco / Triângulo' },
+    { id: 'crlv',        label: 'CRLV presente' },
+  ]
+  const chk = ordem.checklist || {}
+  const checklistRows = checklistItems.map(item => {
+    const v = chk[item.id] || ''
+    const badge = v === 'ok'
+      ? `<span class="vis-ok">✓ OK</span>`
+      : v === 'defeito'
+        ? `<span class="vis-defeito">⚠ Com defeito</span>`
+        : `<span class="vis-nd">— Não vistoriado</span>`
+    return `<div class="vistoria-row"><span>${item.label}</span>${badge}</div>`
+  }).join('')
+
   const pecasRows = itens.length > 0
     ? itens.map((it, i) => `
       <tr>
@@ -173,7 +198,7 @@ function gerarPDF(ordem) {
     .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #000;padding-bottom:14px;margin-bottom:14px}
     .header-left h1{font-size:18px;font-weight:900;color:#000;letter-spacing:0.5px}
     .header-left p{font-size:11px;color:#555;margin-top:2px}
-    .logo-wrap{width:90px;height:90px;background:#000;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .logo-wrap{width:90px;height:90px;background:#000 !important;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
     .logo-img{width:78px;height:78px;object-fit:contain;border-radius:8px;filter:brightness(0) invert(1)}
 
     /* Título OS */
@@ -213,6 +238,16 @@ function gerarPDF(ordem) {
     .mec-item label{font-size:9px;text-transform:uppercase;color:#6b7280;font-weight:700;display:block;margin-bottom:2px}
     .mec-item span{font-size:13px;font-weight:800;color:#111}
     .mec-item span.verde{color:#059669}
+
+    /* Vistoria */
+    .vistoria-box{border:1px solid #ddd;border-radius:6px;overflow:hidden;margin-top:14px}
+    .vistoria-head{background:#000;color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;padding:7px 10px;text-transform:uppercase;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    .vistoria-grid{display:grid;grid-template-columns:1fr 1fr;border-top:none}
+    .vistoria-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #eee;font-size:11.5px}
+    .vistoria-row:nth-child(odd){background:#fafafa}
+    .vis-ok{color:#059669;font-weight:700}
+    .vis-defeito{color:#dc2626;font-weight:700}
+    .vis-nd{color:#aaa}
 
     /* Garantia */
     .garantia-box{border:1.5px solid #86efac;background:#f0fdf4;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11.5px;color:#166534;line-height:1.7}
@@ -340,6 +375,12 @@ function gerarPDF(ordem) {
     ${servicosArr.length > 0 ? `<div class="mec-item"><label>Mecanico(s) Responsavel(is)</label><span>${[...new Set(servicosArr.map(sv => sv.funcionario).filter(Boolean))].join(', ') || '—'}</span></div>` : ''}
     ${tempoStr ? `<div class="mec-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
   </div>` : ''}
+
+  <!-- VISTORIA -->
+  <div class="vistoria-box">
+    <div class="vistoria-head">V I S T O R I A  D O  V E Í C U L O</div>
+    <div class="vistoria-grid">${checklistRows}</div>
+  </div>
 
   <!-- GARANTIA -->
   <div class="garantia-box">
@@ -472,6 +513,10 @@ export default function OrdemServico({ setPage }) {
   function _doSave() {
     if (!form.status) { setStatusError(true); return null }
     if (!form.clienteNome || !form.placa) return null
+    if (form.status === 'concluido' && !CHECKLIST.every(item => (form.checklist?.[item.id] === 'ok' || form.checklist?.[item.id] === 'defeito'))) {
+      alert('⚠️ LEANDRA, levanta do lugar e vai vistoriar o carro antes de concluir a OS!\n\nTodos os itens da vistoria precisam ser marcados (OK ou Com defeito) para concluir.')
+      return null
+    }
     const arr = load()
     const total = calcTotal() || 0
     let savedOrdem = null
@@ -516,10 +561,19 @@ export default function OrdemServico({ setPage }) {
     if (ordem) gerarPDF(ordem)
   }
 
+  function checklistCompleto(ordem) {
+    const chk = ordem.checklist || {}
+    return CHECKLIST.every(item => chk[item.id] === 'ok' || chk[item.id] === 'defeito')
+  }
+
   function handleChangeStatus(id, novoStatus) {
     const arr = load()
     const idx = arr.findIndex(x => x.id === id)
     const old = arr[idx]
+    if (novoStatus === 'concluido' && !checklistCompleto(old)) {
+      alert('⚠️ LEANDRA, levanta do lugar e vai vistoriar o carro antes de concluir a OS!\n\nTodos os itens da vistoria precisam ser marcados (OK ou Com defeito) para concluir.')
+      return
+    }
     let inicio = old.inicio, fim = old.fim
     if (novoStatus === 'em_andamento' && !inicio) inicio = Date.now()
     if ((novoStatus === 'concluido' || novoStatus === 'cancelado') && !fim) fim = Date.now()
