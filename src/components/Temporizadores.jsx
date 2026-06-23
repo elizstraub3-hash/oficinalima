@@ -145,7 +145,6 @@ export default function Temporizadores() {
   return (
     <div>
       <div className="page-header">
-        <h1>⏱️ Temporizadores</h1>
         <button className="btn-primary" onClick={() => { setForm(empty()); setModal(true) }}>
           + Adicionar Carro
         </button>

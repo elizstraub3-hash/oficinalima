@@ -80,7 +80,6 @@ export default function Gastos() {
   return (
     <div>
       <div className="page-header">
-        <h1>🧾 Planilha de Gastos</h1>
         <button className="btn-primary" onClick={openAdd}>+ Adicionar Gasto</button>
       </div>
 

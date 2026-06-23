@@ -112,7 +112,6 @@ export default function Contas() {
   return (
     <div>
       <div className="page-header">
-        <h1>📄 Contas da Oficina</h1>
         <button className="btn-primary" onClick={openAdd}>+ Nova Conta</button>
       </div>
 

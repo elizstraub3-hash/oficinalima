@@ -190,7 +190,6 @@ export default function Funcionarios() {
   return (
     <div>
       <div className="page-header">
-        <h1>👷 Funcionários</h1>
         <button className="btn-primary" onClick={openAdd}>+ Novo Funcionário</button>
       </div>
 

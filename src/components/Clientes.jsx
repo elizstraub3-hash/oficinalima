@@ -53,7 +53,6 @@ export default function Clientes() {
   return (
     <div>
       <div className="page-header">
-        <h1>👤 Clientes</h1>
         <button className="btn-primary" onClick={openAdd}>+ Novo Cliente</button>
       </div>
 

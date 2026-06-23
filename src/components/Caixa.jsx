@@ -126,7 +126,6 @@ export default function Caixa() {
   return (
     <div>
       <div className="page-header">
-        <h1>💰 Caixa</h1>
         <button className="btn-primary" onClick={() => { setForm(empty()); setModal(true) }}>
           + Novo Lançamento
         </button>

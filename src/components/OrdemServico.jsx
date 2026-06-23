@@ -499,7 +499,6 @@ export default function OrdemServico({ setPage }) {
   return (
     <div>
       <div className="page-header">
-        <h1>📋 Ordens de Serviço</h1>
         <button className="btn-primary" onClick={openAdd}>+ Nova OS</button>
       </div>
 
