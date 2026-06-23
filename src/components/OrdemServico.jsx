@@ -328,6 +328,7 @@ export default function OrdemServico({ setPage }) {
   const [statusError, setStatusError] = useState(false)
   const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
   const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
+  const [editMecanico, setEditMecanico] = useState(false)
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -464,6 +465,17 @@ export default function OrdemServico({ setPage }) {
     setViewing(arr[idx])
   }
 
+  function handleChangeMecanico(novoMec) {
+    const arr = load()
+    const idx = arr.findIndex(x => x.id === viewing.id)
+    if (idx === -1) return
+    arr[idx] = { ...arr[idx], funcionario: novoMec }
+    save(arr)
+    setViewing(arr[idx])
+    setOrdens(arr)
+    setEditMecanico(false)
+  }
+
   function handleDelete(id) {
     if (!confirm('Excluir esta ordem de serviço?')) return
     save(load().filter(x => x.id !== id))
@@ -577,7 +589,7 @@ export default function OrdemServico({ setPage }) {
           <div className="modal-box os-detail-box">
             <div className="modal-header">
               <h2>📋 {viewing.numero}</h2>
-              <button className="modal-close" onClick={() => setViewing(null)}>✕</button>
+              <button className="modal-close" onClick={() => { setViewing(null); setEditMecanico(false) }}>✕</button>
             </div>
             <div className="modal-body">
               {/* Troca de status — dropdown */}
@@ -622,7 +634,27 @@ export default function OrdemServico({ setPage }) {
                 </div>
                 <div className="os-detail-section">
                   <h4>👷 Responsável</h4>
-                  <p>{viewing.funcionario || '—'}</p>
+                  {editMecanico ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        defaultValue={viewing.funcionario || ''}
+                        onChange={e => handleChangeMecanico(e.target.value)}
+                        style={{ flex: 1, minWidth: 120, padding: '6px 10px', borderRadius: 6, border: '1.5px solid #555', background: '#1a1a1a', color: '#f0f0f0', fontSize: 13 }}
+                        autoFocus
+                      >
+                        <option value="">— Sem responsável —</option>
+                        {funcionarios.map(f => (
+                          <option key={f.id} value={f.nome}>{f.nome}</option>
+                        ))}
+                      </select>
+                      <button className="btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => setEditMecanico(false)}>Cancelar</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <p style={{ flex: 1 }}>{viewing.funcionario || '—'}</p>
+                      <button className="btn-edit" style={{ padding: '3px 8px', fontSize: 12 }} onClick={() => setEditMecanico(true)}>✏️ Trocar</button>
+                    </div>
+                  )}
                 </div>
                 <div className="os-detail-section">
                   <h4>⏱️ Tempo</h4>
