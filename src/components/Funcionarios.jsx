@@ -22,9 +22,28 @@ function formatMs(ms) {
 
 function calcResumoFuncionario(nome) {
   const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-  const minhas = ordens.filter(o => o.funcionario === nome)
+
+  // OS onde o mecânico aparece como responsável principal OU em algum serviço
+  const minhas = ordens.filter(o => {
+    if (o.funcionario === nome) return true
+    if (o.servicos && o.servicos.some(sv => sv.funcionario === nome)) return true
+    return false
+  })
+
   const concluidas = minhas.filter(o => o.status === 'concluido')
-  const totalMaoDeObra = minhas.reduce((s, o) => s + Number(o.maoDeObra || 0), 0)
+
+  // Soma apenas os serviços atribuídos a este mecânico
+  const totalMaoDeObra = ordens.reduce((s, o) => {
+    if (o.servicos && o.servicos.length > 0) {
+      return s + o.servicos
+        .filter(sv => sv.funcionario === nome)
+        .reduce((a, sv) => a + (parseFloat(sv.maoDeObra) || 0), 0)
+    }
+    // OS legada sem array de serviços: usa maoDeObra do nível principal
+    if (o.funcionario === nome) return s + Number(o.maoDeObra || 0)
+    return s
+  }, 0)
+
   const totalValor = minhas.reduce((s, o) => s + Number(o.valor || 0), 0)
   const tempoTotal = concluidas.reduce((s, o) => {
     if (o.inicio && o.fim) return s + (o.fim - o.inicio)
