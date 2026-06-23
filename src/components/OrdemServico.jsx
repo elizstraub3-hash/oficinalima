@@ -50,7 +50,7 @@ function LiveTimer({ inicio }) {
 
 const emptyForm = () => ({
   clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
-  descricao: '', descBreve: '', valor: '', status: '',
+  descricao: '', descBreve: '', valor: '', status: '', funcionario: '',
   itens: [],
   servicos: [],
 })
@@ -349,7 +349,7 @@ export default function OrdemServico({ setPage }) {
       clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone,
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
       descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
-      valor: ordem.valor || '', status: ordem.status,
+      valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
       itens: ordem.itens || [],
       servicos: legacyServicos,
     })
@@ -768,6 +768,14 @@ export default function OrdemServico({ setPage }) {
             </div>
 
             <p className="os-section-title">🔧 Serviços e Status</p>
+
+            <div className="form-group">
+              <label>👷 Mecânico Responsável</label>
+              <select value={form.funcionario} onChange={e => setForm(f => ({ ...f, funcionario: e.target.value }))}>
+                <option value="">— Selecione o mecânico —</option>
+                {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome} · {f.cargo}</option>)}
+              </select>
+            </div>
 
             <div className="form-row">
               <div className="form-group">
