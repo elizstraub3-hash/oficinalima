@@ -23,29 +23,66 @@ const STATUS = {
   cancelado:    { label: 'Cancelado',    color: '#ef4444', bg: '#fee2e2', icon: '✖️' },
 }
 
-function formatMs(ms) {
-  if (!ms || ms < 0) return '0:00:00'
+// Horário de funcionamento da oficina
+// Seg=1, Ter=2, Qua=3, Qui=4, Sex=5, Sáb=6, Dom=0
+const HORARIO_OFICINA = [
+  { dia: 1, abre: 8, fecha: 18 },
+  { dia: 2, abre: 8, fecha: 18 },
+  { dia: 3, abre: 8, fecha: 18 },
+  { dia: 4, abre: 8, fecha: 18 },
+  { dia: 5, abre: 8, fecha: 18 },
+  { dia: 6, abre: 8, fecha: 12 },
+]
+
+function calcTempoTrabalho(inicio) {
+  if (!inicio) return 0
+  const agora = Date.now()
+  if (inicio >= agora) return 0
+  let total = 0
+  const cursor = new Date(inicio)
+  cursor.setHours(0, 0, 0, 0)
+  const fimDia = new Date(agora)
+  fimDia.setHours(23, 59, 59, 999)
+  while (cursor <= fimDia) {
+    const diaSemana = cursor.getDay()
+    const horario = HORARIO_OFICINA.find(h => h.dia === diaSemana)
+    if (horario) {
+      const base = cursor.getTime()
+      const abreMs  = base + horario.abre  * 3600000
+      const fechaMs = base + horario.fecha * 3600000
+      const start = Math.max(inicio, abreMs)
+      const end   = Math.min(agora,  fechaMs)
+      if (end > start) total += end - start
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return total
+}
+
+function formatTempo(ms) {
+  if (!ms || ms < 0) return '0h 0min 0s'
   const total = Math.floor(ms / 1000)
-  const dias = Math.floor(total / 86400)
-  const h    = Math.floor((total % 86400) / 3600)
-  const m    = Math.floor((total % 3600) / 60)
-  const s    = total % 60
-  const mm   = String(m).padStart(2, '0')
-  const ss   = String(s).padStart(2, '0')
-  if (dias > 0) return `${dias}d ${h}:${mm}:${ss}`
-  if (h > 0)    return `${h}:${mm}:${ss}`
-  return `0:${mm}:${ss}`
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  if (h > 0) return `${h}h ${m}min ${s}s`
+  if (m > 0) return `${m}min ${s}s`
+  return `${s}s`
+}
+
+function formatMs(ms) {
+  return formatTempo(ms)
 }
 
 function LiveTimer({ inicio }) {
-  const [elapsed, setElapsed] = useState(Date.now() - inicio)
+  const [elapsed, setElapsed] = useState(() => calcTempoTrabalho(inicio))
   useEffect(() => {
-    const id = setInterval(() => setElapsed(Date.now() - inicio), 1000)
+    const id = setInterval(() => setElapsed(calcTempoTrabalho(inicio)), 1000)
     return () => clearInterval(id)
   }, [inicio])
-  const h = elapsed / 3600000
-  const cls = h < 2 ? 'green' : h < 4 ? 'yellow' : 'red'
-  return <span className={`os-timer os-timer-${cls}`}>{formatMs(elapsed)}</span>
+  const horas = elapsed / 3600000
+  const cls = horas >= 10 ? 'red' : horas >= 4 ? 'yellow' : 'green'
+  return <span className={`os-timer os-timer-${cls}`}>{formatTempo(elapsed)}</span>
 }
 
 const emptyForm = () => ({
@@ -536,7 +573,7 @@ export default function OrdemServico({ setPage }) {
                 <th>Nº OS</th>
                 <th>Cliente</th>
                 <th>Veículo</th>
-                <th>Responsável</th>
+                <th>Mecânico Responsável</th>
                 <th>Status</th>
                 <th>Tempo</th>
                 <th>Total</th>
@@ -681,7 +718,7 @@ export default function OrdemServico({ setPage }) {
                   {viewing.descricao && <p style={{ color: 'var(--text-light)', fontSize: 13 }}>{viewing.descricao}</p>}
                 </div>
                 <div className="os-detail-section">
-                  <h4>👷 Responsável</h4>
+                  <h4>👷 Mecânico Responsável</h4>
                   {editMecanico ? (
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                       <select
