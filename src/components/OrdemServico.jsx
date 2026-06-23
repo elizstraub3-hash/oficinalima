@@ -536,7 +536,6 @@ export default function OrdemServico({ setPage }) {
                 <th>Nº OS</th>
                 <th>Cliente</th>
                 <th>Veículo</th>
-                <th>Serviço</th>
                 <th>Responsável</th>
                 <th>Status</th>
                 <th>Tempo</th>
@@ -558,7 +557,6 @@ export default function OrdemServico({ setPage }) {
                       <strong>{o.placa}</strong>
                       <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{o.modelo} {o.ano}</div>
                     </td>
-                    <td>{o.servico || '—'}</td>
                     <td onClick={e => e.stopPropagation()} style={{ minWidth: 130 }}>
                       {editMecanicoId === o.id ? (
                         <select
