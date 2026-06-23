@@ -330,6 +330,7 @@ export default function OrdemServico({ setPage }) {
   const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
   const [editMecanico, setEditMecanico] = useState(false)
   const [editMecanicoId, setEditMecanicoId] = useState(null)
+  const [editStatusId, setEditStatusId] = useState(null)
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -585,7 +586,30 @@ export default function OrdemServico({ setPage }) {
                         </span>
                       )}
                     </td>
-                    <td><span className="badge" style={{ color: st.color, background: st.bg }}>{st.icon} {st.label}</span></td>
+                    <td onClick={e => e.stopPropagation()}>
+                      {editStatusId === o.id ? (
+                        <select
+                          autoFocus
+                          defaultValue={o.status}
+                          onChange={e => { handleChangeStatus(o.id, e.target.value); setEditStatusId(null) }}
+                          onBlur={() => setEditStatusId(null)}
+                          style={{ padding: '4px 8px', borderRadius: 6, border: '1.5px solid #555', background: '#1a1a1a', color: '#f0f0f0', fontSize: 13 }}
+                        >
+                          {Object.entries(STATUS).map(([k, v]) => (
+                            <option key={k} value={k}>{v.icon} {v.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className="badge"
+                          style={{ color: st.color, background: st.bg, cursor: 'pointer' }}
+                          onClick={() => setEditStatusId(o.id)}
+                          title="Clique para trocar status"
+                        >
+                          {st.icon} {st.label}
+                        </span>
+                      )}
+                    </td>
                     <td onClick={e => e.stopPropagation()}>
                       {o.status === 'em_andamento' && o.inicio
                         ? <LiveTimer inicio={o.inicio} />
