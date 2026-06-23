@@ -517,6 +517,9 @@ export default function OrdemServico({ setPage }) {
       alert('⚠️ LEANDRA, levanta do lugar e vai vistoriar o carro antes de concluir a OS!\n\nTodos os itens da vistoria precisam ser marcados (OK ou Com defeito) para concluir.')
       return null
     }
+    // Deriva o mecânico responsável a partir dos serviços adicionados
+    const mecDosServicos = (form.servicos || []).find(sv => sv.funcionario)?.funcionario || form.funcionario || ''
+    const formComMec = { ...form, funcionario: mecDosServicos }
     const arr = load()
     const total = calcTotal() || 0
     let savedOrdem = null
@@ -526,11 +529,11 @@ export default function OrdemServico({ setPage }) {
       let inicio = old.inicio, fim = old.fim
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
       if ((form.status === 'concluido' || form.status === 'cancelado') && !fim) fim = Date.now()
-      arr[idx] = { ...old, ...form, valor: total, maoDeObra: calcTotalMob(), inicio, fim }
+      arr[idx] = { ...old, ...formComMec, valor: total, maoDeObra: calcTotalMob(), inicio, fim }
       savedOrdem = arr[idx]
     } else {
       const novaOrdem = {
-        ...form, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: calcTotalMob(),
+        ...formComMec, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: calcTotalMob(),
         inicio: form.status === 'em_andamento' ? Date.now() : null,
         fim: null, data: new Date().toISOString().split('T')[0],
       }
@@ -968,14 +971,6 @@ export default function OrdemServico({ setPage }) {
             </div>
 
             <p className="os-section-title">🔧 Serviços e Status</p>
-
-            <div className="form-group">
-              <label>👷 Mecânico Responsável</label>
-              <select value={form.funcionario} onChange={e => setForm(f => ({ ...f, funcionario: e.target.value }))}>
-                <option value="">— Selecione o mecânico —</option>
-                {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome} · {f.cargo}</option>)}
-              </select>
-            </div>
 
             <div className="form-row">
               <div className="form-group">
