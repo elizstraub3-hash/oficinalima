@@ -74,6 +74,29 @@ function formatMs(ms) {
   return formatTempo(ms)
 }
 
+const CHECKLIST = [
+  { id: 'amassados',    label: 'Amassados / Arranhões' },
+  { id: 'parachoque',  label: 'Para-choque (dianteiro/traseiro)' },
+  { id: 'vidros',      label: 'Vidros / Para-brisa' },
+  { id: 'retrovisores',label: 'Retrovisores' },
+  { id: 'farois',      label: 'Faróis / Lanternas' },
+  { id: 'pneus',       label: 'Pneus (estado / calibragem)' },
+  { id: 'bancos',      label: 'Bancos / Interior' },
+  { id: 'painel',      label: 'Painel (luzes acesas)' },
+  { id: 'arcond',      label: 'Ar-condicionado' },
+  { id: 'som',         label: 'Som / Rádio' },
+  { id: 'macaco',      label: 'Macaco / Triângulo' },
+  { id: 'crlv',        label: 'CRLV presente no veículo' },
+]
+// valores: 'ok' | 'defeito' | '' (não vistoriado)
+const emptyChecklist = () => Object.fromEntries(CHECKLIST.map(c => [c.id, '']))
+
+function ChecklistBadge({ valor }) {
+  if (valor === 'ok')     return <span style={{ color: '#4ade80', fontWeight: 700 }}>✅ OK</span>
+  if (valor === 'defeito') return <span style={{ color: '#f87171', fontWeight: 700 }}>⚠️ Com defeito</span>
+  return <span style={{ color: '#555' }}>— Não vistoriado</span>
+}
+
 function LiveTimer({ inicio }) {
   const [elapsed, setElapsed] = useState(() => calcTempoTrabalho(inicio))
   useEffect(() => {
@@ -90,6 +113,7 @@ const emptyForm = () => ({
   descricao: '', descBreve: '', valor: '', status: '', funcionario: '',
   itens: [],
   servicos: [],
+  checklist: emptyChecklist(),
 })
 
 // ─── Gerador de PDF ──────────────────────────────────────────────────────────
@@ -391,6 +415,7 @@ export default function OrdemServico({ setPage }) {
       valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
       itens: ordem.itens || [],
       servicos: legacyServicos,
+      checklist: ordem.checklist || emptyChecklist(),
     })
     setViewing(null)
     setModal(true)
@@ -777,6 +802,21 @@ export default function OrdemServico({ setPage }) {
                 </div>
               )}
 
+              {/* Vistoria */}
+              {viewing.checklist && (
+                <div style={{ marginTop: 20 }}>
+                  <h4 style={{ fontSize: 12, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 10, fontWeight: 700 }}>🔍 Vistoria do Veículo</h4>
+                  <div className="os-checklist-view">
+                    {CHECKLIST.map(item => (
+                      <div key={item.id} className="os-checklist-view-row">
+                        <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
+                        <ChecklistBadge valor={viewing.checklist[item.id] || ''} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="modal-actions" style={{ marginTop: 20 }}>
                 <button className="btn-danger" onClick={() => handleDelete(viewing.id)}>🗑️ Excluir</button>
                 <button className="btn-pdf-lg" onClick={() => gerarPDF(viewing)}>📄 Gerar PDF / WhatsApp</button>
@@ -850,6 +890,27 @@ export default function OrdemServico({ setPage }) {
                 <label>Cor</label>
                 <input value={form.cor} onChange={e => setForm(f => ({ ...f, cor: e.target.value }))} placeholder="Ex: Branco" />
               </div>
+            </div>
+
+            <p className="os-section-title">🔍 Vistoria do Veículo</p>
+            <div className="os-checklist-grid">
+              {CHECKLIST.map(item => (
+                <div key={item.id} className="os-checklist-item">
+                  <span className="os-checklist-label">{item.label}</span>
+                  <div className="os-checklist-btns">
+                    <button
+                      type="button"
+                      className={`os-chk-btn ${form.checklist?.[item.id] === 'ok' ? 'os-chk-ok' : ''}`}
+                      onClick={() => setForm(f => ({ ...f, checklist: { ...f.checklist, [item.id]: f.checklist?.[item.id] === 'ok' ? '' : 'ok' } }))}
+                    >✅ OK</button>
+                    <button
+                      type="button"
+                      className={`os-chk-btn ${form.checklist?.[item.id] === 'defeito' ? 'os-chk-defeito' : ''}`}
+                      onClick={() => setForm(f => ({ ...f, checklist: { ...f.checklist, [item.id]: f.checklist?.[item.id] === 'defeito' ? '' : 'defeito' } }))}
+                    >⚠️ Defeito</button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <p className="os-section-title">🔧 Serviços e Status</p>

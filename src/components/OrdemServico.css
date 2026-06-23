@@ -330,3 +330,69 @@
 .os-flow-btn { background: #1a1a1a; color: #f0f0f0; border-color: #333; }
 .os-status-select-dd { background: #1a1a1a; color: #f0f0f0; }
 .btn-pdf:hover { background: rgba(139,92,246,0.15); }
+
+/* ── CHECKLIST DE VISTORIA ── */
+.os-checklist-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.os-checklist-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  background: #111;
+  gap: 12px;
+}
+.os-checklist-item:last-child { border-bottom: none; }
+
+.os-checklist-label {
+  font-size: 13px;
+  color: #ccc;
+  flex: 1;
+}
+
+.os-checklist-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.os-chk-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #333;
+  background: transparent;
+  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.os-chk-btn:hover { border-color: #555; color: #ccc; }
+.os-chk-ok { background: rgba(74,222,128,0.15) !important; border-color: #4ade80 !important; color: #4ade80 !important; }
+.os-chk-defeito { background: rgba(248,113,113,0.15) !important; border-color: #f87171 !important; color: #f87171 !important; }
+
+.os-checklist-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.os-checklist-view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  font-size: 13px;
+}
+.os-checklist-view-row:last-child { border-bottom: none; }
