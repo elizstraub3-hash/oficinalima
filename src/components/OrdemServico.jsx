@@ -512,7 +512,8 @@ export default function OrdemServico({ setPage }) {
 
   function _doSave() {
     if (!form.status) { setStatusError(true); return null }
-    if (!form.clienteNome || !form.placa) return null
+    if (!form.clienteNome) { alert('Preencha o nome do cliente.'); return null }
+    if (!form.placa) { alert('Preencha a placa do veículo.'); return null }
     if (form.status === 'concluido' && !CHECKLIST.every(item => (form.checklist?.[item.id] === 'ok' || form.checklist?.[item.id] === 'defeito'))) {
       const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
       if (!ok) return null
@@ -524,7 +525,8 @@ export default function OrdemServico({ setPage }) {
     const total = calcTotal() || 0
     let savedOrdem = null
     if (editing) {
-      const idx = arr.findIndex(x => x.id === editing)
+      const idx = arr.findIndex(x => x.id === editing || x.id === Number(editing))
+      if (idx === -1) return null
       const old = arr[idx]
       let inicio = old.inicio, fim = old.fim
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
@@ -571,7 +573,8 @@ export default function OrdemServico({ setPage }) {
 
   function handleChangeStatus(id, novoStatus) {
     const arr = load()
-    const idx = arr.findIndex(x => x.id === id)
+    const idx = arr.findIndex(x => x.id === id || x.id === Number(id))
+    if (idx === -1) return
     const old = arr[idx]
     if (novoStatus === 'concluido' && !checklistCompleto(old)) {
       const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
