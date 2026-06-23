@@ -329,6 +329,7 @@ export default function OrdemServico({ setPage }) {
   const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
   const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
   const [editMecanico, setEditMecanico] = useState(false)
+  const [editMecanicoId, setEditMecanicoId] = useState(null)
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -557,7 +558,33 @@ export default function OrdemServico({ setPage }) {
                       <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{o.modelo} {o.ano}</div>
                     </td>
                     <td>{o.servico || '—'}</td>
-                    <td>{o.funcionario || '—'}</td>
+                    <td onClick={e => e.stopPropagation()} style={{ minWidth: 130 }}>
+                      {editMecanicoId === o.id ? (
+                        <select
+                          autoFocus
+                          defaultValue={o.funcionario || ''}
+                          onChange={e => {
+                            const arr = load()
+                            const idx = arr.findIndex(x => x.id === o.id)
+                            if (idx !== -1) { arr[idx] = { ...arr[idx], funcionario: e.target.value }; save(arr); setOrdens(arr) }
+                            setEditMecanicoId(null)
+                          }}
+                          onBlur={() => setEditMecanicoId(null)}
+                          style={{ width: '100%', padding: '4px 8px', borderRadius: 6, border: '1.5px solid #555', background: '#1a1a1a', color: '#f0f0f0', fontSize: 13 }}
+                        >
+                          <option value="">— Sem responsável —</option>
+                          {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+                        </select>
+                      ) : (
+                        <span
+                          onClick={() => setEditMecanicoId(o.id)}
+                          title="Clique para trocar"
+                          style={{ cursor: 'pointer', borderBottom: '1px dashed #555', paddingBottom: 1 }}
+                        >
+                          {o.funcionario || '—'}
+                        </span>
+                      )}
+                    </td>
                     <td><span className="badge" style={{ color: st.color, background: st.bg }}>{st.icon} {st.label}</span></td>
                     <td onClick={e => e.stopPropagation()}>
                       {o.status === 'em_andamento' && o.inicio
