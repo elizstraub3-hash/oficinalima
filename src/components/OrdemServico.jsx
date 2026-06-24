@@ -74,29 +74,6 @@ function formatMs(ms) {
   return formatTempo(ms)
 }
 
-const CHECKLIST = [
-  { id: 'amassados',    label: 'Amassados / Arranhões' },
-  { id: 'parachoque',  label: 'Para-choque (dianteiro/traseiro)' },
-  { id: 'vidros',      label: 'Vidros / Para-brisa' },
-  { id: 'retrovisores',label: 'Retrovisores' },
-  { id: 'farois',      label: 'Faróis / Lanternas' },
-  { id: 'pneus',       label: 'Pneus (estado / calibragem)' },
-  { id: 'bancos',      label: 'Bancos / Interior' },
-  { id: 'painel',      label: 'Painel (luzes acesas)' },
-  { id: 'arcond',      label: 'Ar-condicionado' },
-  { id: 'som',         label: 'Som / Rádio' },
-  { id: 'macaco',      label: 'Macaco / Triângulo' },
-  { id: 'crlv',        label: 'CRLV presente no veículo' },
-]
-// valores: 'ok' | 'defeito' | '' (não vistoriado)
-const emptyChecklist = () => Object.fromEntries(CHECKLIST.map(c => [c.id, '']))
-
-function ChecklistBadge({ valor }) {
-  if (valor === 'ok')     return <span style={{ color: '#4ade80', fontWeight: 700 }}>✅ OK</span>
-  if (valor === 'defeito') return <span style={{ color: '#f87171', fontWeight: 700 }}>⚠️ Com defeito</span>
-  return <span style={{ color: '#555' }}>— Não vistoriado</span>
-}
-
 function LiveTimer({ inicio }) {
   const [elapsed, setElapsed] = useState(() => calcTempoTrabalho(inicio))
   useEffect(() => {
@@ -113,7 +90,6 @@ const emptyForm = () => ({
   descricao: '', descBreve: '', valor: '', status: '', funcionario: '',
   itens: [],
   servicos: [],
-  checklist: emptyChecklist(),
 })
 
 // ─── Gerador de PDF ──────────────────────────────────────────────────────────
@@ -146,31 +122,6 @@ function gerarPDF(ordem) {
         : [])
   const totalMob   = servicosArr.reduce((s, sv) => s + (parseFloat(sv.maoDeObra) || 0), 0)
   const totalGeral = totalPecas + totalMob || Number(ordem.valor || 0)
-
-  const checklistItems = [
-    { id: 'amassados',    label: 'Amassados / Arranhões' },
-    { id: 'parachoque',  label: 'Para-choque' },
-    { id: 'vidros',      label: 'Vidros / Para-brisa' },
-    { id: 'retrovisores',label: 'Retrovisores' },
-    { id: 'farois',      label: 'Faróis / Lanternas' },
-    { id: 'pneus',       label: 'Pneus' },
-    { id: 'bancos',      label: 'Bancos / Interior' },
-    { id: 'painel',      label: 'Painel (luzes)' },
-    { id: 'arcond',      label: 'Ar-condicionado' },
-    { id: 'som',         label: 'Som / Rádio' },
-    { id: 'macaco',      label: 'Macaco / Triângulo' },
-    { id: 'crlv',        label: 'CRLV presente' },
-  ]
-  const chk = ordem.checklist || {}
-  const checklistRows = checklistItems.map(item => {
-    const v = chk[item.id] || ''
-    const badge = v === 'ok'
-      ? `<span class="vis-ok">✓ OK</span>`
-      : v === 'defeito'
-        ? `<span class="vis-defeito">⚠ Com defeito</span>`
-        : `<span class="vis-nd">— Não vistoriado</span>`
-    return `<div class="vistoria-row"><span>${item.label}</span>${badge}</div>`
-  }).join('')
 
   const pecasRows = itens.length > 0
     ? itens.map((it, i) => `
@@ -238,16 +189,6 @@ function gerarPDF(ordem) {
     .mec-item label{font-size:9px;text-transform:uppercase;color:#6b7280;font-weight:700;display:block;margin-bottom:2px}
     .mec-item span{font-size:13px;font-weight:800;color:#111}
     .mec-item span.verde{color:#059669}
-
-    /* Vistoria */
-    .vistoria-box{border:1px solid #ddd;border-radius:6px;overflow:hidden;margin-top:14px}
-    .vistoria-head{background:#000;color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;padding:7px 10px;text-transform:uppercase;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-    .vistoria-grid{display:grid;grid-template-columns:1fr 1fr;border-top:none}
-    .vistoria-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid #eee;font-size:11.5px}
-    .vistoria-row:nth-child(odd){background:#fafafa}
-    .vis-ok{color:#059669;font-weight:700}
-    .vis-defeito{color:#dc2626;font-weight:700}
-    .vis-nd{color:#aaa}
 
     /* Garantia */
     .garantia-box{border:1.5px solid #86efac;background:#f0fdf4;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11.5px;color:#166534;line-height:1.7}
@@ -376,12 +317,6 @@ function gerarPDF(ordem) {
     ${tempoStr ? `<div class="mec-item"><label>Tempo de Servico</label><span>${tempoStr}</span></div>` : ''}
   </div>` : ''}
 
-  <!-- VISTORIA -->
-  <div class="vistoria-box">
-    <div class="vistoria-head">V I S T O R I A  D O  V E Í C U L O</div>
-    <div class="vistoria-grid">${checklistRows}</div>
-  </div>
-
   <!-- GARANTIA -->
   <div class="garantia-box">
     <strong>Garantia e Validade do Orcamento</strong>
@@ -456,7 +391,6 @@ export default function OrdemServico({ setPage }) {
       valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
       itens: ordem.itens || [],
       servicos: legacyServicos,
-      checklist: ordem.checklist || emptyChecklist(),
     })
     setViewing(null)
     setModal(true)
@@ -514,10 +448,6 @@ export default function OrdemServico({ setPage }) {
     if (!form.status) { setStatusError(true); return null }
     if (!form.clienteNome) { alert('Preencha o nome do cliente.'); return null }
     if (!form.placa) { alert('Preencha a placa do veículo.'); return null }
-    if (form.status === 'concluido' && !CHECKLIST.every(item => (form.checklist?.[item.id] === 'ok' || form.checklist?.[item.id] === 'defeito'))) {
-      const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
-      if (!ok) return null
-    }
     // Deriva o mecânico responsável a partir dos serviços adicionados
     const mecDosServicos = (form.servicos || []).find(sv => sv.funcionario)?.funcionario || form.funcionario || ''
     const formComMec = { ...form, funcionario: mecDosServicos }
@@ -566,20 +496,11 @@ export default function OrdemServico({ setPage }) {
     if (ordem) gerarPDF(ordem)
   }
 
-  function checklistCompleto(ordem) {
-    const chk = ordem.checklist || {}
-    return CHECKLIST.every(item => chk[item.id] === 'ok' || chk[item.id] === 'defeito')
-  }
-
   function handleChangeStatus(id, novoStatus) {
     const arr = load()
     const idx = arr.findIndex(x => x.id === id || x.id === Number(id))
     if (idx === -1) return
     const old = arr[idx]
-    if (novoStatus === 'concluido' && !checklistCompleto(old)) {
-      const ok = confirm('⚠️ LEANDRA — a vistoria do veículo ainda não foi concluída!\n\nLembra de anotar amassados, luzes, pneus...\n\nDeseja concluir a OS mesmo assim?')
-      if (!ok) return
-    }
     let inicio = old.inicio, fim = old.fim
     if (novoStatus === 'em_andamento' && !inicio) inicio = Date.now()
     if ((novoStatus === 'concluido' || novoStatus === 'cancelado') && !fim) fim = Date.now()
@@ -862,21 +783,6 @@ export default function OrdemServico({ setPage }) {
                 </div>
               )}
 
-              {/* Vistoria */}
-              {viewing.checklist && (
-                <div style={{ marginTop: 20 }}>
-                  <h4 style={{ fontSize: 12, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 10, fontWeight: 700 }}>🔍 Vistoria do Veículo</h4>
-                  <div className="os-checklist-view">
-                    {CHECKLIST.map(item => (
-                      <div key={item.id} className="os-checklist-view-row">
-                        <span style={{ flex: 1, fontSize: 13 }}>{item.label}</span>
-                        <ChecklistBadge valor={viewing.checklist[item.id] || ''} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <div className="modal-actions" style={{ marginTop: 20 }}>
                 <button className="btn-danger" onClick={() => handleDelete(viewing.id)}>🗑️ Excluir</button>
                 <button className="btn-pdf-lg" onClick={() => gerarPDF(viewing)}>📄 Gerar PDF / WhatsApp</button>
@@ -950,27 +856,6 @@ export default function OrdemServico({ setPage }) {
                 <label>Cor</label>
                 <input value={form.cor} onChange={e => setForm(f => ({ ...f, cor: e.target.value }))} placeholder="Ex: Branco" />
               </div>
-            </div>
-
-            <p className="os-section-title">🔍 Vistoria do Veículo</p>
-            <div className="os-checklist-grid">
-              {CHECKLIST.map(item => (
-                <div key={item.id} className="os-checklist-item">
-                  <span className="os-checklist-label">{item.label}</span>
-                  <div className="os-checklist-btns">
-                    <button
-                      type="button"
-                      className={`os-chk-btn ${form.checklist?.[item.id] === 'ok' ? 'os-chk-ok' : ''}`}
-                      onClick={() => setForm(f => ({ ...f, checklist: { ...f.checklist, [item.id]: f.checklist?.[item.id] === 'ok' ? '' : 'ok' } }))}
-                    >✅ OK</button>
-                    <button
-                      type="button"
-                      className={`os-chk-btn ${form.checklist?.[item.id] === 'defeito' ? 'os-chk-defeito' : ''}`}
-                      onClick={() => setForm(f => ({ ...f, checklist: { ...f.checklist, [item.id]: f.checklist?.[item.id] === 'defeito' ? '' : 'defeito' } }))}
-                    >⚠️ Defeito</button>
-                  </div>
-                </div>
-              ))}
             </div>
 
             <p className="os-section-title">🔧 Serviços e Status</p>
