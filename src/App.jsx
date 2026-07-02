@@ -82,9 +82,91 @@ function seedData() {
   }
 }
 
+function ExpiryPopup({ onClose }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 99999,
+      background: 'rgba(0,0,0,0.92)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16,
+    }}>
+      <div style={{
+        background: '#1a0000',
+        border: '3px solid #ff0000',
+        borderRadius: 16,
+        maxWidth: 520,
+        width: '100%',
+        padding: '40px 36px',
+        textAlign: 'center',
+        boxShadow: '0 0 60px rgba(255,0,0,0.5), 0 0 20px rgba(255,0,0,0.3)',
+        animation: 'expiry-pulse 1.5s ease-in-out infinite',
+      }}>
+        <style>{`
+          @keyframes expiry-pulse {
+            0%, 100% { box-shadow: 0 0 60px rgba(255,0,0,0.5), 0 0 20px rgba(255,0,0,0.3); }
+            50% { box-shadow: 0 0 90px rgba(255,0,0,0.9), 0 0 40px rgba(255,0,0,0.6); }
+          }
+        `}</style>
+
+        <div style={{ fontSize: 64, marginBottom: 8 }}>🚨</div>
+        <h1 style={{ color: '#ff2222', fontSize: 28, fontWeight: 900, margin: '0 0 8px', letterSpacing: 1 }}>
+          SISTEMA VENCIDO
+        </h1>
+        <div style={{ color: '#ff6666', fontSize: 15, fontWeight: 700, marginBottom: 24, letterSpacing: 2 }}>
+          VENCEU EM 30/06/2026
+        </div>
+
+        <p style={{ color: '#f0f0f0', fontSize: 15, lineHeight: 1.7, margin: '0 0 24px' }}>
+          O acesso ao sistema <strong>Lima Oficina Mecânica</strong> está <strong style={{ color: '#ff4444' }}>vencido</strong>.<br />
+          As funcionalidades serão <strong style={{ color: '#ff4444' }}>desativadas</strong> até a renovação do plano.
+        </p>
+
+        <div style={{
+          background: '#2a0000',
+          border: '1px solid #ff3333',
+          borderRadius: 10,
+          padding: '18px 20px',
+          marginBottom: 24,
+          textAlign: 'left',
+        }}>
+          <div style={{ color: '#ff9999', fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+            💳 Renove agora via PIX
+          </div>
+          <div style={{ color: '#f0f0f0', fontSize: 14, lineHeight: 2 }}>
+            <div><strong style={{ color: '#aaa' }}>Chave PIX:</strong> <strong style={{ color: '#fff', fontFamily: 'monospace', fontSize: 16 }}>10595735983</strong></div>
+            <div><strong style={{ color: '#aaa' }}>Beneficiária:</strong> Elizandra Cardoso de Lima</div>
+            <div><strong style={{ color: '#aaa' }}>Plano Mensal:</strong> <strong style={{ color: '#4ade80' }}>R$ 60,00</strong></div>
+            <div><strong style={{ color: '#aaa' }}>Plano Anual (5% desc):</strong> <strong style={{ color: '#4ade80' }}>R$ 57,00/mês</strong></div>
+          </div>
+        </div>
+
+        <p style={{ color: '#ff9999', fontSize: 13, marginBottom: 24 }}>
+          Após o pagamento, envie o comprovante para reativar o acesso imediatamente.
+        </p>
+
+        <button
+          onClick={onClose}
+          style={{
+            background: '#333',
+            color: '#aaa',
+            border: '1px solid #555',
+            borderRadius: 8,
+            padding: '10px 28px',
+            cursor: 'pointer',
+            fontSize: 13,
+          }}
+        >
+          Continuar mesmo assim
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('ol_auth') === '1')
   const [page, setPage] = useState('dashboard')
+  const [showExpiry, setShowExpiry] = useState(true)
 
   useEffect(() => { seedData() }, [])
 
@@ -103,6 +185,7 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      {showExpiry && <ExpiryPopup onClose={() => setShowExpiry(false)} />}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
