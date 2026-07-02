@@ -140,24 +140,9 @@ function ExpiryPopup({ onClose }) {
           </div>
         </div>
 
-        <p style={{ color: '#ff9999', fontSize: 13, marginBottom: 24 }}>
+        <p style={{ color: '#ff9999', fontSize: 13 }}>
           Após o pagamento, envie o comprovante para reativar o acesso imediatamente.
         </p>
-
-        <button
-          onClick={onClose}
-          style={{
-            background: '#333',
-            color: '#aaa',
-            border: '1px solid #555',
-            borderRadius: 8,
-            padding: '10px 28px',
-            cursor: 'pointer',
-            fontSize: 13,
-          }}
-        >
-          Continuar mesmo assim
-        </button>
       </div>
     </div>
   )
