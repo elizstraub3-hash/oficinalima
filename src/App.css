@@ -255,46 +255,70 @@ table tr:hover td { background: #1a1a1a; }
   }
 }
 
-/* ── TEMA ESCURO: forçar texto branco em tudo ── */
+/* ── TEMA ESCURO (padrão) ── */
 p, span, div, label, small, td, th, li, a, strong, h1, h2, h3, h4, h5, h6 {
   color: inherit;
 }
-
 .card { color: #f0f0f0; }
 
-/* Separadores de seção */
 .section-divider {
   border: none;
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--border);
   margin: 20px 0;
 }
+.card + .card { margin-top: 16px; }
 
-.card + .card {
-  margin-top: 16px;
-}
-
-/* Garantir inputs/selects brancos */
 input, select, textarea {
-  color: #f0f0f0 !important;
-  background: #1a1a1a !important;
-  border-color: #333 !important;
+  color: var(--text-main) !important;
+  background: var(--bg-card2) !important;
+  border-color: var(--border) !important;
+}
+input::placeholder { color: var(--text-light) !important; }
+select option { background: var(--bg-card2); color: var(--text-main); }
+
+/* ── TEMA CLARO ── */
+[data-theme="light"] {
+  --text-main:  #111111;
+  --text-light: #666666;
+  --bg-main:    #f0f2f5;
+  --bg-card:    #ffffff;
+  --bg-card2:   #f7f8fa;
+  --white:      #ffffff;
+  --border:     #dde1e7;
+  --shadow:     0 2px 10px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 28px rgba(0,0,0,0.12);
+  --green:      #16a34a;
+  --yellow:     #d97706;
+  --red:        #dc2626;
 }
 
-input::placeholder { color: #555 !important; }
+[data-theme="light"] body { background: var(--bg-main); color: var(--text-main); }
+[data-theme="light"] .main-content { background: var(--bg-main); }
 
-select option { background: #1a1a1a; color: #f0f0f0; }
+[data-theme="light"] .card { color: var(--text-main); background: var(--bg-card); border-color: var(--border); }
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3 { color: var(--text-main); }
 
-/* text-light no tema escuro */
-.text-light, [class*="text-light"], [style*="color: var(--text-light)"] {
-  color: #888 !important;
+[data-theme="light"] .btn-primary { background: #111; color: #fff; }
+[data-theme="light"] .btn-primary:hover { background: #333; }
+[data-theme="light"] .btn-secondary { border-color: #ccc; color: #333; }
+[data-theme="light"] .btn-secondary:hover { background: #eee; border-color: #aaa; }
+
+[data-theme="light"] table th { background: #f0f2f5; color: #555; border-bottom-color: #dde1e7; }
+[data-theme="light"] table td { border-bottom-color: #eee; color: var(--text-main); }
+[data-theme="light"] table tr:hover td { background: #f5f7fa; }
+
+[data-theme="light"] .badge-gray { background: #e5e7eb; color: #555; }
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+  color: #111 !important;
+  background: #fff !important;
+  border-color: #ccc !important;
 }
+[data-theme="light"] input::placeholder { color: #aaa !important; }
+[data-theme="light"] select option { background: #fff; color: #111; }
 
-/* Forçar todo var(--text-main) e cores escuras para claro */
-:root {
-  --text-main: #f0f0f0;
-  --text-light: #888;
-  --border: #2a2a2a;
-  --white: #141414;
-  --bg-main: #0a0a0a;
-  --shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
+[data-theme="light"] .app-footer { border-top-color: #dde1e7; color: #999; }
+[data-theme="light"] .app-footer strong { color: #555; }
+
+[data-theme="light"] .empty-state { color: #aaa; }
+[data-theme="light"] .search-bar input { background: #fff !important; color: #111 !important; border-color: #ccc !important; }

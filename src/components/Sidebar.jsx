@@ -48,7 +48,7 @@ function importData(file) {
 
 const PAGE_LABEL = Object.fromEntries(MENU.filter(m => m.id).map(m => [m.id, `${m.icon} ${m.label}`]))
 
-export default function Sidebar({ page, setPage, onLogout }) {
+export default function Sidebar({ page, setPage, onLogout, theme, setTheme }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -82,6 +82,15 @@ export default function Sidebar({ page, setPage, onLogout }) {
 
       {/* Página atual (centro) */}
       <div className="topbar-current">{PAGE_LABEL[page] || '📊 Dashboard'}</div>
+
+      {/* Botão de tema */}
+      <button
+        className="topbar-theme-btn"
+        onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+        title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+      >
+        {theme === 'dark' ? '☀️ Claro' : '🌙 Escuro'}
+      </button>
 
       {/* Dropdown menu */}
       <div className="topbar-right">

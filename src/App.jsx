@@ -121,8 +121,14 @@ export default function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('ol_auth') === '1')
   const [page, setPage] = useState('dashboard')
   const [showExpiry, setShowExpiry] = useState(true)
+  const [theme, setTheme] = useState(() => localStorage.getItem('ol_theme') || 'dark')
 
   useEffect(() => { seedData() }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('ol_theme', theme)
+  }, [theme])
 
   function handleLogin() {
     sessionStorage.setItem('ol_auth', '1')
@@ -140,7 +146,7 @@ export default function App() {
   return (
     <div className="app-layout">
       {showExpiry && <ThanksPopup onClose={() => setShowExpiry(false)} />}
-      <Sidebar page={page} setPage={setPage} onLogout={handleLogout} />
+      <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
         {page === 'ordens'        && <OrdemServico setPage={setPage} />}
