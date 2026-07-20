@@ -89,7 +89,7 @@ export default function Sidebar({ page, setPage, onLogout, theme, setTheme }) {
         onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
         title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
       >
-        {theme === 'dark' ? '☀️ Claro' : '🌙 Escuro'}
+        {theme === 'dark' ? 'Light' : 'Dark'}
       </button>
 
       {/* Dropdown menu */}
