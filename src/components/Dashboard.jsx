@@ -270,11 +270,9 @@ export default function Dashboard({ setPage }) {
   const alertasVisiveis = alertas.filter(a => !alertasDismissed.includes(a.id))
 
   const cards = [
-    { label: 'Receita Hoje', value: fmt(stats.receita), icon: '💰', color: '#10b981', page: 'caixa' },
-    { label: 'Gastos Hoje', value: fmt(stats.gastos), icon: '🧾', color: '#f59e0b', page: 'gastos' },
     { label: 'OS Em Andamento', value: stats.ordens, icon: '📋', color: '#3b82f6', page: 'ordens' },
+    { label: 'Receita Hoje', value: fmt(stats.receita), icon: '💰', color: '#10b981', page: 'caixa' },
     { label: 'Contas a Pagar', value: fmt(stats.contasPendentes), icon: '📄', color: '#e63946', page: 'contas' },
-    { label: 'Clientes Cadastrados', value: stats.clientes, icon: '👤', color: '#8b5cf6', page: 'clientes' },
   ]
 
   return (

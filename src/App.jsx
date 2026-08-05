@@ -297,6 +297,38 @@ function seedData() {
       localStorage.setItem('ol_ordens', JSON.stringify(_ord3))
     }
   }
+  // Clayton OS - Argo QPP3D71 (runs always, guarded by placa)
+  {
+    const _clCl = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
+    if (!_clCl.find(c => c.nome === 'Clayton')) {
+      _clCl.push({ id: nextClienteId(_clCl), nome: 'Clayton', telefone: '', email: '', cpf: '', placa: 'QPP3D71', modelo: 'Argo', ano: '', cor: '' })
+      localStorage.setItem('ol_clientes', JSON.stringify(_clCl))
+    }
+    const _ordCl = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+    if (!_ordCl.find(o => o.placa === 'QPP3D71')) {
+      const _maxIdCl = _ordCl.reduce((m,o) => Math.max(m, o.id||0), 0)
+      _ordCl.push({
+        id: _maxIdCl+1, numero: 'OS-'+String(_maxIdCl+1).padStart(3,'0'),
+        clienteNome: 'Clayton', clienteTelefone: '',
+        placa: 'QPP3D71', modelo: 'Argo', ano: '', cor: '',
+        servico: 'Troca da Embreagem',
+        descricao: 'Kit embreagem + cilindro auxiliar + retentor + passe no volante — Peças: R$1.030,00 | Mão de Obra: R$500,00',
+        funcionario: '', valor: 1530, maoDeObra: 500,
+        status: 'orcamento', inicio: null, fim: null,
+        data: '2026-08-05', criadoEm: Date.now(),
+        itens: [
+          {desc:'PASSE NO VOLANTE',qtd:1,un:'UN',valorUnit:130,valor:130,total:130},
+          {desc:'KIT EMBREAGEM',qtd:1,un:'UN',valorUnit:566,valor:566,total:566},
+          {desc:'CILINDRO DE EMBREAGEM AUXILIAR',qtd:1,un:'UN',valorUnit:253,valor:253,total:253},
+          {desc:'RETENTOR DO VIRABREQUIM TRASEIRO',qtd:1,un:'UN',valorUnit:81,valor:81,total:81},
+        ],
+        servicos: [
+          {desc:'TROCA DA EMBREAGEM',maoDeObra:500},
+        ]
+      })
+      localStorage.setItem('ol_ordens', JSON.stringify(_ordCl))
+    }
+  }
 }
 
 function OverduePopup() {
