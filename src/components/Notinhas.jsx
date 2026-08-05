@@ -107,6 +107,7 @@ export default function Notinhas() {
   const [form, setForm]       = useState(emptyForm())
   const [filtro, setFiltro]   = useState('todos')
   const [busca, setBusca]     = useState('')
+  const [confirmModal, setConfirmModal] = useState(null) // { custoCalc, vendaCalc, lucroCalc, formData }
 
   const todayStr   = new Date().toISOString().split('T')[0]
   const mesStr     = todayStr.slice(0, 7)
@@ -125,23 +126,27 @@ export default function Notinhas() {
   function handleSave(e) {
     e.preventDefault()
     if (!form.desc || !form.custoUnit) return
-    const { comOficina, comLeandra } = calcComissoes(custoCalc)
+    setConfirmModal({ custoCalc, vendaCalc, lucroCalc, formData: { ...form, qtd, custoUnit, precoVenda: precoAuto } })
+  }
+
+  function confirmarSalvar(tipo) {
+    const { custoCalc: cc, vendaCalc: vc, lucroCalc: lc, formData } = confirmModal
+    const comOficina = tipo === 'split' ? parseFloat((cc * 0.30).toFixed(2)) : parseFloat((cc * 0.35).toFixed(2))
+    const comLeandra = tipo === 'split' ? parseFloat((cc * 0.05).toFixed(2)) : 0
     const arr = load()
     arr.push({
-      ...form,
+      ...formData,
       id: nextId(arr),
-      qtd,
-      custoUnit,
-      precoVenda: precoAuto,
-      totalCusto: custoCalc,
-      totalVenda: vendaCalc,
-      lucro: lucroCalc,
-      porcLucro: custoCalc > 0 ? (lucroCalc / custoCalc) * 100 : 0,
+      totalCusto: cc,
+      totalVenda: vc,
+      lucro: lc,
+      porcLucro: cc > 0 ? (lc / cc) * 100 : 0,
       comOficina,
       comLeandra,
       data: todayStr,
     })
     save(arr)
+    setConfirmModal(null)
     setModal(false)
     setForm(emptyForm())
     refresh()
@@ -357,6 +362,53 @@ export default function Notinhas() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* === MODAL CONFIRMAÇÃO COMISSÃO === */}
+      {confirmModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:99999, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, maxWidth:420, width:'100%', padding:'28px 24px' }}>
+            <h3 style={{ margin:'0 0 6px', fontSize:17, fontWeight:800 }}>💰 Como distribuir a comissão?</h3>
+            <p style={{ margin:'0 0 18px', fontSize:13, color:'var(--text-light)' }}>
+              Custo: <strong style={{color:'#ef4444'}}>{fmt(confirmModal.custoCalc)}</strong> &nbsp;|&nbsp;
+              Venda: <strong style={{color:'#3b82f6'}}>{fmt(confirmModal.vendaCalc)}</strong> &nbsp;|&nbsp;
+              Lucro: <strong style={{color:'#10b981'}}>{fmt(confirmModal.lucroCalc)}</strong>
+            </p>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={() => confirmarSalvar('split')} style={{
+                background:'rgba(59,130,246,0.1)', border:'2px solid #3b82f6',
+                borderRadius:10, padding:'14px 16px', cursor:'pointer', textAlign:'left',
+              }}>
+                <div style={{ fontWeight:800, fontSize:14, color:'#3b82f6', marginBottom:4 }}>
+                  🏢 30% Oficina + 👩 5% Leandra
+                </div>
+                <div style={{ fontSize:12, color:'var(--text-light)' }}>
+                  Oficina: <strong style={{color:'#3b82f6'}}>{fmt(confirmModal.custoCalc * 0.30)}</strong>
+                  &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(confirmModal.custoCalc * 0.05)}</strong>
+                  &nbsp;&nbsp;Total: <strong>{fmt(confirmModal.custoCalc * 0.35)}</strong>
+                </div>
+              </button>
+
+              <button onClick={() => confirmarSalvar('oficina')} style={{
+                background:'rgba(16,185,129,0.08)', border:'2px solid #10b981',
+                borderRadius:10, padding:'14px 16px', cursor:'pointer', textAlign:'left',
+              }}>
+                <div style={{ fontWeight:800, fontSize:14, color:'#10b981', marginBottom:4 }}>
+                  🏢 35% só para a Oficina
+                </div>
+                <div style={{ fontSize:12, color:'var(--text-light)' }}>
+                  Oficina: <strong style={{color:'#10b981'}}>{fmt(confirmModal.custoCalc * 0.35)}</strong>
+                  &nbsp;&nbsp;Leandra: <strong style={{color:'var(--text-light)'}}>R$ 0,00</strong>
+                </div>
+              </button>
+            </div>
+
+            <button onClick={() => setConfirmModal(null)} style={{ marginTop:14, background:'transparent', border:'none', color:'var(--text-light)', cursor:'pointer', fontSize:13 }}>
+              ← Voltar e editar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
