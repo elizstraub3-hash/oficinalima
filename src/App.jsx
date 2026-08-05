@@ -158,6 +158,35 @@ function seedData() {
     }
     localStorage.setItem('ol_seeded2', '1')
   }
+  // Moises OS recovery (runs always, guarded by placa)
+  const _ord3 = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  if (!_ord3.find(o => o.placa === 'MHW1C36')) {
+    const _cl3 = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
+    if (!_cl3.find(c => c.nome === 'Moises')) {
+      _cl3.push({ id: nextClienteId(_cl3), nome: 'Moises', telefone: '', email: '', cpf: '' })
+      localStorage.setItem('ol_clientes', JSON.stringify(_cl3))
+    }
+    const _maxId3 = _ord3.reduce((m,o) => Math.max(m, o.id||0), 0)
+    _ord3.push({
+      id: _maxId3+1, numero: 'OS-'+String(_maxId3+1).padStart(3,'0'),
+      clienteNome: 'Moises', clienteTelefone: '',
+      placa: 'MHW1C36', modelo: 'Fiesta 1.6', ano: '2010', cor: 'Preto',
+      servico: 'Troca da Caixa de Direção',
+      descricao: 'Caixa de direção nova + óleo + alinhamento — Peças: R$2.472,00 | Mão de Obra: R$400,00',
+      funcionario: '', valor: 2872, maoDeObra: 400,
+      status: 'orcamento', inicio: null, fim: null,
+      data: '2026-08-05', criadoEm: Date.now(),
+      itens: [
+        {desc:'CAIXA DE DIREÇÃO NOVA',qtd:1,un:'UN',valorUnit:2268,total:2268},
+        {desc:'OLEO DE DIREÇÃO',qtd:2,un:'UN',valorUnit:42,total:84},
+        {desc:'ALINHAMENTO',qtd:1,un:'UN',valorUnit:120,total:120},
+      ],
+      servicos: [
+        {desc:'TROCA DA CAIXA DE DIREÇÃO',maoDeObra:400},
+      ]
+    })
+    localStorage.setItem('ol_ordens', JSON.stringify(_ord3))
+  }
 }
 
 function OverduePopup() {
