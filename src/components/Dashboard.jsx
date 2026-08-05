@@ -171,8 +171,11 @@ export default function Dashboard({ setPage }) {
 
   const todayStr = new Date().toISOString().split('T')[0]
   const notinhasHoje = notinhas.filter(n => n.data === todayStr)
-  const totalGastoHoje = notinhasHoje.reduce((s, n) => s + (n.totalCusto || 0), 0)
-  const totalLucroHoje = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
+  const totalGastoHoje   = notinhasHoje.reduce((s, n) => s + (n.totalCusto || 0), 0)
+  const totalVendaHoje   = notinhasHoje.reduce((s, n) => s + (n.totalVenda  || (n.precoVenda * n.qtd) || 0), 0)
+  const totalLucroHoje   = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
+  const comOficinaHoje   = notinhasHoje.reduce((s, n) => s + (n.comOficina  != null ? n.comOficina  : (n.totalVenda || n.precoVenda * n.qtd || 0) * 0.30), 0)
+  const comLeandraHoje   = notinhasHoje.reduce((s, n) => s + (n.comLeandra  != null ? n.comLeandra  : (n.totalVenda || n.precoVenda * n.qtd || 0) * 0.05), 0)
 
   const custoUnit = parseFloat(notinhaForm.custoUnit) || 0
   const qtd = parseInt(notinhaForm.qtd) || 1
@@ -389,12 +392,24 @@ export default function Dashboard({ setPage }) {
           ) : (
             <div className="dash-notinha-resumo">
               <div className="notinha-resumo-item vermelho">
-                <span>🛒 Gasto com Peças Hoje</span>
+                <span>🛒 Custo com Peças Hoje</span>
                 <strong>{fmt(totalGastoHoje)}</strong>
               </div>
+              <div className="notinha-resumo-item azul">
+                <span>💳 Total Venda Hoje</span>
+                <strong>{fmt(totalVendaHoje)}</strong>
+              </div>
               <div className="notinha-resumo-item verde">
-                <span>📈 Lucro com Peças Hoje</span>
+                <span>📈 Lucro Hoje</span>
                 <strong>{fmt(totalLucroHoje)}</strong>
+              </div>
+              <div className="notinha-resumo-item cinza">
+                <span>🏢 Ganho Oficina (30%)</span>
+                <strong style={{ color: '#3b82f6' }}>{fmt(comOficinaHoje)}</strong>
+              </div>
+              <div className="notinha-resumo-item destaque-leandra">
+                <span>👩 Ganho Leandra (5%)</span>
+                <strong style={{ color: '#d97706', fontSize: 20 }}>{fmt(comLeandraHoje)}</strong>
               </div>
             </div>
           )}
@@ -438,9 +453,13 @@ export default function Dashboard({ setPage }) {
               </div>
               {(custoCalc > 0 || vendaCalc > 0) && (
                 <div className="dash-notinha-calc">
-                  <span>💸 Custo total: <strong style={{ color: '#ef4444' }}>{fmt(custoCalc)}</strong></span>
-                  <span>💰 Venda total: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc)}</strong></span>
-                  <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)} ({porcCalc.toFixed(0)}%)</strong></span>
+                  <span>💸 Custo: <strong style={{ color: '#ef4444' }}>{fmt(custoCalc)}</strong></span>
+                  <span>💳 Venda: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc)}</strong></span>
+                  <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)}</strong></span>
+                  <span>🏢 Oficina 30%: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc * 0.30)}</strong></span>
+                  <span style={{ background: 'rgba(251,191,36,0.15)', borderRadius: 6, padding: '2px 8px' }}>
+                    👩 Leandra 5%: <strong style={{ color: '#d97706' }}>{fmt(vendaCalc * 0.05)}</strong>
+                  </span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
@@ -458,26 +477,31 @@ export default function Dashboard({ setPage }) {
                 <thead>
                   <tr>
                     <th>Peça</th>
-                    <th>Fornecedor</th>
                     <th>Custo</th>
                     <th>Venda</th>
                     <th>Lucro</th>
-                    <th>%</th>
+                    <th style={{ color: '#3b82f6' }}>Oficina 30%</th>
+                    <th style={{ color: '#d97706' }}>Leandra 5%</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {notinhasHoje.map(n => (
-                    <tr key={n.id}>
-                      <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>Qtd: {n.qtd}</span></td>
-                      <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{n.fornecedor || '—'}</td>
-                      <td><strong style={{ color: '#ef4444' }}>{fmt(n.totalCusto)}</strong></td>
-                      <td>{n.precoVenda > 0 ? <strong style={{ color: '#3b82f6' }}>{fmt(n.precoVenda * n.qtd)}</strong> : <span style={{ color: 'var(--text-light)' }}>—</span>}</td>
-                      <td>{n.lucro > 0 ? <strong style={{ color: '#10b981' }}>{fmt(n.lucro)}</strong> : <span style={{ color: '#ef4444' }}>{fmt(n.lucro)}</span>}</td>
-                      <td><span className="comissao-badge">{n.porcLucro.toFixed(0)}%</span></td>
-                      <td><button className="btn-danger" style={{ padding: '4px 8px' }} onClick={() => removerNotinha(n.id)}>🗑️</button></td>
-                    </tr>
-                  ))}
+                  {notinhasHoje.map(n => {
+                    const venda = n.totalVenda || (n.precoVenda * n.qtd) || 0
+                    const comOf = n.comOficina != null ? n.comOficina : venda * 0.30
+                    const comLe = n.comLeandra != null ? n.comLeandra : venda * 0.05
+                    return (
+                      <tr key={n.id}>
+                        <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>Qtd: {n.qtd} · {n.fornecedor || '—'}</span></td>
+                        <td><strong style={{ color: '#ef4444' }}>{fmt(n.totalCusto)}</strong></td>
+                        <td><strong style={{ color: '#3b82f6' }}>{fmt(venda)}</strong></td>
+                        <td><strong style={{ color: n.lucro >= 0 ? '#10b981' : '#ef4444' }}>{fmt(n.lucro)}</strong></td>
+                        <td><span className="comissao-badge azul">{fmt(comOf)}</span></td>
+                        <td><span className="comissao-badge amarelo">{fmt(comLe)}</span></td>
+                        <td><button className="btn-danger" style={{ padding: '4px 8px' }} onClick={() => removerNotinha(n.id)}>🗑️</button></td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
