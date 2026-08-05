@@ -158,6 +158,36 @@ function seedData() {
     }
     localStorage.setItem('ol_seeded2', '1')
   }
+  // Cezar OS recovery (runs always, guarded by placa)
+  const _cl2x = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
+  if (!_cl2x.find(c => c.nome === 'Cezar')) {
+    _cl2x.push({ id: nextClienteId(_cl2x), nome: 'Cezar', telefone: '', email: '', cpf: '' })
+    localStorage.setItem('ol_clientes', JSON.stringify(_cl2x))
+  }
+  const _ord2x = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  if (!_ord2x.find(o => o.placa === 'CEJ6F00')) {
+    const _maxId2x = _ord2x.reduce((m,o) => Math.max(m, o.id||0), 0)
+    _ord2x.push({
+      id: _maxId2x+1, numero: 'OS-'+String(_maxId2x+1).padStart(3,'0'),
+      clienteNome: 'Cezar', clienteTelefone: '',
+      placa: 'CEJ6F00', modelo: 'Uno Fire', ano: '', cor: 'Preto',
+      servico: 'Montagem e Desmontagem do Cabeçote',
+      descricao: 'Plaina no cabeçote + Junta + Correia + Interruptor do radiador — Peças: R$503,00 | Mão de Obra: R$1.100,00',
+      funcionario: '', valor: 1603, maoDeObra: 1100,
+      status: 'orcamento', inicio: null, fim: null,
+      data: '2026-08-05', criadoEm: Date.now(),
+      itens: [
+        {desc:'PLAINA NO CABEÇOTE',qtd:1,un:'UN',valorUnit:250,total:250},
+        {desc:'JUNTA DO CABEÇOTE',qtd:1,un:'UN',valorUnit:73,total:73},
+        {desc:'CORREIA DENTADA',qtd:1,un:'UN',valorUnit:73,total:73},
+        {desc:'INTERRUPTOR DO RADIADOR',qtd:1,un:'UN',valorUnit:107,total:107},
+      ],
+      servicos: [
+        {desc:'MONTAGEM E DESMONTAGEM DO CABEÇOTE',maoDeObra:1100},
+      ]
+    })
+    localStorage.setItem('ol_ordens', JSON.stringify(_ord2x))
+  }
   // Moises OS recovery (runs always, guarded by placa)
   const _ord3 = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
   if (!_ord3.find(o => o.placa === 'MHW1C36')) {
