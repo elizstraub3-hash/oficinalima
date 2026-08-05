@@ -197,8 +197,11 @@ export default function Dashboard({ setPage }) {
       custoUnit,
       precoVenda: precoAutoUnit,
       totalCusto: custoCalc,
+      totalVenda: vendaCalc,
       lucro: lucroCalc,
       porcLucro: porcCalc,
+      comOficina: parseFloat((vendaCalc * 0.30).toFixed(2)),
+      comLeandra: parseFloat((vendaCalc * 0.05).toFixed(2)),
       data: todayStr,
     })
     saveNotinhas(arr)
