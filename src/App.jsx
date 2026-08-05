@@ -176,9 +176,14 @@ function seedData() {
     if (_changed) localStorage.setItem('ol_funcionarios', JSON.stringify(_keep))
   }
   // Max OS recovery (runs always, guarded by placa)
-  const _clMax = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
-  if (!_clMax.find(c => c.nome === 'Max')) {
-    _clMax.push({ id: nextClienteId(_clMax), nome: 'Max', telefone: '41 9148-2990', email: '', cpf: '' })
+  {
+    const _clMax = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
+    const _maxIdx = _clMax.findIndex(c => c.nome === 'Max')
+    if (_maxIdx === -1) {
+      _clMax.push({ id: nextClienteId(_clMax), nome: 'Max', telefone: '41 9148-2990', email: '', cpf: '', placa: 'EDB1577', modelo: 'Corsa', ano: '2008', cor: '' })
+    } else {
+      _clMax[_maxIdx] = { ..._clMax[_maxIdx], placa: 'EDB1577', modelo: 'Corsa', ano: '2008' }
+    }
     localStorage.setItem('ol_clientes', JSON.stringify(_clMax))
   }
   const _ordMax = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
