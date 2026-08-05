@@ -11,6 +11,7 @@ import Contas from './components/Contas.jsx'
 import Clientes from './components/Clientes.jsx'
 import OrdemServico from './components/OrdemServico.jsx'
 import Notinhas from './components/Notinhas.jsx'
+import { diasSemBackup } from './components/Sidebar.jsx'
 
 function seedData() {
   if (!localStorage.getItem('ol_seeded2')) {
@@ -161,6 +162,7 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [showExpiry, setShowExpiry] = useState(true)
   const [theme, setTheme] = useState(() => localStorage.getItem('ol_theme') || 'dark')
+  const [backupDismissed, setBackupDismissed] = useState(false)
 
   useEffect(() => { seedData() }, [])
 
@@ -182,8 +184,33 @@ export default function App() {
 
   if (!authed) return <Login onLogin={handleLogin} />
 
+  const dias = diasSemBackup()
+  const precisaBackup = dias >= 3 && !backupDismissed
+
   return (
     <div className="app-layout">
+      {precisaBackup && (
+        <div style={{
+          position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9000,
+          background: dias >= 7 ? '#7c2d12' : '#78350f',
+          borderBottom: `2px solid ${dias >= 7 ? '#ef4444' : '#f59e0b'}`,
+          padding: '10px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>
+            {dias >= 7 ? '🚨' : '⚠️'} Leandra, faz <strong style={{ fontSize: 16 }}>{dias === 999 ? 'nunca' : `${dias} dias`}</strong> que não é feito backup dos dados!
+            {dias >= 7 ? ' Faça AGORA para não perder os orçamentos!' : ' Faça o backup para proteger seus dados.'}
+          </span>
+          <button
+            onClick={() => { document.getElementById('btn-export-backup').click(); setBackupDismissed(true) }}
+            style={{ background: '#fff', color: '#7c2d12', border: 'none', borderRadius: 8, padding: '7px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            ⬇️ Fazer Backup Agora
+          </button>
+          <button onClick={() => setBackupDismissed(true)} style={{ background: 'transparent', color: 'rgba(255,255,255,0.6)', border: 'none', cursor: 'pointer', fontSize: 18 }}>✕</button>
+        </div>
+      )}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}

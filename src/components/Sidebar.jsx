@@ -29,6 +29,13 @@ function exportData() {
   a.download = `oficinalima_backup_${new Date().toISOString().slice(0,10)}.json`
   a.click()
   URL.revokeObjectURL(url)
+  localStorage.setItem('ol_ultimo_backup', new Date().toISOString())
+}
+
+export function diasSemBackup() {
+  const ultimo = localStorage.getItem('ol_ultimo_backup')
+  if (!ultimo) return 999
+  return Math.floor((Date.now() - new Date(ultimo).getTime()) / 86400000)
 }
 
 function importData(file) {
@@ -118,7 +125,7 @@ export default function Sidebar({ page, setPage, onLogout, theme, setTheme }) {
               )}
             </nav>
             <div className="td-footer">
-              <button className="td-io-btn" onClick={() => { exportData(); setOpen(false) }}>⬇️ Exportar dados</button>
+              <button id="btn-export-backup" className="td-io-btn" onClick={() => { exportData(); setOpen(false) }}>⬇️ Exportar dados</button>
               <label className="td-io-btn">
                 ⬆️ Importar dados
                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
