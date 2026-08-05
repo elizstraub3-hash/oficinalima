@@ -362,6 +362,14 @@
 }
 
 /* === GRID INFERIOR === */
+.dash-side-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
 .dash-bottom-grid {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -437,6 +445,10 @@
   .dash-cards {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+  }
+
+  .dash-side-row {
+    grid-template-columns: 1fr;
   }
 
   .dash-bottom-grid {

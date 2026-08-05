@@ -356,6 +356,8 @@ export default function Dashboard({ setPage }) {
         )
       })}
 
+      {/* === CHECKLIST + NOTINHAS LADO A LADO === */}
+      <div className="dash-side-row">
       {/* === CHECKLIST === */}
       <div className="dash-checklist card">
         <div className="dash-checklist-header">
@@ -398,22 +400,6 @@ export default function Dashboard({ setPage }) {
         </ul>
       </div>
 
-      {/* === CARDS === */}
-      <div className="dash-cards">
-        {cards.map((c, i) => (
-          <button key={i} className="dash-card" onClick={() => setPage(c.page)}>
-            <div className="dash-card-icon" style={{ background: c.color + '18' }}>
-              <span>{c.icon}</span>
-            </div>
-            <div className="dash-card-info">
-              <span className="dash-card-label">{c.label}</span>
-              <strong className="dash-card-value" style={{ color: c.color }}>{c.value}</strong>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="dash-bottom-grid">
         {/* === NOTINHAS DE PEÇAS === */}
         <div className="card dash-pecas">
           <div className="dash-pecas-header">
@@ -547,21 +533,21 @@ export default function Dashboard({ setPage }) {
             </div>
           )}
         </div>
+      </div>{/* end dash-side-row */}
 
-        {/* === MÓDULOS === */}
-        <div className="dash-tip card">
-          <h3>📌 Módulos do Sistema</h3>
-          <ul>
-            <li>📋 <strong>Ordens de Serviço</strong> – OS com dados do cliente, veículo, status e cronômetro</li>
-            <li>👤 <strong>Clientes</strong> – Cadastro salvo com histórico</li>
-            <li>💰 <strong>Caixa</strong> – Controle de entradas e saídas</li>
-            <li>🧾 <strong>Planilha de Gastos</strong> – Notinhas com comissão por peça</li>
-            <li>📄 <strong>Contas da Oficina</strong> – Aluguel, luz, água e outras contas</li>
-            <li>🔧 <strong>Serviços</strong> – Tabela de preços</li>
-            <li>👷 <strong>Funcionários</strong> – Equipe da oficina</li>
-            <li>⬇️⬆️ <strong>Exportar / Importar</strong> – Backup completo no menu lateral</li>
-          </ul>
-        </div>
+      {/* === CARDS === */}
+      <div className="dash-cards">
+        {cards.map((c, i) => (
+          <button key={i} className="dash-card" onClick={() => setPage(c.page)}>
+            <div className="dash-card-icon" style={{ background: c.color + '18' }}>
+              <span>{c.icon}</span>
+            </div>
+            <div className="dash-card-info">
+              <span className="dash-card-label">{c.label}</span>
+              <strong className="dash-card-value" style={{ color: c.color }}>{c.value}</strong>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   )
