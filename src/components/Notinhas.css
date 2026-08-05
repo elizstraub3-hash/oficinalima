@@ -1,0 +1,68 @@
+.notinhas-summaries {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.notinhas-summary-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.notinhas-summary-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.notinhas-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ns-item {
+  background: var(--bg-card2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.ns-item span {
+  display: block;
+  font-size: 10px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+}
+
+.ns-item strong {
+  font-size: 14px;
+}
+
+.ns-item.highlight-oficina {
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+  grid-column: span 2;
+}
+
+.ns-item.highlight-oficina strong { color: #3b82f6; font-size: 16px; }
+
+.ns-item.highlight-leandra {
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.3);
+  grid-column: span 2;
+}
+
+.ns-item.highlight-leandra strong { color: #d97706; font-size: 18px; }
+
+@media (max-width: 768px) {
+  .notinhas-summaries { grid-template-columns: 1fr; }
+}

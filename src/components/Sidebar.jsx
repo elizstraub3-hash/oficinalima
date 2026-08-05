@@ -11,6 +11,7 @@ const MENU = [
   { id: 'caixa',          label: 'Caixa',              icon: '💰' },
   { id: 'gastos',         label: 'Planilha de Gastos', icon: '🧾' },
   { id: 'contas',         label: 'Contas da Oficina',  icon: '📄' },
+  { id: 'notinhas', label: 'Notinhas de Peças', icon: '🔩' },
   { separator: true, label: 'CADASTROS' },
   { id: 'servicos',       label: 'Serviços',           icon: '🔧' },
   { id: 'funcionarios',   label: 'Funcionários',       icon: '👷' },

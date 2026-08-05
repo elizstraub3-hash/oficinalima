@@ -10,6 +10,7 @@ import Gastos from './components/Gastos.jsx'
 import Contas from './components/Contas.jsx'
 import Clientes from './components/Clientes.jsx'
 import OrdemServico from './components/OrdemServico.jsx'
+import Notinhas from './components/Notinhas.jsx'
 
 function seedData() {
   if (!localStorage.getItem('ol_seeded2')) {
@@ -157,6 +158,7 @@ export default function App() {
         {page === 'servicos'      && <Servicos />}
         {page === 'funcionarios'  && <Funcionarios />}
         {page === 'temporizadores'&& <Temporizadores />}
+        {page === 'notinhas'      && <Notinhas />}
         <footer className="app-footer">
           Criado por <strong>Elizandra Cardoso</strong> · Lima Oficina Mecanica © {new Date().getFullYear()}
         </footer>
