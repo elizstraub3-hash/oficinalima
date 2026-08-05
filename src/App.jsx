@@ -158,6 +158,50 @@ function seedData() {
     }
     localStorage.setItem('ol_seeded2', '1')
   }
+  // Max OS recovery (runs always, guarded by placa)
+  const _clMax = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
+  if (!_clMax.find(c => c.nome === 'Max')) {
+    _clMax.push({ id: nextClienteId(_clMax), nome: 'Max', telefone: '41 9148-2990', email: '', cpf: '' })
+    localStorage.setItem('ol_clientes', JSON.stringify(_clMax))
+  }
+  const _ordMax = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  if (!_ordMax.find(o => o.placa === 'EDB1577')) {
+    const _maxIdM = _ordMax.reduce((m,o) => Math.max(m, o.id||0), 0)
+    _ordMax.push({
+      id: _maxIdM+1, numero: 'OS-'+String(_maxIdM+1).padStart(3,'0'),
+      clienteNome: 'Max', clienteTelefone: '41 9148-2990',
+      placa: 'EDB1577', modelo: 'Corsa', ano: '2008', cor: '',
+      servico: 'Motor Completo + Retifica',
+      descricao: 'Motor Completo + Retifica — Peças: R$2.500,00 | Mão de Obra: R$4.900,00',
+      funcionario: '', valor: 7400, maoDeObra: 4900,
+      status: 'orcamento', inicio: null, fim: null,
+      data: '2026-08-05', criadoEm: Date.now(),
+      itens: [
+        {desc:'BOMBA DE OLEO',qtd:1,un:'UN',valorUnit:242,total:242},
+        {desc:'BRONZINA DE BIELA 0,25',qtd:1,un:'UN',valorUnit:84,total:84},
+        {desc:'BRONZINA DE MANCAL 0,25',qtd:1,un:'UN',valorUnit:164,total:164},
+        {desc:'ANEIS 0,50',qtd:1,un:'JG',valorUnit:373,total:373},
+        {desc:'PISTÕES',qtd:4,un:'UN',valorUnit:134,total:536},
+        {desc:'RETENTOR TRASEIRO',qtd:1,un:'UN',valorUnit:78,total:78},
+        {desc:'RETENTOR COMANDO',qtd:1,un:'UN',valorUnit:33,total:33},
+        {desc:'COLA DE SILICONE',qtd:1,un:'UN',valorUnit:38,total:38},
+        {desc:'OLEO SEMISINTETICO 15W40',qtd:4,un:'UN',valorUnit:63,total:252},
+        {desc:'FILTRO DE OLEO',qtd:1,un:'UN',valorUnit:18,total:18},
+        {desc:'PERINHA DO OLEO',qtd:1,un:'UN',valorUnit:83,total:83},
+        {desc:'PESCADOR',qtd:1,un:'UN',valorUnit:161,total:161},
+        {desc:'SELO DO BLOCO',qtd:7,un:'UN',valorUnit:6,total:42},
+        {desc:'JUNTA DO CABEÇOTE',qtd:1,un:'UN',valorUnit:141,total:141},
+        {desc:'JUNTA DA TAMPA DE VALVULA',qtd:1,un:'UN',valorUnit:45,total:45},
+        {desc:'JUNTA DO ESCAPAMENTO',qtd:1,un:'UN',valorUnit:35,total:35},
+        {desc:'PARAFUSO DO CABEÇOTE',qtd:1,un:'UN',valorUnit:175,total:175},
+      ],
+      servicos: [
+        {desc:'MOTOR COMPLETO',maoDeObra:3000},
+        {desc:'RETIFICA',maoDeObra:1900},
+      ]
+    })
+    localStorage.setItem('ol_ordens', JSON.stringify(_ordMax))
+  }
   // Cezar OS recovery (runs always, guarded by placa)
   const _cl2x = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
   if (!_cl2x.find(c => c.nome === 'Cezar')) {
