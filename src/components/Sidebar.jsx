@@ -12,6 +12,7 @@ const MENU = [
   { id: 'gastos',         label: 'Planilha de Gastos', icon: '🧾' },
   { id: 'contas',         label: 'Contas da Oficina',  icon: '📄' },
   { id: 'notinhas', label: 'Notinhas de Peças', icon: '🔩' },
+  { id: 'estoque',  label: 'Estoque de Peças',  icon: '📦' },
   { separator: true, label: 'CADASTROS' },
   { id: 'servicos',       label: 'Serviços',           icon: '🔧' },
   { id: 'funcionarios',   label: 'Funcionários',       icon: '👷' },
