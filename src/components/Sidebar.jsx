@@ -131,6 +131,13 @@ export default function Sidebar({ page, setPage, onLogout, theme, setTheme }) {
                 ⬆️ Importar dados
                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
               </label>
+              <a
+                className="td-io-btn"
+                href="https://wa.me/5541991177651?text=Olá!%20Preciso%20de%20suporte%20no%20sistema%20Lima%20Oficina%20Mecânica."
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none', textAlign: 'center' }}
+              >💬 Suporte via WhatsApp</a>
               <button className="td-logout" onClick={onLogout}>🚪 Sair</button>
             </div>
           </div>
