@@ -182,26 +182,8 @@ export default function App() {
 
   if (!authed) return <Login onLogin={handleLogin} />
 
-  const diasAtraso = Math.floor((Date.now() - new Date('2026-07-30').getTime()) / 86400000)
-
   return (
     <div className="app-layout">
-      {diasAtraso > 0 && <OverduePopup />}
-      {diasAtraso > 0 && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9998,
-          background: '#7f1d1d',
-          borderTop: '2px solid #ef4444',
-          padding: '6px 20px',
-          textAlign: 'center',
-          fontSize: 13,
-          fontWeight: 700,
-          color: '#fca5a5',
-          letterSpacing: 0.5,
-        }}>
-          ⚠️ Pagamento em atraso — <span style={{ color: '#fff', fontSize: 15 }}>{diasAtraso} {diasAtraso === 1 ? 'dia' : 'dias'}</span> desde 30/06/2026
-        </div>
-      )}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
