@@ -289,23 +289,22 @@ export default function App() {
 
   if (!authed) return <Login onLogin={handleLogin} />
 
-  const dias = diasSemBackup()
-  const precisaBackup = dias >= 3 && !backupDismissed
+  const totalOrdens = JSON.parse(localStorage.getItem('ol_ordens') || '[]').length
+  const precisaBackup = totalOrdens >= 20 && !backupDismissed
 
   return (
     <div className="app-layout">
       {precisaBackup && (
         <div style={{
           position: 'fixed', top: 64, left: 0, right: 0, zIndex: 9000,
-          background: dias >= 7 ? '#7c2d12' : '#78350f',
-          borderBottom: `2px solid ${dias >= 7 ? '#ef4444' : '#f59e0b'}`,
+          background: '#78350f',
+          borderBottom: '2px solid #f59e0b',
           padding: '10px 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
           flexWrap: 'wrap',
         }}>
           <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>
-            {dias >= 7 ? '🚨' : '⚠️'} Leandra, faz <strong style={{ fontSize: 16 }}>{dias === 999 ? 'nunca' : `${dias} dias`}</strong> que não é feito backup dos dados!
-            {dias >= 7 ? ' Faça AGORA para não perder os orçamentos!' : ' Faça o backup para proteger seus dados.'}
+            ⚠️ Você já tem <strong style={{ fontSize: 16 }}>{totalOrdens} ordens de serviço</strong> salvas. Faça um backup para não perder os dados!
           </span>
           <button
             onClick={() => { document.getElementById('btn-export-backup').click(); setBackupDismissed(true) }}
