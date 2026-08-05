@@ -278,11 +278,34 @@
   font-size: 10px;
   font-weight: 700;
   color: #f59e0b;
-  background: #fef3c7;
+  background: rgba(245,158,11,0.15);
   border-radius: 20px;
   padding: 2px 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.dash-check-pending.urgente {
+  color: #ef4444;
+  background: rgba(239,68,68,0.15);
+  font-size: 11px;
+  animation: pulse-urgente 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-urgente {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.dash-check-item.aviso {
+  border-left: 3px solid #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+
+.dash-check-item.aviso .dash-check-label {
+  color: #fca5a5;
+  font-weight: 600;
 }
 
 /* === CARDS === */

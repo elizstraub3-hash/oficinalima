@@ -76,6 +76,9 @@ const ITEMS_FIXOS = [
   { id: 'pecas', label: 'Verificar peças para pedir 🔩', icon: '🔩' },
   { id: 'contas', label: 'Verificar contas a pagar 💳', icon: '💳' },
   { id: 'orcamentos', label: 'Conferir orçamentos com os mecânicos 📋', icon: '📋' },
+  { id: 'copel', label: 'Pessoal, pagaram a Copel (luz)? Energia é essencial na oficina! ⚡', icon: '⚡', aviso: true },
+  { id: 'aluguel', label: 'Pessoal, o aluguel está em dia? Sem isso não temos onde trabalhar! 🏠', icon: '🏠', aviso: true },
+  { id: 'agua', label: 'Pessoal, pagaram a água? Não podemos ficar sem! 💧', icon: '💧', aviso: true },
 ]
 
 function getTodayKey() {
@@ -349,12 +352,12 @@ export default function Dashboard({ setPage }) {
           {ITEMS_FIXOS.map(item => {
             const done = checked.includes(item.id)
             return (
-              <li key={item.id} className={`dash-check-item ${done ? 'done' : ''}`} onClick={() => toggleCheck(item.id)}>
+              <li key={item.id} className={`dash-check-item ${done ? 'done' : ''} ${item.aviso && !done ? 'aviso' : ''}`} onClick={() => toggleCheck(item.id)}>
                 <span className={`dash-checkbox ${done ? 'checked' : ''}`}>
                   {done ? '✔' : ''}
                 </span>
                 <span className="dash-check-label">{item.label}</span>
-                {!done && <span className="dash-check-pending">Pendente</span>}
+                {!done && <span className={`dash-check-pending ${item.aviso ? 'urgente' : ''}`}>{item.aviso ? '❗ Urgente' : 'Pendente'}</span>}
               </li>
             )
           })}
