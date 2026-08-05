@@ -83,37 +83,75 @@ function seedData() {
   }
 }
 
-function ThanksPopup({ onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000)
-    return () => clearTimeout(t)
-  }, [onClose])
+function OverduePopup() {
+  const dias = Math.floor((Date.now() - new Date('2026-07-30').getTime()) / 86400000)
 
   return (
     <div style={{
-      position: 'fixed', bottom: 32, right: 32, zIndex: 99999,
-      background: '#052e16',
-      border: '2px solid #22c55e',
-      borderRadius: 14,
-      padding: '24px 28px',
-      maxWidth: 340,
-      boxShadow: '0 0 30px rgba(34,197,94,0.35)',
-      animation: 'fadeInUp 0.4s ease',
+      position: 'fixed', inset: 0, zIndex: 99999,
+      background: 'rgba(0,0,0,0.88)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16,
     }}>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes shake {
+          0%,100% { transform: translateX(0); }
+          20%,60% { transform: translateX(-8px); }
+          40%,80% { transform: translateX(8px); }
+        }
+        @keyframes blink-border {
+          0%,100% { border-color: #ff0000; box-shadow: 0 0 40px rgba(255,0,0,0.5); }
+          50%      { border-color: #ff6600; box-shadow: 0 0 80px rgba(255,100,0,0.8); }
         }
       `}</style>
-      <div style={{ fontSize: 36, marginBottom: 8 }}>🎉</div>
-      <h2 style={{ color: '#4ade80', fontSize: 18, fontWeight: 800, margin: '0 0 8px' }}>
-        Obrigada pelo pagamento!
-      </h2>
-      <p style={{ color: '#bbf7d0', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-        Seu sistema está ativo e atualizado.<br />
-        Bom trabalho, equipe Lima Oficina! 🔧
-      </p>
+      <div style={{
+        background: '#0d0000',
+        border: '3px solid #ff0000',
+        borderRadius: 16,
+        maxWidth: 500,
+        width: '100%',
+        padding: '40px 32px',
+        textAlign: 'center',
+        animation: 'blink-border 1.2s ease-in-out infinite',
+      }}>
+        <div style={{ fontSize: 60, marginBottom: 12, animation: 'shake 0.6s ease-in-out infinite' }}>🚨</div>
+
+        <h1 style={{ color: '#ff2222', fontSize: 26, fontWeight: 900, margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: 1 }}>
+          Pagamento em Atraso!
+        </h1>
+
+        <div style={{
+          background: '#1a0000', border: '1px solid #ff3333', borderRadius: 10,
+          padding: '16px 20px', margin: '20px 0', display: 'inline-block', width: '100%',
+        }}>
+          <div style={{ color: '#ff9999', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Dias sem pagamento</div>
+          <div style={{ color: '#ff2222', fontSize: 56, fontWeight: 900, lineHeight: 1 }}>{dias}</div>
+          <div style={{ color: '#ff6666', fontSize: 13, marginTop: 4 }}>desde 30/07/2026</div>
+        </div>
+
+        <p style={{ color: '#f0f0f0', fontSize: 14, lineHeight: 1.7, margin: '0 0 20px' }}>
+          O sistema <strong>Lima Oficina Mecânica</strong> está com pagamento em atraso.<br />
+          As funcionalidades serão <strong style={{ color: '#ff4444' }}>suspensas</strong> a qualquer momento.
+        </p>
+
+        <div style={{
+          background: '#1a0800', border: '1px solid #ff6600', borderRadius: 10,
+          padding: '16px 20px', textAlign: 'left', marginBottom: 20,
+        }}>
+          <div style={{ color: '#ffaa66', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            💳 Regularize agora via PIX
+          </div>
+          <div style={{ color: '#f0f0f0', fontSize: 14, lineHeight: 2 }}>
+            <div><strong style={{ color: '#aaa' }}>Chave PIX:</strong> <strong style={{ color: '#fff', fontFamily: 'monospace', fontSize: 16 }}>10595735983</strong></div>
+            <div><strong style={{ color: '#aaa' }}>Beneficiária:</strong> Elizandra Cardoso de Lima</div>
+            <div><strong style={{ color: '#aaa' }}>Valor:</strong> <strong style={{ color: '#4ade80', fontSize: 18 }}>R$ 60,00 / mês</strong></div>
+          </div>
+        </div>
+
+        <p style={{ color: '#ff9999', fontSize: 12, margin: 0 }}>
+          Após o pagamento, envie o comprovante para reativar o acesso.
+        </p>
+      </div>
     </div>
   )
 }
@@ -144,11 +182,11 @@ export default function App() {
 
   if (!authed) return <Login onLogin={handleLogin} />
 
-  const diasAtraso = Math.floor((Date.now() - new Date('2026-06-30').getTime()) / 86400000)
+  const diasAtraso = Math.floor((Date.now() - new Date('2026-07-30').getTime()) / 86400000)
 
   return (
     <div className="app-layout">
-      {showExpiry && <ThanksPopup onClose={() => setShowExpiry(false)} />}
+      {diasAtraso > 0 && <OverduePopup />}
       {diasAtraso > 0 && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9998,
