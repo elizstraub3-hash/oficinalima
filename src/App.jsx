@@ -77,10 +77,10 @@ function seedData() {
     }
     if (!localStorage.getItem('ol_contas')) {
       localStorage.setItem('ol_contas', JSON.stringify([
-        { id: 1, descricao: 'Aluguel', valor: 2500, vencimento: 5, status: 'pendente', categoria: 'Fixo' },
-        { id: 2, descricao: 'Energia Elétrica', valor: 380, vencimento: 10, status: 'pendente', categoria: 'Fixo' },
-        { id: 3, descricao: 'Internet', valor: 120, vencimento: 15, status: 'pago', categoria: 'Fixo' },
-        { id: 4, descricao: 'Água', valor: 90, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
+        { id: 1, descricao: 'Luz (Copel)',  valor: 0,    vencimento: 4,  status: 'pendente', categoria: 'Fixo' },
+        { id: 2, descricao: 'Aluguel',      valor: 1200, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
+        { id: 3, descricao: 'Água',         valor: 0,    vencimento: 22, status: 'pendente', categoria: 'Fixo' },
+        { id: 4, descricao: 'Sistema',      valor: 0,    vencimento: 30, status: 'pendente', categoria: 'Fixo' },
       ]))
     }
     // Cadastro do cliente Max e OS recuperada
@@ -158,6 +158,13 @@ function seedData() {
     }
     localStorage.setItem('ol_seeded2', '1')
   }
+  // Corrige contas para os valores reais (roda sempre)
+  localStorage.setItem('ol_contas', JSON.stringify([
+    { id: 1, descricao: 'Luz (Copel)',  valor: 0,    vencimento: 4,  status: 'pendente', categoria: 'Fixo' },
+    { id: 2, descricao: 'Aluguel',      valor: 1200, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
+    { id: 3, descricao: 'Água',         valor: 0,    vencimento: 22, status: 'pendente', categoria: 'Fixo' },
+    { id: 4, descricao: 'Sistema',      valor: 0,    vencimento: 30, status: 'pendente', categoria: 'Fixo' },
+  ]))
   // Funcionários: apenas Pedro Lima e Celio Lima
   {
     const _funcs = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]')
