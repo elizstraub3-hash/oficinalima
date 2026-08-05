@@ -322,6 +322,37 @@ export default function Dashboard({ setPage }) {
         </div>
       )}
 
+      {/* === ALUGUEL COUNTDOWN === */}
+      {(() => {
+        const hoje = new Date()
+        const dia = hoje.getDate()
+        const mes = hoje.getMonth()
+        const ano = hoje.getFullYear()
+        const venc = new Date(ano, mes, 20)
+        if (dia > 20) venc.setMonth(venc.getMonth() + 1)
+        const diasRestantes = Math.ceil((venc - hoje) / 86400000)
+        if (diasRestantes > 5) return null
+        const urgente = diasRestantes <= 2
+        return (
+          <div style={{
+            background: urgente ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.10)',
+            border: `2px solid ${urgente ? '#ef4444' : '#f59e0b'}`,
+            borderRadius: 12, padding: '14px 20px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 28 }}>{urgente ? '🚨' : '🏠'}</span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: urgente ? '#ef4444' : '#f59e0b' }}>
+                {diasRestantes === 0 ? 'ALUGUEL VENCE HOJE!' : `Aluguel vence em ${diasRestantes} dia${diasRestantes > 1 ? 's' : ''}!`}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 2 }}>
+                Vencimento: dia 20 &nbsp;|&nbsp; Valor: <strong>R$1.200,00</strong>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* === CHECKLIST === */}
       <div className="dash-checklist card">
         <div className="dash-checklist-header">
