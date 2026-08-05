@@ -114,7 +114,7 @@ function gerarPDF(ordem) {
   })()
 
   const itens      = ordem.itens && ordem.itens.length > 0 ? ordem.itens : []
-  const totalPecas = itens.reduce((s, it) => s + Number(it.valor) * Number(it.qtd), 0)
+  const totalPecas = itens.reduce((s, it) => s + Number(it.valor ?? it.valorUnit ?? 0) * Number(it.qtd), 0)
   const servicosArr = ordem.servicos && ordem.servicos.length > 0
     ? ordem.servicos
     : (Number(ordem.maoDeObra || 0) > 0
@@ -130,8 +130,8 @@ function gerarPDF(ordem) {
         <td>${it.uni || 'UN'}</td>
         <td>${it.cod || '—'}</td>
         <td>${it.desc}</td>
-        <td style="text-align:right">${fmt(it.valor)}</td>
-        <td style="text-align:right"><strong>${fmt(Number(it.valor) * Number(it.qtd))}</strong></td>
+        <td style="text-align:right">${fmt(it.valor ?? it.valorUnit ?? 0)}</td>
+        <td style="text-align:right"><strong>${fmt(Number(it.valor ?? it.valorUnit ?? 0) * Number(it.qtd))}</strong></td>
       </tr>`).join('')
     : `<tr><td colspan="6" style="text-align:center;color:#aaa;padding:14px">Nenhuma peca informada</td></tr>`
 
@@ -389,7 +389,10 @@ export default function OrdemServico({ setPage }) {
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
       descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
       valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
-      itens: ordem.itens || [],
+      itens: (ordem.itens || []).map(it => ({
+        ...it,
+        valor: it.valor != null ? it.valor : (it.valorUnit != null ? it.valorUnit : 0),
+      })),
       servicos: legacyServicos,
     })
     setViewing(null)
@@ -774,8 +777,8 @@ export default function OrdemServico({ setPage }) {
                         <tr key={it.id}>
                           <td>{it.desc}</td>
                           <td>{it.qtd}</td>
-                          <td>R$ {Number(it.valor).toFixed(2).replace('.', ',')}</td>
-                          <td><strong>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
+                          <td>R$ {Number(it.valor ?? it.valorUnit ?? 0).toFixed(2).replace('.', ',')}</td>
+                          <td><strong>R$ {(Number(it.valor ?? it.valorUnit ?? 0) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
                         </tr>
                       ))}
                     </tbody>
