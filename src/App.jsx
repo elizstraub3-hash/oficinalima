@@ -161,9 +161,10 @@ function seedData() {
   // Corrige contas para os valores reais (roda sempre)
   localStorage.setItem('ol_contas', JSON.stringify([
     { id: 1, descricao: 'Luz (Copel)',  valor: 0,    vencimento: 4,  status: 'pendente', categoria: 'Fixo' },
-    { id: 2, descricao: 'Aluguel',      valor: 1200, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
-    { id: 3, descricao: 'Água',         valor: 0,    vencimento: 22, status: 'pendente', categoria: 'Fixo' },
-    { id: 4, descricao: 'Sistema',      valor: 0,    vencimento: 30, status: 'pendente', categoria: 'Fixo' },
+    { id: 2, descricao: 'Internet',     valor: 0,    vencimento: 16, status: 'pendente', categoria: 'Fixo' },
+    { id: 3, descricao: 'Aluguel',      valor: 1200, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
+    { id: 4, descricao: 'Água',         valor: 0,    vencimento: 22, status: 'pendente', categoria: 'Fixo' },
+    { id: 5, descricao: 'Sistema',      valor: 0,    vencimento: 30, status: 'pendente', categoria: 'Fixo' },
   ]))
   // Funcionários: apenas Pedro Lima e Celio Lima
   {

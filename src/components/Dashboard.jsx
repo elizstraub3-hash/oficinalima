@@ -325,6 +325,7 @@ export default function Dashboard({ setPage }) {
       {/* === CONTAS COUNTDOWN === */}
       {[
         { dia: 4,  icon: '⚡', nome: 'Luz (Copel)',  valor: null,      msg0: 'A conta de LUZ vence HOJE! Paga logo pra não cortar a energia da oficina! ⚡', msgN: d => `Ei Leandra, a conta de luz vence em ${d} dia${d>1?'s':''}! Não deixa acumular! ⚡` },
+        { dia: 16, icon: '📶', nome: 'Internet',      valor: null,      msg0: 'A INTERNET vence HOJE! Paga para não ficar sem sinal! 📶',                        msgN: d => `Leandra, a internet vence em ${d} dia${d>1?'s':''}! Não esquece! 📶` },
         { dia: 20, icon: '🏠', nome: 'Aluguel',      valor: 'R$1.200', msg0: 'O ALUGUEL vence HOJE! Sem pagar não tem onde trabalhar! 🏠',                    msgN: d => `Leandra, o aluguel vence em ${d} dia${d>1?'s':''}! Já separa o dinheiro! 🏠` },
         { dia: 22, icon: '💧', nome: 'Água',          valor: null,      msg0: 'A conta de ÁGUA vence HOJE! Paga antes de faltar água na oficina! 💧',           msgN: d => `Leandra, a água vence em ${d} dia${d>1?'s':''}! Não esquece! 💧` },
         { dia: 30, icon: '💻', nome: 'Sistema',       valor: null,      msg0: 'O SISTEMA vence HOJE! Renova para não perder o acesso! 💻',                      msgN: d => `Leandra, o sistema vence em ${d} dia${d>1?'s':''}! Já avisa para renovar! 💻` },
