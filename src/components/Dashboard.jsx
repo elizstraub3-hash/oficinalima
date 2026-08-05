@@ -177,8 +177,8 @@ export default function Dashboard({ setPage }) {
   const totalGastoHoje   = notinhasHoje.reduce((s, n) => s + (n.totalCusto || 0), 0)
   const totalVendaHoje   = notinhasHoje.reduce((s, n) => s + (n.totalVenda  || (n.precoVenda * n.qtd) || 0), 0)
   const totalLucroHoje   = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
-  const comOficinaHoje   = notinhasHoje.reduce((s, n) => s + (n.comOficina  != null ? n.comOficina  : (n.totalVenda || n.precoVenda * n.qtd || 0) * 0.30), 0)
-  const comLeandraHoje   = notinhasHoje.reduce((s, n) => s + (n.comLeandra  != null ? n.comLeandra  : (n.totalVenda || n.precoVenda * n.qtd || 0) * 0.05), 0)
+  const comOficinaHoje   = notinhasHoje.reduce((s, n) => s + (n.comOficina  != null ? n.comOficina  : (n.totalCusto || n.custoUnit * n.qtd || 0) * 0.30), 0)
+  const comLeandraHoje   = notinhasHoje.reduce((s, n) => s + (n.comLeandra  != null ? n.comLeandra  : (n.totalCusto || n.custoUnit * n.qtd || 0) * 0.05), 0)
 
   const custoUnit = parseFloat(notinhaForm.custoUnit) || 0
   const qtd = parseInt(notinhaForm.qtd) || 1
@@ -203,8 +203,8 @@ export default function Dashboard({ setPage }) {
       totalVenda: vendaCalc,
       lucro: lucroCalc,
       porcLucro: porcCalc,
-      comOficina: parseFloat((vendaCalc * 0.30).toFixed(2)),
-      comLeandra: parseFloat((vendaCalc * 0.05).toFixed(2)),
+      comOficina: parseFloat((custoCalc * 0.30).toFixed(2)),
+      comLeandra: parseFloat((custoCalc * 0.05).toFixed(2)),
       data: todayStr,
     })
     saveNotinhas(arr)
@@ -480,9 +480,9 @@ export default function Dashboard({ setPage }) {
                   <span>💸 Custo: <strong style={{ color: '#ef4444' }}>{fmt(custoCalc)}</strong></span>
                   <span>💳 Venda: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc)}</strong></span>
                   <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)}</strong></span>
-                  <span>🏢 Oficina 30%: <strong style={{ color: '#3b82f6' }}>{fmt(vendaCalc * 0.30)}</strong></span>
+                  <span>🏢 Oficina 30%: <strong style={{ color: '#3b82f6' }}>{fmt(custoCalc * 0.30)}</strong></span>
                   <span style={{ background: 'rgba(251,191,36,0.15)', borderRadius: 6, padding: '2px 8px' }}>
-                    👩 Leandra 5%: <strong style={{ color: '#d97706' }}>{fmt(vendaCalc * 0.05)}</strong>
+                    👩 Leandra 5%: <strong style={{ color: '#d97706' }}>{fmt(custoCalc * 0.05)}</strong>
                   </span>
                 </div>
               )}
@@ -512,8 +512,8 @@ export default function Dashboard({ setPage }) {
                 <tbody>
                   {notinhasHoje.map(n => {
                     const venda = n.totalVenda || (n.precoVenda * n.qtd) || 0
-                    const comOf = n.comOficina != null ? n.comOficina : venda * 0.30
-                    const comLe = n.comLeandra != null ? n.comLeandra : venda * 0.05
+                    const comOf = n.comOficina != null ? n.comOficina : (n.totalCusto || 0) * 0.30
+                    const comLe = n.comLeandra != null ? n.comLeandra : (n.totalCusto || 0) * 0.05
                     return (
                       <tr key={n.id}>
                         <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>Qtd: {n.qtd} · {n.fornecedor || '—'}</span></td>

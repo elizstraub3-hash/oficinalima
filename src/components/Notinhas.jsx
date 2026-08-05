@@ -27,11 +27,11 @@ function getWeekRange() {
   return { start: pad(mon), end: pad(sun) }
 }
 
-function calcComissoes(valorVenda) {
-  const v = Number(valorVenda) || 0
+function calcComissoes(valorCusto) {
+  const c = Number(valorCusto) || 0
   return {
-    comOficina: parseFloat((v * COM_OFICINA).toFixed(2)),
-    comLeandra: parseFloat((v * COM_LEANDRA).toFixed(2)),
+    comOficina: parseFloat((c * COM_OFICINA).toFixed(2)),
+    comLeandra: parseFloat((c * COM_LEANDRA).toFixed(2)),
   }
 }
 
@@ -118,14 +118,14 @@ export default function Notinhas() {
   const custoCalc    = custoUnit * qtd
   const vendaCalc    = precoAuto * qtd
   const lucroCalc    = vendaCalc - custoCalc
-  const { comOficina: comOficinaCalc, comLeandra: comLeandraCalc } = calcComissoes(vendaCalc)
+  const { comOficina: comOficinaCalc, comLeandra: comLeandraCalc } = calcComissoes(custoCalc)
 
   function refresh() { setItems(load()) }
 
   function handleSave(e) {
     e.preventDefault()
     if (!form.desc || !form.custoUnit) return
-    const { comOficina, comLeandra } = calcComissoes(vendaCalc)
+    const { comOficina, comLeandra } = calcComissoes(custoCalc)
     const arr = load()
     arr.push({
       ...form,
@@ -250,12 +250,12 @@ export default function Notinhas() {
                     <td><strong style={{ color: Number(n.lucro) >= 0 ? '#10b981' : '#ef4444' }}>{fmt(n.lucro)}</strong></td>
                     <td>
                       <span style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', padding: '3px 10px', borderRadius: 20, fontWeight: 700, fontSize: 13 }}>
-                        {fmt(n.comOficina || (n.totalVenda * COM_OFICINA))}
+                        {fmt(n.comOficina != null ? n.comOficina : (n.totalCusto * COM_OFICINA))}
                       </span>
                     </td>
                     <td>
                       <span style={{ background: 'rgba(251,191,36,0.15)', color: '#d97706', padding: '3px 10px', borderRadius: 20, fontWeight: 700, fontSize: 13 }}>
-                        {fmt(n.comLeandra || (n.totalVenda * COM_LEANDRA))}
+                        {fmt(n.comLeandra != null ? n.comLeandra : (n.totalCusto * COM_LEANDRA))}
                       </span>
                     </td>
                     <td>
@@ -272,12 +272,12 @@ export default function Notinhas() {
                   <td><strong style={{ color: '#10b981' }}>{fmt(filtered.reduce((s,n) => s + Number(n.lucro||0), 0))}</strong></td>
                   <td>
                     <span style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', padding: '3px 10px', borderRadius: 20, fontWeight: 800, fontSize: 14 }}>
-                      {fmt(filtered.reduce((s,n) => s + Number(n.comOficina || n.totalVenda * COM_OFICINA || 0), 0))}
+                      {fmt(filtered.reduce((s,n) => s + Number(n.comOficina != null ? n.comOficina : n.totalCusto * COM_OFICINA || 0), 0))}
                     </span>
                   </td>
                   <td>
                     <span style={{ background: 'rgba(251,191,36,0.2)', color: '#d97706', padding: '3px 10px', borderRadius: 20, fontWeight: 800, fontSize: 14 }}>
-                      {fmt(filtered.reduce((s,n) => s + Number(n.comLeandra || n.totalVenda * COM_LEANDRA || 0), 0))}
+                      {fmt(filtered.reduce((s,n) => s + Number(n.comLeandra != null ? n.comLeandra : n.totalCusto * COM_LEANDRA || 0), 0))}
                     </span>
                   </td>
                   <td></td>
