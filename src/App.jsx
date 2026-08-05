@@ -158,6 +158,18 @@ function seedData() {
     }
     localStorage.setItem('ol_seeded2', '1')
   }
+  // Mecânicos: Pedro Lima e Celio Lima (runs always, guarded by name)
+  const _funcs = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]')
+  let _funcsChanged = false
+  if (!_funcs.find(f => f.nome === 'Pedro Lima')) {
+    _funcs.push({ id: (_funcs.reduce((m,f) => Math.max(m,f.id||0),0))+1, nome: 'Pedro Lima', cargo: 'Mecânico', telefone: '', status: 'ativo' })
+    _funcsChanged = true
+  }
+  if (!_funcs.find(f => f.nome === 'Celio Lima')) {
+    _funcs.push({ id: (_funcs.reduce((m,f) => Math.max(m,f.id||0),0))+1, nome: 'Celio Lima', cargo: 'Mecânico', telefone: '', status: 'ativo' })
+    _funcsChanged = true
+  }
+  if (_funcsChanged) localStorage.setItem('ol_funcionarios', JSON.stringify(_funcs))
   // Max OS recovery (runs always, guarded by placa)
   const _clMax = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
   if (!_clMax.find(c => c.nome === 'Max')) {
