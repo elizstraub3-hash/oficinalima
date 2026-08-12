@@ -423,6 +423,22 @@ export default function OrdemServico({ setPage }) {
     setForm(f => ({ ...f, itens: f.itens.filter(it => it.id !== id) }))
   }
 
+  function updateItem(idx, field, value) {
+    setForm(f => {
+      const itens = [...f.itens]
+      itens[idx] = { ...itens[idx], [field]: value }
+      return { ...f, itens }
+    })
+  }
+
+  function updateServico(idx, field, value) {
+    setForm(f => {
+      const servicos = [...f.servicos]
+      servicos[idx] = { ...servicos[idx], [field]: value }
+      return { ...f, servicos }
+    })
+  }
+
   function adicionarServico() {
     if (!novoServico.desc && !novoServico.maoDeObra) return
     setForm(f => ({ ...f, servicos: [...(f.servicos || []), { ...novoServico, id: Date.now() }] }))
@@ -924,21 +940,39 @@ export default function OrdemServico({ setPage }) {
             </div>
 
             {form.itens && form.itens.length > 0 && (
-              <div style={{ marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <div style={{ marginBottom: 8, border: '1px solid var(--border)', borderRadius: 8, overflowX: 'auto' }}>
                 <table style={{ fontSize: 13, marginBottom: 0 }}>
-                  <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead>
+                  <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit. R$</th><th>Total</th><th></th></tr></thead>
                   <tbody>
-                    {form.itens.map(it => (
-                      <tr key={it.id}>
-                        <td>{it.desc}</td>
-                        <td>{it.uni || 'UN'}</td>
-                        <td>{it.cod || '—'}</td>
-                        <td>{it.qtd}</td>
-                        <td>R$ {Number(it.valor).toFixed(2).replace('.', ',')}</td>
-                        <td><strong>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
-                        <td><button type="button" className="btn-danger" onClick={() => removerItem(it.id)}>✕</button></td>
-                      </tr>
-                    ))}
+                    {form.itens.map((it, idx) => {
+                      const inputStyle = { width: '100%', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 5, background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: 13 }
+                      return (
+                        <tr key={it.id}>
+                          <td><input value={it.desc} onChange={e => updateItem(idx, 'desc', e.target.value)} style={{ ...inputStyle, minWidth: 120 }} /></td>
+                          <td>
+                            <select value={it.uni || 'UN'} onChange={e => updateItem(idx, 'uni', e.target.value)} style={{ ...inputStyle, width: 60 }}>
+                              {['UN','PC','KG','LT','MT','JG','PAR'].map(u => <option key={u}>{u}</option>)}
+                            </select>
+                          </td>
+                          <td><input value={it.cod || ''} onChange={e => updateItem(idx, 'cod', e.target.value)} style={{ ...inputStyle, width: 60 }} /></td>
+                          <td>
+                            <select value={it.qtd} onChange={e => updateItem(idx, 'qtd', e.target.value)} style={{ ...inputStyle, width: 55 }}>
+                              {[1,2,3,4,5,6,7,8,9,10,12,15,20,24,50,100].map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={it.valor}
+                              onChange={e => updateItem(idx, 'valor', e.target.value)}
+                              style={{ ...inputStyle, width: 90 }}
+                            />
+                          </td>
+                          <td><strong style={{ color: '#10b981' }}>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
+                          <td><button type="button" className="btn-danger" onClick={() => removerItem(it.id)}>✕</button></td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -972,18 +1006,33 @@ export default function OrdemServico({ setPage }) {
             </div>
 
             {form.servicos && form.servicos.length > 0 && (
-              <div style={{ marginBottom: 8, border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <div style={{ marginBottom: 8, border: '1px solid var(--border)', borderRadius: 8, overflowX: 'auto' }}>
                 <table style={{ fontSize: 13, marginBottom: 0 }}>
-                  <thead><tr><th>Serviço</th><th>Mecânico</th><th>Mão de Obra</th><th></th></tr></thead>
+                  <thead><tr><th>Serviço</th><th>Mecânico</th><th>Mão de Obra R$</th><th></th></tr></thead>
                   <tbody>
-                    {form.servicos.map(sv => (
-                      <tr key={sv.id}>
-                        <td>{sv.desc || '—'}</td>
-                        <td>{sv.funcionario || '—'}</td>
-                        <td><strong style={{ color: '#059669' }}>R$ {(parseFloat(sv.maoDeObra) || 0).toFixed(2).replace('.', ',')}</strong></td>
-                        <td><button type="button" className="btn-danger" onClick={() => removerServico(sv.id)}>✕</button></td>
-                      </tr>
-                    ))}
+                    {form.servicos.map((sv, idx) => {
+                      const inputStyle = { width: '100%', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 5, background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: 13 }
+                      return (
+                        <tr key={sv.id}>
+                          <td><input value={sv.desc || ''} onChange={e => updateServico(idx, 'desc', e.target.value)} style={{ ...inputStyle, minWidth: 120 }} /></td>
+                          <td>
+                            <select value={sv.funcionario || ''} onChange={e => updateServico(idx, 'funcionario', e.target.value)} style={{ ...inputStyle, minWidth: 100 }}>
+                              <option value="">— Mecânico —</option>
+                              {funcionarios.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={sv.maoDeObra}
+                              onChange={e => updateServico(idx, 'maoDeObra', e.target.value)}
+                              style={{ ...inputStyle, width: 100 }}
+                            />
+                          </td>
+                          <td><button type="button" className="btn-danger" onClick={() => removerServico(sv.id)}>✕</button></td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
