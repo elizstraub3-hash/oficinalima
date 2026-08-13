@@ -9,7 +9,7 @@ function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 :
 
 const MARGEM = 1.35
 const COM_OFICINA = 0.30
-const COM_LEANDRA = 0.05
+const COM_LEANDRA = 0.03
 
 const emptyForm = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '' })
 
@@ -36,7 +36,7 @@ function calcComissoes(valorCusto) {
 }
 
 function exportCSV(items) {
-  const header = ['ID', 'Data', 'Peça/Descrição', 'Fornecedor', 'Qtd', 'Custo Unit.', 'Preço Venda Unit.', 'Total Custo', 'Total Venda', 'Lucro', 'Comissão Oficina (30%)', 'Comissão Leandra (5%)']
+  const header = ['ID', 'Data', 'Peça/Descrição', 'Fornecedor', 'Qtd', 'Custo Unit.', 'Preço Venda Unit.', 'Total Custo', 'Total Venda', 'Lucro', 'Comissão Oficina (30%)', 'Comissão Leandra (3%)']
   const rows = items.map(n => [
     n.id,
     n.data,
@@ -93,7 +93,7 @@ function SummaryBox({ label, items }) {
           <strong>{fmt(comOficina)}</strong>
         </div>
         <div className="ns-item highlight-leandra">
-          <span>Comissão Leandra (5%)</span>
+          <span>Comissão Leandra (3%)</span>
           <strong>{fmt(comLeandra)}</strong>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function Notinhas() {
   function confirmarSalvar(tipo) {
     const { custoCalc: cc, vendaCalc: vc, lucroCalc: lc, formData } = confirmModal
     const pct = Math.max(0, parseFloat(pctInput) || 35) / 100
-    const leandraFix = 0.05
+    const leandraFix = 0.03
     const oficinaPct = tipo === 'split' ? Math.max(0, pct - leandraFix) : pct
     const comOficina = parseFloat((cc * oficinaPct).toFixed(2))
     const comLeandra = tipo === 'split' ? parseFloat((cc * leandraFix).toFixed(2)) : 0
@@ -241,7 +241,7 @@ export default function Notinhas() {
                   <th>Valor Venda</th>
                   <th>Lucro</th>
                   <th style={{ color: '#3b82f6' }}>Com. Oficina 30%</th>
-                  <th style={{ color: '#f59e0b' }}>Com. Leandra 5%</th>
+                  <th style={{ color: '#f59e0b' }}>Com. Leandra 3%</th>
                   <th></th>
                 </tr>
               </thead>
@@ -354,7 +354,7 @@ export default function Notinhas() {
                     <strong style={{ color: '#3b82f6' }}>{fmt(comOficinaCalc)}</strong>
                   </div>
                   <div style={{ textAlign: 'center', background: 'rgba(251,191,36,0.12)', borderRadius: 8, padding: '6px 0' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-light)' }}>Com. Leandra 5%</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-light)' }}>Com. Leandra 3%</div>
                     <strong style={{ color: '#d97706', fontSize: 16 }}>{fmt(comLeandraCalc)}</strong>
                   </div>
                 </div>
@@ -415,7 +415,7 @@ export default function Notinhas() {
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#3b82f6'}}>{fmt(cc * oficinaSplit)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.05)}</strong>
+                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
                     &nbsp;&nbsp;Total: <strong>{fmt(cc * pctDec)}</strong>
                   </div>
                 </button>

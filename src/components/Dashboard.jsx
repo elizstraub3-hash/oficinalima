@@ -180,7 +180,7 @@ export default function Dashboard({ setPage }) {
   const totalVendaHoje   = notinhasHoje.reduce((s, n) => s + (n.totalVenda  || (n.precoVenda * n.qtd) || 0), 0)
   const totalLucroHoje   = notinhasHoje.reduce((s, n) => s + (n.lucro || 0), 0)
   const comOficinaHoje   = notinhasHoje.reduce((s, n) => s + (n.comOficina  != null ? n.comOficina  : (n.totalCusto || n.custoUnit * n.qtd || 0) * 0.30), 0)
-  const comLeandraHoje   = notinhasHoje.reduce((s, n) => s + (n.comLeandra  != null ? n.comLeandra  : (n.totalCusto || n.custoUnit * n.qtd || 0) * 0.05), 0)
+  const comLeandraHoje   = notinhasHoje.reduce((s, n) => s + (n.comLeandra  != null ? n.comLeandra  : (n.totalCusto || n.custoUnit * n.qtd || 0) * 0.03), 0)
 
   const custoUnit = parseFloat(notinhaForm.custoUnit) || 0
   const qtd = parseInt(notinhaForm.qtd) || 1
@@ -201,7 +201,7 @@ export default function Dashboard({ setPage }) {
   function confirmarNotinha(tipo) {
     const { custoCalc: cc, vendaCalc: vc, lucroCalc: lc, porcCalc: pc } = notinhaConfirm
     const pct = Math.max(0, parseFloat(dashPctInput) || 35) / 100
-    const oficinaPct = tipo === 'split' ? Math.max(0, pct - 0.05) : pct
+    const oficinaPct = tipo === 'split' ? Math.max(0, pct - 0.03) : pct
     const arr = loadNotinhas()
     arr.push({
       ...notinhaForm,
@@ -214,7 +214,7 @@ export default function Dashboard({ setPage }) {
       lucro: lc,
       porcLucro: pc,
       comOficina: parseFloat((cc * oficinaPct).toFixed(2)),
-      comLeandra: tipo === 'split' ? parseFloat((cc * 0.05).toFixed(2)) : 0,
+      comLeandra: tipo === 'split' ? parseFloat((cc * 0.03).toFixed(2)) : 0,
       data: todayStr,
     })
     saveNotinhas(arr)
@@ -443,7 +443,7 @@ export default function Dashboard({ setPage }) {
                 <strong style={{ color: '#3b82f6' }}>{fmt(comOficinaHoje)}</strong>
               </div>
               <div className="notinha-resumo-item destaque-leandra">
-                <span>👩 Ganho Leandra (5%)</span>
+                <span>👩 Ganho Leandra (3%)</span>
                 <strong style={{ color: '#d97706', fontSize: 20 }}>{fmt(comLeandraHoje)}</strong>
               </div>
             </div>
@@ -493,7 +493,7 @@ export default function Dashboard({ setPage }) {
                   <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)}</strong></span>
                   <span>🏢 Oficina 30%: <strong style={{ color: '#3b82f6' }}>{fmt(custoCalc * 0.30)}</strong></span>
                   <span style={{ background: 'rgba(251,191,36,0.15)', borderRadius: 6, padding: '2px 8px' }}>
-                    👩 Leandra 5%: <strong style={{ color: '#d97706' }}>{fmt(custoCalc * 0.05)}</strong>
+                    👩 Leandra 3%: <strong style={{ color: '#d97706' }}>{fmt(custoCalc * 0.03)}</strong>
                   </span>
                 </div>
               )}
@@ -516,7 +516,7 @@ export default function Dashboard({ setPage }) {
                     <th>Venda</th>
                     <th>Lucro</th>
                     <th style={{ color: '#3b82f6' }}>Oficina 30%</th>
-                    <th style={{ color: '#d97706' }}>Leandra 5%</th>
+                    <th style={{ color: '#d97706' }}>Leandra 3%</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -524,7 +524,7 @@ export default function Dashboard({ setPage }) {
                   {notinhasHoje.map(n => {
                     const venda = n.totalVenda || (n.precoVenda * n.qtd) || 0
                     const comOf = n.comOficina != null ? n.comOficina : (n.totalCusto || 0) * 0.30
-                    const comLe = n.comLeandra != null ? n.comLeandra : (n.totalCusto || 0) * 0.05
+                    const comLe = n.comLeandra != null ? n.comLeandra : (n.totalCusto || 0) * 0.03
                     return (
                       <tr key={n.id}>
                         <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>Qtd: {n.qtd} · {n.fornecedor || '—'}</span></td>
@@ -564,7 +564,7 @@ export default function Dashboard({ setPage }) {
         const cc = notinhaConfirm.custoCalc
         const pctNum = Math.max(0, parseFloat(dashPctInput) || 35)
         const pctDec = pctNum / 100
-        const oficinaSplit = Math.max(0, pctDec - 0.05)
+        const oficinaSplit = Math.max(0, pctDec - 0.03)
         return (
           <div style={{ position:'fixed', inset:0, zIndex:99999, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, maxWidth:440, width:'100%', padding:'28px 24px' }}>
@@ -602,7 +602,7 @@ export default function Dashboard({ setPage }) {
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#3b82f6'}}>{fmt(cc * oficinaSplit)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.05)}</strong>
+                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
                     &nbsp;&nbsp;Total: <strong>{fmt(cc * pctDec)}</strong>
                   </div>
                 </button>
