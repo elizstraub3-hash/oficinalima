@@ -291,7 +291,6 @@ export default function Dashboard({ setPage }) {
   const _vencSistema = new Date(_hoje.getFullYear(), _hoje.getMonth(), 30)
   if (_hoje.getDate() > 30) _vencSistema.setMonth(_vencSistema.getMonth() + 1)
   const _diasSistema = Math.ceil((_vencSistema - _hoje) / 86400000)
-  const _sistemaUrgente = _diasSistema <= 5
   const _sistemaHoje = _diasSistema === 0
 
   return (
@@ -314,33 +313,31 @@ export default function Dashboard({ setPage }) {
         </div>
       </div>
 
-      {/* === AVISO FATURA DO SISTEMA === */}
-      <div style={{
-        background: _sistemaUrgente ? 'rgba(239,68,68,0.10)' : 'rgba(99,102,241,0.08)',
-        border: `1.5px solid ${_sistemaUrgente ? '#ef4444' : '#6366f1'}`,
-        borderRadius: 12, padding: '12px 18px', marginBottom: 14,
-        display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
-      }}>
-        <span style={{ fontSize: 26 }}>{_sistemaHoje ? '🚨' : _sistemaUrgente ? '⚠️' : '💻'}</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, color: _sistemaUrgente ? '#ef4444' : '#6366f1' }}>
-            {_sistemaHoje
-              ? 'A fatura do sistema vence HOJE (dia 30)! Leandra, não esquece de pagar! 🚨'
-              : _diasSistema === 1
-                ? 'A fatura do sistema vence AMANHÃ (dia 30)! Já vai separando, Leandra! ⚠️'
-                : `Fatura do sistema vence em ${_diasSistema} dias (dia 30) 💻`}
+      {/* === AVISO FATURA DO SISTEMA (só aparece com 8 dias ou menos) === */}
+      {_diasSistema <= 8 && (() => {
+        const urgente = _diasSistema <= 3
+        const msg = _sistemaHoje
+          ? 'Lê, hoje vence a fatura do site! Bora pagar pra gente não ficar sem o sistema, hein! 😬💳'
+          : _diasSistema === 1
+            ? 'Lê, amanhã vence a fatura do site! Não deixa pra última hora não! 😅'
+            : `Lê, fica de olho — daqui ${_diasSistema} dias vence a fatura do site! Vai separando o dinheirinho! 😄💻`
+        return (
+          <div style={{
+            background: urgente ? 'rgba(239,68,68,0.10)' : 'rgba(99,102,241,0.08)',
+            border: `1.5px solid ${urgente ? '#ef4444' : '#6366f1'}`,
+            borderRadius: 12, padding: '12px 18px', marginBottom: 14,
+            display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 26 }}>{_sistemaHoje ? '🚨' : urgente ? '⏰' : '💻'}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: urgente ? '#ef4444' : '#6366f1' }}>{msg}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>
+                R$ 60,00 · PIX <strong>10595735983</strong> · Elizandra · Pix com desconto = <strong>R$ 57,00</strong>
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>
-            R$ 60,00/mês · PIX: <strong>10595735983</strong> · Elizandra Cardoso de Lima
-            {!_sistemaUrgente && <span style={{ marginLeft: 8, color: '#6366f1', fontWeight: 600 }}>Pix com 5% desconto = R$ 57,00</span>}
-          </div>
-        </div>
-        {_sistemaUrgente && (
-          <span style={{ background: _sistemaHoje ? '#ef4444' : '#f59e0b', color: '#fff', borderRadius: 20, padding: '4px 14px', fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' }}>
-            {_sistemaHoje ? 'VENCE HOJE' : `${_diasSistema} dia${_diasSistema > 1 ? 's' : ''}`}
-          </span>
-        )}
-      </div>
+        )
+      })()}
 
       {/* === AVISO DE ALMOÇO === */}
       {almoco && !almocoConcluido && (
