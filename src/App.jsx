@@ -174,6 +174,21 @@ function seedData() {
     localStorage.setItem('ol_estoque_lubrax_2309', '1')
   }
 
+  if (!localStorage.getItem('ol_estoque_lote_2309b')) {
+    const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
+    const novos = [
+      { nome: 'Óleo Sintético Lubrax 5W40', qtd: 5, precoVenda: 63, categoria: 'Óleos', fornecedor: 'Lubrax' },
+      { nome: 'Aditivo Paraflu (pronto pra uso)', qtd: 10, precoVenda: 24, categoria: 'Arrefecimento', fornecedor: 'Paraflu' },
+    ]
+    novos.forEach(n => {
+      if (est.some(p => p.nome?.toLowerCase() === n.nome.toLowerCase())) return
+      const id = est.length ? Math.max(...est.map(x => x.id)) + 1 : 1
+      est.push({ id, codigo: '', un: 'UN', qtdMinima: 3, precoCusto: 0, localizacao: '', obs: '', criadoEm: Date.now(), ...n })
+    })
+    localStorage.setItem('ol_estoque', JSON.stringify(est))
+    localStorage.setItem('ol_estoque_lote_2309b', '1')
+  }
+
   // Garante as contas fixas existem, sem sobrescrever dados editados pelo usuário
   {
     const _contas = JSON.parse(localStorage.getItem('ol_contas') || '[]')
