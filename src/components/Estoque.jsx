@@ -11,8 +11,41 @@ function save(d)   { localStorage.setItem(KEY,     JSON.stringify(d)) }
 function saveMov(d){ localStorage.setItem(KEY_MOV, JSON.stringify(d)) }
 function nextId(a) { return a.length ? Math.max(...a.map(x => x.id)) + 1 : 1 }
 
-const CATEGORIAS = ['Motor','Freios','Suspensão','Elétrica','Filtros','Transmissão','Arrefecimento','Outros']
+const KEY_CATS  = 'ol_estoque_cats'
+const CATS_PADRAO = ['Óleos','Lubrificantes','Filtros','Motor','Freios','Suspensão','Elétrica','Baterias','Pneus','Transmissão','Arrefecimento','Outros']
 const UNIDADES   = ['UN','JG','L','KG','M','CJ','PAR']
+
+export function loadCategorias() {
+  const salvas = JSON.parse(localStorage.getItem(KEY_CATS) || 'null')
+  const usadas = load().map(p => p.categoria).filter(Boolean)
+  return [...new Set([...(salvas || CATS_PADRAO), ...usadas])]
+}
+function saveCategorias(c) { localStorage.setItem(KEY_CATS, JSON.stringify(c)) }
+
+export function loadEstoque() { return load() }
+
+// Ajusta o estoque pela diferença entre os itens antigos e novos de uma OS
+export function sincronizarEstoqueOS(itensAntigos, itensNovos, ref) {
+  const soma = lista => {
+    const m = {}
+    ;(lista || []).forEach(it => { if (it.pecaId) m[it.pecaId] = (m[it.pecaId] || 0) + (Number(it.qtd) || 0) })
+    return m
+  }
+  const antes = soma(itensAntigos), depois = soma(itensNovos)
+  const ids = new Set([...Object.keys(antes), ...Object.keys(depois)])
+  const arr = load(), ms = loadMov()
+  let mudou = false
+  ids.forEach(id => {
+    const delta = (depois[id] || 0) - (antes[id] || 0)
+    if (!delta) return
+    const p = arr.find(x => String(x.id) === String(id))
+    if (!p) return
+    p.qtd = Number(p.qtd) - delta
+    ms.push({ id: nextId(ms), peca: p.nome, pecaId: p.id, tipo: delta > 0 ? 'saida' : 'entrada', qtd: Math.abs(delta), obs: delta > 0 ? `Usado na ${ref}` : `Devolvido da ${ref}`, data: today(), hora: nowStr() })
+    mudou = true
+  })
+  if (mudou) { save(arr); saveMov(ms) }
+}
 
 const emptyForm = () => ({
   nome: '', codigo: '', categoria: 'Outros', fornecedor: '',
@@ -39,10 +72,23 @@ export default function Estoque() {
   const [selected, setSelected] = useState(null)
   const [busca,    setBusca]    = useState('')
   const [catFiltro,setCatFiltro]= useState('todas')
+  const [cats,     setCats]     = useState(loadCategorias)
+
+  function novaCategoria() {
+    const nome = (prompt('Nome da nova categoria (ex: Aditivos, Palhetas...):') || '').trim()
+    if (!nome) return
+    if (cats.some(c => c.toLowerCase() === nome.toLowerCase())) return alert('Essa categoria já existe.')
+    const nov = [...cats, nome]; saveCategorias(nov); setCats(nov); setCatFiltro(nome)
+  }
+  function removerCategoria(c) {
+    if (items.some(p => p.categoria === c)) return alert('Tem peças nessa categoria. Mude as peças de categoria antes de remover.')
+    if (!confirm(`Remover a categoria "${c}"?`)) return
+    const nov = cats.filter(x => x !== c); saveCategorias(nov); setCats(nov); setCatFiltro('todas')
+  }
 
   function refresh() { setItems(load()); setMovs(loadMov()) }
 
-  function openAdd()  { setEditing(null); setForm(emptyForm()); setModal('add') }
+  function openAdd()  { setEditing(null); setForm({ ...emptyForm(), categoria: catFiltro !== 'todas' ? catFiltro : 'Outros' }); setModal('add') }
   function openEdit(p){ setEditing(p.id); setForm({ ...p }); setModal('edit') }
   function openBaixa(p){ setSelected(p); setMovForm({ qtd: 1, obs: '' }); setModal('baixa') }
   function openEntrada(p){ setSelected(p); setMovForm({ qtd: 1, obs: '' }); setModal('entrada') }
@@ -149,10 +195,16 @@ export default function Estoque() {
       {/* Filtros */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={() => setCatFiltro('todas')} className={`estoque-cat-btn ${catFiltro === 'todas' ? 'active' : ''}`}>Todas</button>
-          {CATEGORIAS.map(c => (
-            <button key={c} onClick={() => setCatFiltro(c)} className={`estoque-cat-btn ${catFiltro === c ? 'active' : ''}`}>{c}</button>
-          ))}
+          <button onClick={() => setCatFiltro('todas')} className={`estoque-cat-btn ${catFiltro === 'todas' ? 'active' : ''}`}>Todas ({items.length})</button>
+          {cats.map(c => {
+            const n = items.filter(p => p.categoria === c).length
+            return (
+              <button key={c} onClick={() => setCatFiltro(c)} onDoubleClick={() => removerCategoria(c)} title="Duplo clique para remover" className={`estoque-cat-btn ${catFiltro === c ? 'active' : ''}`}>
+                {c}{n > 0 && ` (${n})`}
+              </button>
+            )
+          })}
+          <button onClick={novaCategoria} className="estoque-cat-btn" style={{ borderStyle: 'dashed' }}>+ Categoria</button>
           <input
             className="estoque-busca"
             placeholder="🔍 Buscar peça, código ou fornecedor..."
@@ -240,7 +292,7 @@ export default function Estoque() {
               <div className="form-group">
                 <label>Categoria</label>
                 <select value={form.categoria} onChange={e => setForm(f=>({...f, categoria: e.target.value}))}>
-                  {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+                  {cats.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="form-group">
@@ -257,7 +309,7 @@ export default function Estoque() {
             <div className="form-row">
               <div className="form-group">
                 <label>Quantidade Atual</label>
-                <input type="number" min="0" value={form.qtd} onChange={e => setForm(f=>({...f, qtd: e.target.value}))} />
+                <input type="number" min="0" step="any" value={form.qtd} onChange={e => setForm(f=>({...f, qtd: e.target.value}))} />
               </div>
               <div className="form-group">
                 <label>Qtd Mínima (alerta)</label>
@@ -313,7 +365,7 @@ export default function Estoque() {
           <form onSubmit={handleBaixa}>
             <div className="form-group">
               <label>Quantidade a retirar *</label>
-              <input type="number" min="1" max={selected.qtd} value={movForm.qtd} onChange={e => setMovForm(f=>({...f, qtd: e.target.value}))} required autoFocus />
+              <input type="number" min="0.01" step="any" max={selected.qtd} value={movForm.qtd} onChange={e => setMovForm(f=>({...f, qtd: e.target.value}))} required autoFocus />
             </div>
             <div className="form-group">
               <label>Motivo / OS</label>
@@ -336,7 +388,7 @@ export default function Estoque() {
           <form onSubmit={handleEntrada}>
             <div className="form-group">
               <label>Quantidade recebida *</label>
-              <input type="number" min="1" value={movForm.qtd} onChange={e => setMovForm(f=>({...f, qtd: e.target.value}))} required autoFocus />
+              <input type="number" min="0.01" step="any" value={movForm.qtd} onChange={e => setMovForm(f=>({...f, qtd: e.target.value}))} required autoFocus />
             </div>
             <div className="form-group">
               <label>Nota Fiscal / Observação</label>

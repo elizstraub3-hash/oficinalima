@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import { loadEstoque, loadCategorias, sincronizarEstoqueOS } from './Estoque.jsx'
+
+const itensAtivos = o => (o && o.status !== 'cancelado' ? (o.itens || []) : [])
 import './OrdemServico.css'
 
 const KEY = 'ol_ordens'
@@ -368,6 +371,9 @@ export default function OrdemServico({ setPage }) {
   const [editMecanico, setEditMecanico] = useState(false)
   const [editMecanicoId, setEditMecanicoId] = useState(null)
   const [editStatusId, setEditStatusId] = useState(null)
+  const [estCat, setEstCat] = useState('todas')
+  const [estBusca, setEstBusca] = useState('')
+  const [estoqueAberto, setEstoqueAberto] = useState(true)
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -417,6 +423,25 @@ export default function OrdemServico({ setPage }) {
     if (!novoItem.desc || !novoItem.valor) return
     setForm(f => ({ ...f, itens: [...(f.itens || []), { ...novoItem, id: Date.now() }] }))
     setNovoItem({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
+  }
+
+  // Quanto da peça já está reservado nesta OS (salvo) — volta a ficar disponível ao editar
+  function disponivel(peca) {
+    const salva = editing ? load().find(x => x.id === editing) : null
+    const jaReservado = itensAtivos(salva).filter(it => String(it.pecaId) === String(peca.id)).reduce((s, it) => s + Number(it.qtd || 0), 0)
+    const noForm = (form.itens || []).filter(it => String(it.pecaId) === String(peca.id)).reduce((s, it) => s + Number(it.qtd || 0), 0)
+    return Number(peca.qtd) + jaReservado - noForm
+  }
+
+  function adicionarDoEstoque(peca) {
+    if (disponivel(peca) < 1 && !confirm(`⚠️ ${peca.nome} está sem estoque suficiente. Adicionar mesmo assim?`)) return
+    setForm(f => {
+      const itens = [...(f.itens || [])]
+      const idx = itens.findIndex(it => String(it.pecaId) === String(peca.id))
+      if (idx >= 0) itens[idx] = { ...itens[idx], qtd: Number(itens[idx].qtd || 0) + 1 }
+      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd: 1, valor: peca.precoVenda || 0, custo: peca.precoCusto || 0 })
+      return { ...f, itens }
+    })
   }
 
   function removerItem(id) {
@@ -473,6 +498,9 @@ export default function OrdemServico({ setPage }) {
     const arr = load()
     const total = calcTotal() || 0
     let savedOrdem = null
+    const antiga = editing ? arr.find(x => x.id === editing || x.id === Number(editing)) : null
+    const ref = `OS ${antiga?.numero || nextNumero(arr)}`
+    sincronizarEstoqueOS(itensAtivos(antiga), itensAtivos({ ...form }), ref)
     if (editing) {
       const idx = arr.findIndex(x => x.id === editing || x.id === Number(editing))
       if (idx === -1) return null
@@ -524,6 +552,7 @@ export default function OrdemServico({ setPage }) {
     if (novoStatus === 'em_andamento' && !inicio) inicio = Date.now()
     if ((novoStatus === 'concluido' || novoStatus === 'cancelado') && !fim) fim = Date.now()
     arr[idx] = { ...old, status: novoStatus, inicio, fim }
+    sincronizarEstoqueOS(itensAtivos(old), itensAtivos(arr[idx]), `OS ${old.numero || old.id}`)
     save(arr)
     refresh()
     setViewing(arr[idx])
@@ -541,7 +570,9 @@ export default function OrdemServico({ setPage }) {
   }
 
   function handleDelete(id) {
-    if (!confirm('Excluir esta ordem de serviço?')) return
+    if (!confirm('Excluir esta ordem de serviço? As peças do estoque usadas nela voltam para o estoque.')) return
+    const old = load().find(x => x.id === id)
+    sincronizarEstoqueOS(itensAtivos(old), [], `OS ${old?.numero || id} (excluída)`)
     save(load().filter(x => x.id !== id))
     setViewing(null)
     refresh()
@@ -897,6 +928,47 @@ export default function OrdemServico({ setPage }) {
             </div>
 
             <p className="os-section-title">📦 Itens / Peças</p>
+            {(() => {
+              const estoque = loadEstoque()
+              if (!estoque.length) return <p style={{ fontSize: 12, color: 'var(--text-light)', margin: '0 0 8px' }}>Cadastre peças em "Estoque de Peças" para puxar direto daqui.</p>
+              const cats = loadCategorias().filter(c => estoque.some(p => p.categoria === c))
+              const q = estBusca.toLowerCase().trim()
+              const lista = estoque.filter(p => (estCat === 'todas' || p.categoria === estCat) && (!q || p.nome?.toLowerCase().includes(q) || p.codigo?.toLowerCase().includes(q)))
+              const chip = ativo => ({ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid ' + (ativo ? '#3b82f6' : 'var(--border)'), background: ativo ? '#3b82f6' : 'transparent', color: ativo ? '#fff' : 'var(--text-main)' })
+              return (
+                <div style={{ border: '1.5px solid #3b82f6', borderRadius: 10, padding: 10, marginBottom: 10, background: 'rgba(59,130,246,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setEstoqueAberto(v => !v)}>
+                    <strong style={{ fontSize: 13, color: '#3b82f6' }}>📦 Puxar do Estoque (dá baixa automática)</strong>
+                    <span style={{ fontSize: 12 }}>{estoqueAberto ? '▲ fechar' : '▼ abrir'}</span>
+                  </div>
+                  {estoqueAberto && (<>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
+                      <button type="button" style={chip(estCat === 'todas')} onClick={() => setEstCat('todas')}>Todas</button>
+                      {cats.map(c => <button type="button" key={c} style={chip(estCat === c)} onClick={() => setEstCat(c)}>{c}</button>)}
+                    </div>
+                    <input placeholder="🔍 Buscar peça ou código..." value={estBusca} onChange={e => setEstBusca(e.target.value)} style={{ width: '100%', marginBottom: 8 }} />
+                    <div style={{ maxHeight: 190, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
+                      {lista.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-light)' }}>Nenhuma peça encontrada.</span>}
+                      {lista.map(p => {
+                        const disp = disponivel(p)
+                        const cor = disp <= 0 ? '#ef4444' : disp <= Number(p.qtdMinima || 3) ? '#f59e0b' : '#10b981'
+                        return (
+                          <button type="button" key={p.id} onClick={() => adicionarDoEstoque(p)} title="Clique para adicionar 1 na nota"
+                            style={{ textAlign: 'left', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer' }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{p.nome}</div>
+                            <div style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
+                              <span style={{ color: cor, fontWeight: 700 }}>{disp} {p.un} disp.</span>
+                              <span style={{ color: '#10b981' }}>R$ {Number(p.precoVenda || 0).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>)}
+                </div>
+              )
+            })()}
+            <p style={{ fontSize: 12, color: 'var(--text-light)', margin: '0 0 4px' }}>Ou digite uma peça avulsa (não mexe no estoque):</p>
             <div className="os-itens-add">
               <input
                 placeholder="Descrição da peça"
@@ -923,13 +995,12 @@ export default function OrdemServico({ setPage }) {
                 onChange={e => setNovoItem(n => ({ ...n, cod: e.target.value }))}
                 className="os-item-cod"
               />
-              <select
+              <input
+                type="number" min="0.01" step="any"
                 value={novoItem.qtd}
                 onChange={e => setNovoItem(n => ({ ...n, qtd: e.target.value }))}
                 className="os-item-qtd"
-              >
-                {[1,2,3,4,5,6,7,8,9,10,12,15,20,24,50,100].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+              />
               <input
                 type="number" min="0" step="0.01" placeholder="Valor unit. R$"
                 value={novoItem.valor}
@@ -948,7 +1019,10 @@ export default function OrdemServico({ setPage }) {
                       const inputStyle = { width: '100%', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 5, background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: 13 }
                       return (
                         <tr key={it.id}>
-                          <td><input value={it.desc} onChange={e => updateItem(idx, 'desc', e.target.value)} style={{ ...inputStyle, minWidth: 120 }} /></td>
+                          <td>
+                            <input value={it.desc} onChange={e => updateItem(idx, 'desc', e.target.value)} style={{ ...inputStyle, minWidth: 120 }} />
+                            {it.pecaId && <div style={{ fontSize: 10, color: '#3b82f6', fontWeight: 700, marginTop: 2 }}>📦 do estoque</div>}
+                          </td>
                           <td>
                             <select value={it.uni || 'UN'} onChange={e => updateItem(idx, 'uni', e.target.value)} style={{ ...inputStyle, width: 60 }}>
                               {['UN','PC','KG','LT','MT','JG','PAR'].map(u => <option key={u}>{u}</option>)}
@@ -956,9 +1030,7 @@ export default function OrdemServico({ setPage }) {
                           </td>
                           <td><input value={it.cod || ''} onChange={e => updateItem(idx, 'cod', e.target.value)} style={{ ...inputStyle, width: 60 }} /></td>
                           <td>
-                            <select value={it.qtd} onChange={e => updateItem(idx, 'qtd', e.target.value)} style={{ ...inputStyle, width: 55 }}>
-                              {[1,2,3,4,5,6,7,8,9,10,12,15,20,24,50,100].map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
+                            <input type="number" min="0.01" step="any" value={it.qtd} onChange={e => updateItem(idx, 'qtd', e.target.value)} style={{ ...inputStyle, width: 65 }} />
                           </td>
                           <td>
                             <input
