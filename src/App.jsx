@@ -12,6 +12,7 @@ import Clientes from './components/Clientes.jsx'
 import OrdemServico from './components/OrdemServico.jsx'
 import Notinhas from './components/Notinhas.jsx'
 import Estoque from './components/Estoque.jsx'
+import NotaFiscal from './components/NotaFiscal.jsx'
 import { diasSemBackup } from './components/Sidebar.jsx'
 
 function nextClienteId(arr) { return arr.length ? Math.max(...arr.map(x => x.id||0)) + 1 : 1 }
@@ -481,6 +482,7 @@ export default function App() {
         {page === 'temporizadores'&& <Temporizadores />}
         {page === 'notinhas'      && <Notinhas />}
         {page === 'estoque'       && <Estoque />}
+        {page === 'notafiscal'    && <NotaFiscal />}
         <footer className="app-footer">
           Criado por <strong>Elizandra Cardoso</strong> · Lima Oficina Mecanica © {new Date().getFullYear()}
         </footer>
