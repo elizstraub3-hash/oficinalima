@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import './NotaFiscal.css'
+import { loadEstoque } from './Estoque.jsx'
 
 const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
@@ -45,6 +46,7 @@ export default function NotaFiscal() {
     numero: '',
     bairro: '',
     cep: '',
+    municipio: 'Colombo',
     uf: 'PR',
     meioPag: '01',
     obs: '',
@@ -80,30 +82,22 @@ export default function NotaFiscal() {
     const os = ordens.find(o => String(o.id) === String(form.osId))
     if (!os) return setErro('Selecione uma OS válida.')
 
-    const itens = [
-      ...(os.itens || []).map(it => ({
+    const estoque = loadEstoque()
+    const itens = (os.itens || []).map(it => {
+      const peca = it.pecaId ? estoque.find(p => String(p.id) === String(it.pecaId)) : null
+      const qtd = Number(it.qtd) || 1
+      const valorUnit = Number(it.valor ?? it.valorUnit) || 0
+      return {
         descricao: it.desc || it.descricao || 'Peça/Material',
-        codigo: it.cod || '',
-        ncm: '87089990',
+        codigo: it.cod || peca?.codigo || '',
+        ncm: peca?.ncm || '',
         cfop: '5102',
         unidade: it.uni || 'UN',
-        qtd: Number(it.qtd) || 1,
-        valorUnit: Number(it.valor ?? it.valorUnit) || 0,
-        total: (Number(it.qtd) || 1) * (Number(it.valor ?? it.valorUnit) || 0),
-      })),
-      ...(os.servicos || []).map(sv => ({
-        descricao: sv.desc || sv.descricao || 'Serviço',
-        codigo: 'SV',
-        ncm: '87089990',
-        cfop: '5933',
-        unidade: 'SV',
-        qtd: 1,
-        valorUnit: Number(sv.maoDeObra) || 0,
-        total: Number(sv.maoDeObra) || 0,
-      })),
-    ].filter(it => it.total > 0)
+        qtd, valorUnit, total: qtd * valorUnit,
+      }
+    }).filter(it => it.total > 0)
 
-    if (!itens.length) return setErro('A OS não tem itens com valor.')
+    if (!itens.length) return setErro('A OS não tem peças com valor. (Mão de obra vai em NFS-e, não em NF-e.)')
 
     setLoading(true)
     try {
@@ -120,9 +114,9 @@ export default function NotaFiscal() {
               logradouro: form.logradouro || 'A definir',
               numero: form.numero || 'SN',
               bairro: form.bairro || 'Centro',
-              cep: (form.cep || '80000000').replace(/\D/g, ''),
+              cep: (form.cep || '').replace(/\D/g, ''),
               uf: form.uf || 'PR',
-              codigo_municipio: '4106902',
+              municipio: form.municipio || 'Colombo',
             },
           },
           itens,
@@ -218,7 +212,7 @@ export default function NotaFiscal() {
         <div className="nfe-aviso-backend">
           <strong>⚙️ Backend não encontrado.</strong> Inicie o servidor com:
           <pre>cd backend && npm install && node server.js</pre>
-          Certifique-se de criar o arquivo <code>backend/.env</code> com suas credenciais da Nuvem Fiscal.
+          Confira se o arquivo <code>backend/.env</code> tem o <code>FOCUS_TOKEN</code> da Focus NFe.
         </div>
       )}
 
@@ -338,6 +332,10 @@ export default function NotaFiscal() {
                 <div className="form-group">
                   <label>CEP</label>
                   <input value={form.cep} onChange={e => setForm(f => ({ ...f, cep: e.target.value }))} placeholder="00000-000" />
+                </div>
+                <div className="form-group">
+                  <label>Cidade</label>
+                  <input value={form.municipio} onChange={e => setForm(f => ({ ...f, municipio: e.target.value }))} />
                 </div>
                 <div className="form-group" style={{ flex: '0 0 80px' }}>
                   <label>UF</label>

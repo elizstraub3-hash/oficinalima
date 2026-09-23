@@ -5,90 +5,75 @@ const axios = require('axios')
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const PRODUCAO = process.env.FOCUS_AMBIENTE === 'producao'
+const BASE = PRODUCAO ? 'https://api.focusnfe.com.br' : 'https://homologacao.focusnfe.com.br'
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-}))
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }))
 app.use(express.json({ limit: '10mb' }))
 
-// ── Auth token cache ─────────────────────────────────────────────────────────
-let _token = null
-let _tokenExpires = 0
-
-async function getToken() {
-  if (_token && Date.now() < _tokenExpires) return _token
-  const res = await axios.post(
-    'https://auth.nuvemfiscal.com.br/oauth/token',
-    new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: process.env.NUVEM_FISCAL_CLIENT_ID,
-      client_secret: process.env.NUVEM_FISCAL_CLIENT_SECRET,
-      scope: 'nfe',
-    }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-  )
-  _token = res.data.access_token
-  _tokenExpires = Date.now() + (res.data.expires_in - 60) * 1000
-  return _token
-}
-
-function nuvemApi() {
-  return axios.create({ baseURL: 'https://api.nuvemfiscal.com.br/v1' })
-}
-
-async function nuvemGet(path) {
-  const token = await getToken()
-  const res = await nuvemApi().get(path, { headers: { Authorization: `Bearer ${token}` } })
-  return res.data
-}
-
-async function nuvemPost(path, body) {
-  const token = await getToken()
-  const res = await nuvemApi().post(path, body, { headers: { Authorization: `Bearer ${token}` } })
-  return res.data
-}
-
-// ── Rotas ────────────────────────────────────────────────────────────────────
-
-// Healthcheck
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, cnpj: process.env.CNPJ_EMITENTE })
+// Focus NFe usa o token como usuário da autenticação básica, com senha vazia
+const focus = axios.create({
+  baseURL: BASE,
+  auth: { username: process.env.FOCUS_TOKEN || '', password: '' },
 })
 
-// Emitir NF-e
+const STATUS = {
+  processando_autorizacao: 'processando',
+  autorizado: 'autorizado',
+  cancelado: 'cancelado',
+  erro_autorizacao: 'rejeitado',
+  denegado: 'rejeitado',
+}
+
+function erroMsg(err) {
+  const d = err.response?.data
+  if (d?.erros) return d.erros.map(e => e.mensagem).join(' | ')
+  return d?.mensagem || d || err.message
+}
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: !!process.env.FOCUS_TOKEN, cnpj: process.env.CNPJ_EMITENTE, ambiente: PRODUCAO ? 'producao' : 'homologacao' })
+})
+
 app.post('/api/nfe/emitir', async (req, res) => {
   try {
-    const { destinatario, itens, pagamento, obs, numero } = req.body
-
+    const { destinatario = {}, itens = [], pagamento, obs, numero } = req.body
     const cnpj = process.env.CNPJ_EMITENTE
     if (!cnpj) return res.status(500).json({ erro: 'CNPJ_EMITENTE não configurado no .env' })
+    if (!itens.length) return res.status(400).json({ erro: 'Nenhum item na nota.' })
 
-    // Monta payload NF-e para Nuvem Fiscal
+    const doc = (destinatario.cpfCnpj || '').replace(/\D/g, '')
+    const end = destinatario.endereco || {}
+    const total = itens.reduce((s, it) => s + Number(it.total || 0), 0)
+    const ref = `os${numero || ''}-${Date.now()}`
+
     const payload = {
-      ambiente: 'homologacao', // troque para 'producao' quando estiver pronto
-      referencia: `OS-${numero || Date.now()}`,
-      emitente: { cpf_cnpj: cnpj },
-      destinatario: {
-        cpf_cnpj: destinatario.cpfCnpj?.replace(/\D/g, '') || '',
-        nome: destinatario.nome,
-        email: destinatario.email || '',
-        endereco: destinatario.endereco || {
-          logradouro: 'A definir',
-          numero: 'SN',
-          bairro: 'Centro',
-          codigo_municipio: '4106902', // Curitiba padrão
-          uf: 'PR',
-          cep: '80000000',
-        },
-        indicador_ie: 9, // 9 = não contribuinte
-      },
-      itens: itens.map((it, i) => ({
+      natureza_operacao: 'Venda de mercadoria',
+      data_emissao: new Date().toISOString(),
+      tipo_documento: 1,
+      finalidade_emissao: 1,
+      local_destino: 1,
+      consumidor_final: 1,
+      presenca_comprador: 1,
+      modalidade_frete: 9,
+      cnpj_emitente: cnpj,
+      nome_destinatario: destinatario.nome,
+      ...(doc.length === 14 ? { cnpj_destinatario: doc } : { cpf_destinatario: doc }),
+      email_destinatario: destinatario.email || undefined,
+      logradouro_destinatario: end.logradouro || 'Nao informado',
+      numero_destinatario: end.numero || 'SN',
+      bairro_destinatario: end.bairro || 'Centro',
+      municipio_destinatario: end.municipio || 'Colombo',
+      uf_destinatario: end.uf || 'PR',
+      cep_destinatario: (end.cep || '').replace(/\D/g, '') || undefined,
+      indicador_inscricao_estadual_destinatario: 9,
+      informacoes_adicionais_contribuinte: obs || undefined,
+      items: itens.map((it, i) => ({
         numero_item: i + 1,
         codigo_produto: it.codigo || String(i + 1).padStart(4, '0'),
         descricao: it.descricao,
-        ncm: it.ncm || '87089990', // NCM genérico para autopeças
-        cfop: it.cfop || '5102',   // Venda dentro do estado
+        codigo_ncm: it.ncm || '87089990',
+        cfop: it.cfop || '5102',
         unidade_comercial: it.unidade || 'UN',
         quantidade_comercial: Number(it.qtd) || 1,
         valor_unitario_comercial: Number(it.valorUnit) || 0,
@@ -96,101 +81,65 @@ app.post('/api/nfe/emitir', async (req, res) => {
         unidade_tributavel: it.unidade || 'UN',
         quantidade_tributavel: Number(it.qtd) || 1,
         valor_unitario_tributavel: Number(it.valorUnit) || 0,
-        tributos: {
-          icms: {
-            origem: 0,
-            cst: '400', // tributado normalmente
-            modalidade_bc: 3,
-            valor_bc: Number(it.total) || 0,
-            aliquota: 0,
-            valor: 0,
-          },
-          pis: { cst: '07', valor_bc: 0, aliquota_percentual: 0, valor: 0 },
-          cofins: { cst: '07', valor_bc: 0, aliquota_percentual: 0, valor: 0 },
-        },
+        icms_origem: 0,
+        icms_situacao_tributaria: process.env.ICMS_CSOSN || '102',
+        pis_situacao_tributaria: '07',
+        cofins_situacao_tributaria: '07',
       })),
-      cobranca: {
-        fatura: {
-          numero: String(numero || Date.now()),
-          valor_original: itens.reduce((s, it) => s + Number(it.total || 0), 0),
-          valor_liquido: itens.reduce((s, it) => s + Number(it.total || 0), 0),
-        },
-        duplicatas: [],
-      },
-      pagamentos: [
-        {
-          indicador_forma_pagamento: 1,
-          meio_pagamento: pagamento?.meio || '01', // 01=dinheiro, 03=cartão, 17=pix
-          valor: itens.reduce((s, it) => s + Number(it.total || 0), 0),
-        },
-      ],
-      informacoes_adicionais: {
-        informacoes_contribuinte: obs || 'Serviço de manutenção automotiva - Lima Oficina',
-      },
+      formas_pagamento: [{ forma_pagamento: pagamento?.meio || '01', valor_pagamento: total.toFixed(2) }],
     }
 
-    const resultado = await nuvemPost('/nfe', payload)
-    res.json({ ok: true, nfe: resultado })
+    const r = await focus.post(`/v2/nfe?ref=${encodeURIComponent(ref)}`, payload)
+    res.json({ ok: true, nfe: { id: ref, status: STATUS[r.data.status] || 'processando' } })
   } catch (err) {
-    const msg = err.response?.data || err.message
-    console.error('[emitir]', msg)
-    res.status(500).json({ erro: msg })
+    console.error('[emitir]', err.response?.data || err.message)
+    res.status(500).json({ erro: erroMsg(err) })
   }
 })
 
-// Consultar NF-e por ID
-app.get('/api/nfe/:id', async (req, res) => {
+app.get('/api/nfe/:ref', async (req, res) => {
   try {
-    const data = await nuvemGet(`/nfe/${req.params.id}`)
-    res.json(data)
+    const { data } = await focus.get(`/v2/nfe/${encodeURIComponent(req.params.ref)}`)
+    res.json({
+      status: STATUS[data.status] || data.status,
+      chave_acesso: data.chave_nfe,
+      numero: data.numero,
+      mensagem: data.mensagem_sefaz,
+    })
   } catch (err) {
-    res.status(500).json({ erro: err.response?.data || err.message })
+    res.status(500).json({ erro: erroMsg(err) })
   }
 })
 
-// Listar NF-e emitidas
-app.get('/api/nfe', async (req, res) => {
-  try {
-    const cnpj = process.env.CNPJ_EMITENTE
-    const data = await nuvemGet(`/nfe?cpf_cnpj=${cnpj}&top=50`)
-    res.json(data)
-  } catch (err) {
-    res.status(500).json({ erro: err.response?.data || err.message })
-  }
-})
-
-// Cancelar NF-e
-app.post('/api/nfe/:id/cancelar', async (req, res) => {
+app.post('/api/nfe/:ref/cancelar', async (req, res) => {
   try {
     const { justificativa } = req.body
     if (!justificativa || justificativa.length < 15) {
       return res.status(400).json({ erro: 'Justificativa deve ter pelo menos 15 caracteres.' })
     }
-    const data = await nuvemPost(`/nfe/${req.params.id}/cancelamento`, { justificativa })
-    res.json({ ok: true, data })
+    const { data } = await focus.delete(`/v2/nfe/${encodeURIComponent(req.params.ref)}`, { data: { justificativa } })
+    if (data.status !== 'cancelado') return res.status(400).json({ erro: data.mensagem_sefaz || data.mensagem || 'Cancelamento não autorizado.' })
+    res.json({ ok: true })
   } catch (err) {
-    res.status(500).json({ erro: err.response?.data || err.message })
+    res.status(500).json({ erro: erroMsg(err) })
   }
 })
 
-// Download DANFE (PDF)
-app.get('/api/nfe/:id/danfe', async (req, res) => {
+app.get('/api/nfe/:ref/danfe', async (req, res) => {
   try {
-    const token = await getToken()
-    const response = await nuvemApi().get(`/nfe/${req.params.id}/pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: 'arraybuffer',
-    })
+    const { data } = await focus.get(`/v2/nfe/${encodeURIComponent(req.params.ref)}`)
+    if (!data.caminho_danfe) return res.status(404).json({ erro: 'DANFE ainda não disponível.' })
+    const pdf = await focus.get(data.caminho_danfe, { responseType: 'arraybuffer' })
     res.set('Content-Type', 'application/pdf')
-    res.set('Content-Disposition', `inline; filename="danfe-${req.params.id}.pdf"`)
-    res.send(response.data)
+    res.set('Content-Disposition', `inline; filename="danfe-${req.params.ref}.pdf"`)
+    res.send(pdf.data)
   } catch (err) {
-    res.status(500).json({ erro: err.response?.data || err.message })
+    res.status(500).json({ erro: erroMsg(err) })
   }
 })
 
 app.listen(PORT, () => {
-  console.log(`\n✅ Lima Oficina Backend rodando na porta ${PORT}`)
-  console.log(`   CNPJ configurado: ${process.env.CNPJ_EMITENTE || '⚠️  não definido'}`)
-  console.log(`   Ambiente: ${process.env.NODE_ENV || 'desenvolvimento'}\n`)
+  console.log(`\n✅ Lima Oficina Backend na porta ${PORT} — Focus NFe (${PRODUCAO ? 'PRODUÇÃO' : 'homologação/teste'})`)
+  console.log(`   CNPJ: ${process.env.CNPJ_EMITENTE || '⚠️  não definido'}`)
+  if (!process.env.FOCUS_TOKEN) console.log('   ⚠️  FOCUS_TOKEN não definido no .env')
 })

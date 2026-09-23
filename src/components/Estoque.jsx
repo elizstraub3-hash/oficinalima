@@ -287,6 +287,10 @@ export default function Estoque() {
                 <label>Código</label>
                 <input value={form.codigo} onChange={e => setForm(f=>({...f, codigo: e.target.value}))} placeholder="COD-001" />
               </div>
+              <div className="form-group">
+                <label>NCM <span style={{ fontSize: 11, color: 'var(--text-light)' }}>(nota fiscal)</span></label>
+                <input value={form.ncm || ''} onChange={e => setForm(f=>({...f, ncm: e.target.value.replace(/\D/g,'').slice(0,8)}))} placeholder="Ex: 27101932" />
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">
