@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
+import { lancamentosCaixa } from './Caixa.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
@@ -241,7 +242,7 @@ export default function Dashboard({ setPage }) {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
-    const caixa = JSON.parse(localStorage.getItem('ol_caixa') || '[]')
+    const caixa = lancamentosCaixa()
     const receita = caixa.filter(e => e.tipo === 'entrada' && e.data === today).reduce((s, e) => s + Number(e.valor), 0)
     const gastosArr = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
     const gastos = gastosArr.filter(g => g.data === today).reduce((s, g) => s + Number(g.valor), 0)

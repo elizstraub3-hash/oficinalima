@@ -59,11 +59,15 @@ export default function NotaFiscal() {
   })
 
   useEffect(() => {
-    setOrdens(loadOS().filter(o => o.status !== 'cancelado'))
+    carregarOrdens()
     verificar()
   }, [])
 
   function refresh() { setNfes(loadNFes()) }
+
+  function carregarOrdens() {
+    setOrdens(loadOS().filter(o => o.status !== 'cancelado').sort((a, b) => Number(b.id) - Number(a.id)))
+  }
 
   function verificar() {
     return fetch(`${API}/api/health`, { headers: cab() })
@@ -83,14 +87,17 @@ export default function NotaFiscal() {
   function preencherOS(osId) {
     const os = ordens.find(o => String(o.id) === String(osId))
     if (!os) return
-    const cli = JSON.parse(localStorage.getItem('ol_clientes') || '[]').find(c => c.id === os.clienteId)
+    const nome = (os.clienteNome || '').trim().toLowerCase()
+    const cli = JSON.parse(localStorage.getItem('ol_clientes') || '[]').find(c => (c.nome || '').trim().toLowerCase() === nome)
+    const veiculo = [os.modelo, os.placa].filter(Boolean).join(' — ')
     setForm(f => ({
       ...f,
       osId,
-      destNome: cli?.nome || os.cliente || '',
+      destNome: cli?.nome || os.clienteNome || '',
       destCpfCnpj: cli?.cpf || cli?.cnpj || '',
       destEmail: cli?.email || '',
-      obs: `OS #${os.numero || os.id} - ${os.veiculo || ''}`.trim(),
+      logradouro: cli?.endereco || f.logradouro,
+      obs: `${os.numero || 'OS ' + os.id}${veiculo ? ' - ' + veiculo : ''}`,
     }))
   }
 
@@ -225,7 +232,7 @@ export default function NotaFiscal() {
             {backendOk === null ? '⏳ Verificando...' : backendOk ? `🟢 Conectado à Focus NFe${ambiente === 'producao' ? ' — PRODUÇÃO' : ' — modo TESTE'}` : '🔴 Nota fiscal não configurada'}
           </div>
         </div>
-        <button className="btn-primary" onClick={() => { setErro(''); setModal(true) }} disabled={!backendOk || !senhaOk}>
+        <button className="btn-primary" onClick={() => { setErro(''); carregarOrdens(); setModal(true) }} disabled={!backendOk || !senhaOk}>
           + Emitir NF-e
         </button>
       </div>
@@ -323,7 +330,7 @@ export default function NotaFiscal() {
                 <option value="">Selecione a OS...</option>
                 {ordens.map(os => (
                   <option key={os.id} value={os.id}>
-                    OS #{os.numero || os.id} — {os.cliente || os.veiculo || 'sem nome'} — {fmt(os.totalVenda || 0)}
+                    {os.numero || `OS ${os.id}`} — {os.clienteNome || 'sem nome'}{os.placa ? ` — ${os.placa}` : ''} — {fmt(os.valor || 0)}{os.status === 'concluido' ? ' ✅' : ''}
                   </option>
                 ))}
               </select>

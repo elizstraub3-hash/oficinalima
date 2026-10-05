@@ -35,6 +35,9 @@ export default function Contas() {
     } else {
       arr.push({ ...form, id: nextId(arr), valor: parseFloat(form.valor) })
     }
+    const c = editing ? arr.find(x => x.id === editing) : arr[arr.length - 1]
+    if (c.status === 'pago' && !c.pagoEm) c.pagoEm = new Date().toISOString().split('T')[0]
+    if (c.status !== 'pago') delete c.pagoEm
     save(arr)
     setModal(false)
     refresh()
@@ -50,6 +53,8 @@ export default function Contas() {
     const arr = load()
     const idx = arr.findIndex(x => x.id === id)
     arr[idx].status = arr[idx].status === 'pago' ? 'pendente' : 'pago'
+    if (arr[idx].status === 'pago') arr[idx].pagoEm = new Date().toISOString().split('T')[0]
+    else delete arr[idx].pagoEm
     save(arr)
     refresh()
   }

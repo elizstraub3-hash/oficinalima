@@ -9,15 +9,45 @@ function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
 
+const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
+const dataLocal = ts => { const d = new Date(ts); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().split('T')[0] }
+
+export function adicionarLancamento(l) {
+  const arr = load()
+  arr.push({ ...l, id: nextId(arr), valor: Number(l.valor) || 0, data: l.data || dataLocal(Date.now()) })
+  save(arr)
+}
+
+// Lançamentos manuais + automáticos (OS concluídas, gastos e contas pagas), sem duplicar dados
+export function lancamentosCaixa() {
+  const manuais = load().map(e => ({ ...e, origem: 'manual' }))
+  const os = ler('ol_ordens').filter(o => o.status === 'concluido' && Number(o.valor) > 0).map(o => ({
+    id: o.id, origem: 'os', tipo: 'entrada', categoria: 'Serviço', valor: Number(o.valor),
+    data: o.fim ? dataLocal(o.fim) : (o.data || dataLocal(Date.now())),
+    descricao: [o.numero || `OS ${o.id}`, o.clienteNome, o.placa].filter(Boolean).join(' — '),
+  }))
+  const gastos = ler('ol_gastos').filter(g => Number(g.valor) > 0).map(g => ({
+    id: g.id, origem: 'gasto', tipo: 'saida', categoria: g.categoria || 'Gasto', valor: Number(g.valor),
+    data: g.data || dataLocal(Date.now()), descricao: g.descricao || 'Gasto',
+  }))
+  const contas = ler('ol_contas').filter(c => c.status === 'pago' && c.pagoEm && Number(c.valor) > 0).map(c => ({
+    id: c.id, origem: 'conta', tipo: 'saida', categoria: 'Contas', valor: Number(c.valor),
+    data: c.pagoEm, descricao: `Conta: ${c.descricao}`,
+  }))
+  return [...manuais, ...os, ...gastos, ...contas].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+}
+
+const ORIGEM = { os: '🔗 OS concluída', gasto: '🧾 Planilha de Gastos', conta: '📄 Conta paga' }
+
 const empty = () => ({ descricao: '', valor: '', tipo: 'entrada', categoria: 'Serviço', data: new Date().toISOString().split('T')[0] })
 
 export default function Caixa() {
-  const [entries, setEntries] = useState(load)
+  const [entries, setEntries] = useState(lancamentosCaixa)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(empty())
   const [filtro, setFiltro] = useState({ tipo: 'todos', de: '', ate: '' })
 
-  function refresh() { setEntries(load()) }
+  function refresh() { setEntries(lancamentosCaixa()) }
 
   function handleSave(e) {
     e.preventDefault()
@@ -87,7 +117,7 @@ export default function Caixa() {
   const gastosMes = gastos.filter(g => (g.data || '').startsWith(mesAtual))
   const totalGastosMes = gastosMes.reduce((s, g) => s + Number(g.valor || 0), 0)
   const receitaMes = somaValor(ordensMes)
-  const entradaMes = entries.filter(e => e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
+  const entradaMes = entries.filter(e => e.origem === 'manual' && e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
   const totalEntradasMes = receitaMes + entradaMes
 
   // Categorias de gastos do mês
@@ -337,9 +367,12 @@ export default function Caixa() {
             </thead>
             <tbody>
               {[...filtered].reverse().map(e => (
-                <tr key={e.id}>
+                <tr key={`${e.origem}-${e.id}`}>
                   <td>{new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                  <td>{e.descricao}</td>
+                  <td>
+                    {e.descricao}
+                    {ORIGEM[e.origem] && <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, marginTop: 2 }}>{ORIGEM[e.origem]} · automático</div>}
+                  </td>
                   <td><span className="badge badge-gray">{e.categoria}</span></td>
                   <td>
                     <span className={`badge ${e.tipo === 'entrada' ? 'badge-green' : 'badge-red'}`}>
@@ -350,7 +383,7 @@ export default function Caixa() {
                     {e.tipo === 'saida' ? '-' : '+'}{fmt(e.valor)}
                   </td>
                   <td>
-                    <button className="btn-danger" onClick={() => handleDelete(e.id)}>🗑️</button>
+                    {e.origem === 'manual' && <button className="btn-danger" onClick={() => handleDelete(e.id)}>🗑️</button>}
                   </td>
                 </tr>
               ))}

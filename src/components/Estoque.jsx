@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import Modal from './Modal.jsx'
 import './Estoque.css'
+import { adicionarLancamento } from './Caixa.jsx'
 
 const KEY       = 'ol_estoque'
 const KEY_MOV   = 'ol_estoque_mov'
@@ -91,7 +92,7 @@ export default function Estoque() {
   function openAdd()  { setEditing(null); setForm({ ...emptyForm(), categoria: catFiltro !== 'todas' ? catFiltro : 'Outros' }); setModal('add') }
   function openEdit(p){ setEditing(p.id); setForm({ ...p }); setModal('edit') }
   function openBaixa(p){ setSelected(p); setMovForm({ qtd: 1, obs: '' }); setModal('baixa') }
-  function openEntrada(p){ setSelected(p); setMovForm({ qtd: 1, obs: '' }); setModal('entrada') }
+  function openEntrada(p){ setSelected(p); setMovForm({ qtd: 1, obs: '', lancarCaixa: true, valorCompra: '' }); setModal('entrada') }
   function openHist(p){ setSelected(p); setModal('hist') }
 
   function handleSave(e) {
@@ -143,6 +144,10 @@ export default function Estoque() {
     const ms = loadMov()
     ms.push({ id: nextId(ms), peca: selected.nome, pecaId: selected.id, tipo: 'entrada', qtd: qtdMov, obs: movForm.obs, data: today(), hora: nowStr() })
     saveMov(ms)
+    const valorCompra = movForm.valorCompra !== '' ? Number(movForm.valorCompra) : qtdMov * Number(selected.precoCusto || 0)
+    if (movForm.lancarCaixa && valorCompra > 0) {
+      adicionarLancamento({ tipo: 'saida', categoria: 'Estoque', valor: valorCompra, descricao: `Compra estoque: ${qtdMov} ${selected.un} ${selected.nome}${movForm.obs ? ' (' + movForm.obs + ')' : ''}` })
+    }
     setModal(false); refresh()
   }
 
@@ -398,6 +403,18 @@ export default function Estoque() {
               <label>Nota Fiscal / Observação</label>
               <input value={movForm.obs} onChange={e => setMovForm(f=>({...f, obs: e.target.value}))} placeholder="Ex: NF-001, Compra do fornecedor X..." />
             </div>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, marginBottom: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={!!movForm.lancarCaixa} onChange={e => setMovForm(f=>({...f, lancarCaixa: e.target.checked}))} style={{ width: 'auto' }} />
+              💰 Lançar essa compra no Caixa como saída
+            </label>
+            {movForm.lancarCaixa && (
+              <div className="form-group">
+                <label>Valor total pago (R$)</label>
+                <input type="number" min="0" step="0.01" value={movForm.valorCompra}
+                  onChange={e => setMovForm(f=>({...f, valorCompra: e.target.value}))}
+                  placeholder={(Number(movForm.qtd || 0) * Number(selected.precoCusto || 0)).toFixed(2)} />
+              </div>
+            )}
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
               <button type="submit" style={{ background: '#10b981', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Confirmar Entrada</button>
