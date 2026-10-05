@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
 import { lancamentosCaixa } from './Caixa.jsx'
+import { calcResumoFuncionario, listarPeriodos } from './Funcionarios.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
@@ -442,6 +443,37 @@ export default function Dashboard({ setPage }) {
           })}
         </ul>
       </div>
+
+        {/* === MECÂNICOS NA SEMANA === */}
+        {(() => {
+          const semana = listarPeriodos().semanas[0]
+          const mecs = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => f.status === 'ativo')
+          if (!mecs.length) return null
+          const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          return (
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                <h3 style={{ margin: 0 }}>👷 Mecânicos — {semana.label.toLowerCase()}</h3>
+                <button className="btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setPage && setPage('funcionarios')}>Ver histórico →</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                {mecs.map(f => {
+                  const r = calcResumoFuncionario(f.nome, semana)
+                  return (
+                    <div key={f.id} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px' }}>
+                      <strong>{f.nome}</strong>
+                      <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>
+                        {r.concluidas} OS concluída(s) · {r.emAndamento} em andamento
+                      </div>
+                      <div style={{ fontSize: 13, marginTop: 6 }}>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>
+                      <div style={{ fontSize: 13 }}>A pagar (50%): <strong style={{ color: '#3b82f6' }}>{fmtR(r.maoDeObra * 0.5)}</strong></div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* === NOTINHAS DE PEÇAS === */}
         <div className="card dash-pecas">

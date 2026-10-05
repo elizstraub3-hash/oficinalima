@@ -20,8 +20,43 @@ function formatMs(ms) {
   return `${m}min`
 }
 
-function calcResumoFuncionario(nome) {
-  const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+const dLocal = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+const ddmm = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7)
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+// Data que conta para a OS: dia em que foi concluída, senão o dia de abertura
+function dataOS(o) {
+  if (o.fim) return dLocal(new Date(o.fim))
+  if (o.data) return o.data
+  if (o.inicio) return dLocal(new Date(o.inicio))
+  return ''
+}
+
+// Semanas (segunda a domingo) e meses disponíveis para consulta
+export function listarPeriodos() {
+  const hoje = new Date(); hoje.setHours(12, 0, 0, 0)
+  const seg = new Date(hoje); seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7))
+  const semanas = []
+  for (let i = 0; i < 8; i++) {
+    const ini = new Date(seg); ini.setDate(seg.getDate() - 7 * i)
+    const fim = new Date(ini); fim.setDate(ini.getDate() + 6)
+    const de = dLocal(ini), ate = dLocal(fim)
+    const nome = i === 0 ? 'Esta semana' : i === 1 ? 'Semana passada' : 'Semana'
+    semanas.push({ id: `semana-${i}`, de, ate, label: `${nome} (${ddmm(de)} – ${ddmm(ate)})` })
+  }
+  const datas = JSON.parse(localStorage.getItem('ol_ordens') || '[]').map(dataOS).filter(Boolean)
+  const meses = new Set([dLocal(hoje).slice(0, 7), ...datas.map(d => d.slice(0, 7))])
+  const listaMeses = [...meses].sort().reverse().map(m => {
+    const [a, mm] = m.split('-')
+    const ultimo = new Date(Number(a), Number(mm), 0).getDate()
+    return { id: `mes-${m}`, de: `${m}-01`, ate: `${m}-${String(ultimo).padStart(2, '0')}`, label: `${MESES[Number(mm) - 1]} de ${a}` }
+  })
+  return { semanas, meses: listaMeses }
+}
+
+export function calcResumoFuncionario(nome, periodo) {
+  const todas = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  const ordens = periodo ? todas.filter(o => { const d = dataOS(o); return d >= periodo.de && d <= periodo.ate }) : todas
 
   // OS onde o mecânico aparece como responsável principal OU em algum serviço
   const minhas = ordens.filter(o => {
@@ -56,7 +91,7 @@ function calcResumoFuncionario(nome) {
     maoDeObra: totalMaoDeObra,
     totalValor,
     tempo: tempoTotal,
-    ordens: minhas.slice().reverse().slice(0, 5),
+    ordens: minhas.slice().reverse(),
   }
 }
 
@@ -68,6 +103,9 @@ export default function Funcionarios() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(empty())
   const [expanded, setExpanded] = useState(null)
+  const [periodoId, setPeriodoId] = useState('semana-0')
+  const { semanas, meses } = listarPeriodos()
+  const periodo = [...semanas, ...meses].find(p => p.id === periodoId) || semanas[0]
 
   function refresh() { setItems(load()) }
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
@@ -114,7 +152,7 @@ export default function Funcionarios() {
   }
 
   function renderCard(f) {
-    const r = calcResumoFuncionario(f.nome)
+    const r = calcResumoFuncionario(f.nome, periodo)
     const isOpen = expanded === f.id
 
     return (
@@ -158,7 +196,11 @@ export default function Funcionarios() {
           </div>
           <div className="func-resumo-item highlight">
             <span className="func-resumo-label">💰 Mão de Obra</span>
-            <strong style={{ color: '#000', fontSize: 18 }}>{fmt(r.maoDeObra)}</strong>
+            <strong style={{ color: 'var(--text-main)', fontSize: 18 }}>{fmt(r.maoDeObra)}</strong>
+          </div>
+          <div className="func-resumo-item">
+            <span className="func-resumo-label">👷 A pagar (50%)</span>
+            <strong style={{ color: '#3b82f6' }}>{fmt(r.maoDeObra * 0.5)}</strong>
           </div>
           <div className="func-resumo-item">
             <span className="func-resumo-label">Total em OS</span>
@@ -170,7 +212,7 @@ export default function Funcionarios() {
         {r.ordens.length > 0 && (
           <>
             <button className="func-toggle" onClick={() => setExpanded(isOpen ? null : f.id)}>
-              {isOpen ? '▲ Ocultar histórico' : `▼ Ver últimas ${r.ordens.length} OS`}
+              {isOpen ? '▲ Ocultar OS' : `▼ Ver ${r.ordens.length} OS do período`}
             </button>
             {isOpen && (
               <table className="func-os-table">
@@ -194,7 +236,7 @@ export default function Funcionarios() {
                       <td style={{ fontFamily: 'monospace', fontSize: 13 }}>
                         {o.inicio && o.fim ? formatMs(o.fim - o.inicio) : o.status === 'em_andamento' && o.inicio ? '▶ rodando' : '—'}
                       </td>
-                      <td><strong style={{ color: o.maoDeObra ? '#000' : 'var(--text-light)' }}>{o.maoDeObra ? fmt(o.maoDeObra) : '—'}</strong></td>
+                      <td><strong style={{ color: o.maoDeObra ? 'var(--text-main)' : 'var(--text-light)' }}>{o.maoDeObra ? fmt(o.maoDeObra) : '—'}</strong></td>
                     </tr>
                   ))}
                 </tbody>
@@ -209,8 +251,19 @@ export default function Funcionarios() {
   return (
     <div>
       <div className="page-header">
+        <select value={periodoId} onChange={e => setPeriodoId(e.target.value)} style={{ minWidth: 240, fontWeight: 600 }} title="Período">
+          <optgroup label="Semanas">
+            {semanas.map(p => <option key={p.id} value={p.id}>📅 {p.label}</option>)}
+          </optgroup>
+          <optgroup label="Meses">
+            {meses.map(p => <option key={p.id} value={p.id}>🗓️ {p.label}</option>)}
+          </optgroup>
+        </select>
         <button className="btn-primary" onClick={openAdd}>+ Novo Funcionário</button>
       </div>
+      <p style={{ fontSize: 13, color: 'var(--text-light)', margin: '-8px 0 16px' }}>
+        Mostrando: <strong>{periodo.label}</strong>. A semana zera toda segunda-feira — o histórico fica guardado nos meses e semanas anteriores.
+      </p>
 
       <div className="func-stats">
         <div className="func-stat"><span>👥</span><div><strong>{items.length}</strong><small>Total</small></div></div>
@@ -219,8 +272,8 @@ export default function Funcionarios() {
         <div className="func-stat">
           <span>💰</span>
           <div>
-            <strong>{fmt(items.reduce((s, f) => s + calcResumoFuncionario(f.nome).maoDeObra, 0))}</strong>
-            <small>Total Mão de Obra</small>
+            <strong>{fmt(items.reduce((s, f) => s + calcResumoFuncionario(f.nome, periodo).maoDeObra, 0))}</strong>
+            <small>Mão de Obra no período</small>
           </div>
         </div>
       </div>
