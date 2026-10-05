@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './Dashboard.css'
 import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario, listarPeriodos } from './Funcionarios.jsx'
+import { resumoPeriodo } from './Relatorio.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
@@ -443,6 +444,27 @@ export default function Dashboard({ setPage }) {
           })}
         </ul>
       </div>
+
+        {/* === RELATÓRIO DE SEXTA === */}
+        {new Date().getDay() === 5 && (() => {
+          const semana = listarPeriodos().semanas[0]
+          const r = resumoPeriodo(semana)
+          const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          return (
+            <div className="card" style={{ marginBottom: 20, border: '2px solid #10b981', background: 'rgba(16,185,129,0.06)' }}>
+              <h3 style={{ marginTop: 0 }}>📊 Sextou, Pedro! O relatório da semana está pronto</h3>
+              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14, marginBottom: 12 }}>
+                <span>💵 Entradas: <strong style={{ color: '#10b981' }}>{fmtR(r.entradas)}</strong></span>
+                <span>💸 Saídas: <strong style={{ color: '#ef4444' }}>{fmtR(r.saidas)}</strong></span>
+                <span>📈 Saldo: <strong>{fmtR(r.saldo)}</strong></span>
+                {r.mecanicos.filter(m => m.maoDeObra > 0).map(m => (
+                  <span key={m.nome}>👷 {m.nome}: <strong style={{ color: '#3b82f6' }}>{fmtR(m.maoDeObra * 0.5)}</strong></span>
+                ))}
+              </div>
+              <button className="btn-primary" onClick={() => setPage && setPage('relatorio')}>Ver relatório completo →</button>
+            </div>
+          )
+        })()}
 
         {/* === MECÂNICOS NA SEMANA === */}
         {(() => {

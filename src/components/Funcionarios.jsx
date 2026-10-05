@@ -223,7 +223,7 @@ export default function Funcionarios() {
         <button className="btn-primary" onClick={openAdd}>+ Novo Funcionário</button>
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-light)', margin: '-8px 0 16px' }}>
-        Mostrando: <strong>{periodo.label}</strong>. A semana zera toda segunda-feira — o histórico fica guardado nos meses e semanas anteriores.
+        Mostrando: <strong>{periodo.label}</strong>. A semana fecha toda sexta-feira — o histórico fica guardado nos meses e semanas anteriores.
       </p>
 
       <div className="func-stats">

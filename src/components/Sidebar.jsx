@@ -9,6 +9,7 @@ const MENU = [
   { id: 'temporizadores', label: 'Temporizadores',     icon: '⏱️' },
   { separator: true, label: 'FINANCEIRO' },
   { id: 'caixa',          label: 'Caixa',              icon: '💰' },
+  { id: 'relatorio',      label: 'Relatório Semanal',  icon: '📊' },
   { id: 'gastos',         label: 'Planilha de Gastos', icon: '🧾' },
   { id: 'contas',         label: 'Contas da Oficina',  icon: '📄' },
   { id: 'notinhas', label: 'Notinhas de Peças', icon: '🔩' },

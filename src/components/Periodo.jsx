@@ -14,17 +14,18 @@ export function dataOS(o) {
 
 export const noPeriodo = (iso, p) => !!iso && iso >= p.de && iso <= p.ate
 
-// Semanas (segunda a domingo) e meses com dados, para consultar o histórico
+// Semana de trabalho fecha na sexta: vai de sábado a sexta, para lançamentos de fim de semana caírem na semana seguinte
 export function listarPeriodos() {
   const hoje = new Date(); hoje.setHours(12, 0, 0, 0)
-  const seg = new Date(hoje); seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7))
+  const sexta = new Date(hoje); sexta.setDate(hoje.getDate() + ((5 - hoje.getDay() + 7) % 7))
   const semanas = []
   for (let i = 0; i < 8; i++) {
-    const ini = new Date(seg); ini.setDate(seg.getDate() - 7 * i)
-    const fim = new Date(ini); fim.setDate(ini.getDate() + 6)
+    const fim = new Date(sexta); fim.setDate(sexta.getDate() - 7 * i)
+    const ini = new Date(fim); ini.setDate(fim.getDate() - 6)
+    const seg = new Date(fim); seg.setDate(fim.getDate() - 4)
     const de = dLocal(ini), ate = dLocal(fim)
     const nome = i === 0 ? 'Esta semana' : i === 1 ? 'Semana passada' : 'Semana'
-    semanas.push({ id: `semana-${i}`, de, ate, label: `${nome} (${ddmm(de)} – ${ddmm(ate)})` })
+    semanas.push({ id: `semana-${i}`, de, ate, label: `${nome} (seg ${ddmm(dLocal(seg))} – sex ${ddmm(ate)})` })
   }
   const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
   const datas = [

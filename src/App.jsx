@@ -3,6 +3,7 @@ import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import Caixa from './components/Caixa.jsx'
+import Relatorio from './components/Relatorio.jsx'
 import Servicos from './components/Servicos.jsx'
 import Funcionarios from './components/Funcionarios.jsx'
 import Temporizadores from './components/Temporizadores.jsx'
@@ -505,6 +506,7 @@ export default function App() {
         {page === 'ordens'        && <OrdemServico setPage={setPage} />}
         {page === 'clientes'      && <Clientes />}
         {page === 'caixa'         && <Caixa />}
+        {page === 'relatorio'     && <Relatorio />}
         {page === 'gastos'        && <Gastos />}
         {page === 'contas'        && <Contas />}
         {page === 'servicos'      && <Servicos />}
