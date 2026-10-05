@@ -166,6 +166,24 @@ export default function Contas() {
         </div>
       </div>
 
+      {(() => {
+        const semValor = items.filter(c => !Number(c.valor))
+        if (!semValor.length) return null
+        return (
+          <div style={{ background: 'rgba(59,130,246,0.08)', border: '1.5px solid #3b82f6', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
+              💬 Oi, Pedro! Que tal colocar os gastos do mês, como luz, internet e aluguel? Assim a gente se prepara e mantém o caixa sempre certinho! 😉
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-light)' }}>Falta o valor de:</span>
+              {semValor.map(c => (
+                <button key={c.id} className="btn-edit" style={{ fontSize: 13, padding: '4px 10px' }} onClick={() => openEdit(c)}>✏️ {c.descricao}</button>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
       <div className="contas-resumo">
         <div className="contas-card pendente">
           <span className="resumo-label">⏳ A Pagar</span>
