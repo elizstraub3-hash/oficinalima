@@ -3,7 +3,10 @@ import Modal from './Modal.jsx'
 import './NotaFiscal.css'
 import { loadEstoque } from './Estoque.jsx'
 
-const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+const API = import.meta.env.VITE_BACKEND_URL || ''
+const KEY_SENHA = 'ol_nfe_senha'
+const lerSenha = () => { try { return sessionStorage.getItem(KEY_SENHA) || '' } catch { return '' } }
+const cab = (extra = {}) => ({ 'x-nfe-senha': lerSenha(), ...extra })
 
 const MEIOS_PAG = [
   { v: '01', l: '💵 Dinheiro' },
@@ -36,6 +39,9 @@ export default function NotaFiscal() {
   const [justificativa, setJustificativa] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
+  const [senhaOk, setSenhaOk] = useState(false)
+  const [senhaInput, setSenhaInput] = useState('')
+  const [ambiente, setAmbiente] = useState('')
 
   const [form, setForm] = useState({
     osId: '',
@@ -54,13 +60,25 @@ export default function NotaFiscal() {
 
   useEffect(() => {
     setOrdens(loadOS().filter(o => o.status !== 'cancelado'))
-    fetch(`${API}/api/health`)
-      .then(r => r.json())
-      .then(d => setBackendOk(d.ok))
-      .catch(() => setBackendOk(false))
+    verificar()
   }, [])
 
   function refresh() { setNfes(loadNFes()) }
+
+  function verificar() {
+    return fetch(`${API}/api/health`, { headers: cab() })
+      .then(r => r.json())
+      .then(d => { setBackendOk(!!d.ok); setSenhaOk(!!d.senhaOk); setAmbiente(d.ambiente || ''); return d })
+      .catch(() => { setBackendOk(false); return {} })
+  }
+
+  async function entrarSenha(e) {
+    e.preventDefault()
+    try { sessionStorage.setItem(KEY_SENHA, senhaInput) } catch { /* sem storage */ }
+    const d = await verificar()
+    if (!d.senhaOk) { setErro('Senha da nota fiscal incorreta.'); try { sessionStorage.removeItem(KEY_SENHA) } catch { /* */ } }
+    else { setErro(''); setSenhaInput('') }
+  }
 
   function preencherOS(osId) {
     const os = ordens.find(o => String(o.id) === String(osId))
@@ -103,7 +121,7 @@ export default function NotaFiscal() {
     try {
       const res = await fetch(`${API}/api/nfe/emitir`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cab({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           numero: os.numero || os.id,
           destinatario: {
@@ -150,7 +168,7 @@ export default function NotaFiscal() {
 
   async function consultarStatus(nfe) {
     try {
-      const res = await fetch(`${API}/api/nfe/${nfe.nuvemId}`)
+      const res = await fetch(`${API}/api/nfe/${nfe.nuvemId}`, { headers: cab() })
       const data = await res.json()
       const lista = loadNFes()
       const idx = lista.findIndex(n => n.id === nfe.id)
@@ -171,7 +189,7 @@ export default function NotaFiscal() {
     try {
       const res = await fetch(`${API}/api/nfe/${cancelModal.nuvemId}/cancelar`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cab({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ justificativa }),
       })
       const data = await res.json()
@@ -189,8 +207,12 @@ export default function NotaFiscal() {
     }
   }
 
-  function abrirDANFE(nfe) {
-    window.open(`${API}/api/nfe/${nfe.nuvemId}/danfe`, '_blank')
+  async function abrirDANFE(nfe) {
+    const aba = window.open('', '_blank')
+    const res = await fetch(`${API}/api/nfe/${nfe.nuvemId}/danfe`, { headers: cab() })
+    if (!res.ok) { aba?.close(); const d = await res.json().catch(() => ({})); return alert(d.erro || 'DANFE indisponível.') }
+    const url = URL.createObjectURL(await res.blob())
+    if (aba) aba.location.href = url; else window.open(url, '_blank')
   }
 
   const totalEmitido = nfes.filter(n => n.status === 'autorizado').reduce((s, n) => s + Number(n.valor || 0), 0)
@@ -200,20 +222,29 @@ export default function NotaFiscal() {
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className={`backend-badge ${backendOk === null ? 'checking' : backendOk ? 'online' : 'offline'}`}>
-            {backendOk === null ? '⏳ Verificando backend...' : backendOk ? '🟢 Backend online' : '🔴 Backend offline'}
+            {backendOk === null ? '⏳ Verificando...' : backendOk ? `🟢 Conectado à Focus NFe${ambiente === 'producao' ? ' — PRODUÇÃO' : ' — modo TESTE'}` : '🔴 Nota fiscal não configurada'}
           </div>
         </div>
-        <button className="btn-primary" onClick={() => { setErro(''); setModal(true) }} disabled={!backendOk}>
+        <button className="btn-primary" onClick={() => { setErro(''); setModal(true) }} disabled={!backendOk || !senhaOk}>
           + Emitir NF-e
         </button>
       </div>
 
       {backendOk === false && (
         <div className="nfe-aviso-backend">
-          <strong>⚙️ Backend não encontrado.</strong> Inicie o servidor com:
-          <pre>cd backend && npm install && node server.js</pre>
-          Confira se o arquivo <code>backend/.env</code> tem o <code>FOCUS_TOKEN</code> da Focus NFe.
+          <strong>⚙️ Nota fiscal ainda não configurada.</strong> Falta cadastrar o token da Focus NFe nas configurações do site (Vercel).
         </div>
+      )}
+
+      {backendOk && !senhaOk && (
+        <form onSubmit={entrarSenha} className="card" style={{ marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ margin: 0, flex: 1, minWidth: 200 }}>
+            <label>🔒 Senha da nota fiscal</label>
+            <input type="password" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} placeholder="Digite a senha da nota fiscal" autoFocus />
+          </div>
+          <button type="submit" className="btn-primary">Entrar</button>
+          {erro && <div className="nfe-erro" style={{ width: '100%', margin: 0 }}>{erro}</div>}
+        </form>
       )}
 
       <div className="nfe-resumo">
