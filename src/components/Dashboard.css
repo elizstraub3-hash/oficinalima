@@ -579,3 +579,5 @@
 /* Separadores entre blocos */
 .dash-cards { border-bottom: 1px solid #2a2a2a; padding-bottom: 20px; margin-bottom: 20px; }
 .dash-checklist { border-bottom: 1px solid #2a2a2a; padding-bottom: 20px; }
+
+.dash-col-direita { display: flex; flex-direction: column; min-width: 0; }

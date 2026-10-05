@@ -445,6 +445,7 @@ export default function Dashboard({ setPage }) {
         </ul>
       </div>
 
+        <div className="dash-col-direita">
         {/* === RELATÓRIO DE SEXTA === */}
         {new Date().getDay() === 5 && (() => {
           const semana = listarPeriodos().semanas[0]
@@ -630,6 +631,7 @@ export default function Dashboard({ setPage }) {
             </div>
           )}
         </div>
+        </div>{/* end dash-col-direita */}
       </div>{/* end dash-side-row */}
 
       {/* === CARDS === */}
