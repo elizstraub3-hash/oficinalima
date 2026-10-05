@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { SeletorPeriodo, acharPeriodo, noPeriodo, hojeISO } from './Periodo.jsx'
 import Modal from './Modal.jsx'
 import './Notinhas.css'
 
@@ -15,17 +16,6 @@ const emptyForm = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', prec
 
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 const fmtPct = v => `${Number(v || 0).toFixed(2).replace('.', ',')}%`
-
-function getWeekRange() {
-  const now = new Date()
-  const day = now.getDay()
-  const mon = new Date(now)
-  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
-  const sun = new Date(mon)
-  sun.setDate(mon.getDate() + 6)
-  const pad = d => d.toISOString().split('T')[0]
-  return { start: pad(mon), end: pad(sun) }
-}
 
 function calcComissoes(valorCusto) {
   const c = Number(valorCusto) || 0
@@ -105,14 +95,13 @@ export default function Notinhas() {
   const [items, setItems]     = useState(load)
   const [modal, setModal]     = useState(false)
   const [form, setForm]       = useState(emptyForm())
-  const [filtro, setFiltro]   = useState('todos')
+  const [periodoId, setPeriodoId] = useState('semana-0')
   const [busca, setBusca]     = useState('')
   const [confirmModal, setConfirmModal] = useState(null) // { custoCalc, vendaCalc, lucroCalc, formData, pct }
   const [pctInput, setPctInput] = useState('35')
 
-  const todayStr   = new Date().toISOString().split('T')[0]
-  const mesStr     = todayStr.slice(0, 7)
-  const semana     = getWeekRange()
+  const todayStr   = hojeISO()
+  const periodo    = acharPeriodo(periodoId)
 
   const custoUnit    = parseFloat(form.custoUnit) || 0
   const qtd          = parseInt(form.qtd) || 1
@@ -164,20 +153,16 @@ export default function Notinhas() {
   }
 
   const filtered = useMemo(() => {
-    let list = [...items].reverse()
-    if (filtro === 'hoje')   list = list.filter(n => n.data === todayStr)
-    if (filtro === 'semana') list = list.filter(n => n.data >= semana.start && n.data <= semana.end)
-    if (filtro === 'mes')    list = list.filter(n => n.data?.startsWith(mesStr))
+    let list = [...items].reverse().filter(n => noPeriodo(n.data, periodo))
     if (busca.trim()) {
       const q = busca.toLowerCase()
       list = list.filter(n => n.desc?.toLowerCase().includes(q) || n.fornecedor?.toLowerCase().includes(q))
     }
     return list
-  }, [items, filtro, busca, todayStr, mesStr, semana])
+  }, [items, busca, periodo])
 
   const hoje   = items.filter(n => n.data === todayStr)
-  const semItems = items.filter(n => n.data >= semana.start && n.data <= semana.end)
-  const mesItems = items.filter(n => n.data?.startsWith(mesStr))
+  const perItems = items.filter(n => noPeriodo(n.data, periodo))
 
   return (
     <div>
@@ -193,25 +178,13 @@ export default function Notinhas() {
       {/* Somatorias */}
       <div className="notinhas-summaries">
         <SummaryBox label="📅 Hoje" items={hoje} />
-        <SummaryBox label="📆 Esta Semana" items={semItems} />
-        <SummaryBox label="🗓️ Este Mês" items={mesItems} />
+        <SummaryBox label={`📆 ${periodo.label}`} items={perItems} />
       </div>
 
       {/* Filtros */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {[['todos','Todas'], ['hoje','Hoje'], ['semana','Esta Semana'], ['mes','Este Mês']].map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => setFiltro(v)}
-              style={{
-                padding: '6px 16px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                background: filtro === v ? '#111' : 'transparent',
-                color: filtro === v ? '#fff' : 'var(--text-light)',
-                outline: filtro === v ? 'none' : '1.5px solid var(--border)',
-              }}
-            >{l}</button>
-          ))}
+          <SeletorPeriodo value={periodoId} onChange={setPeriodoId} />
           <input
             style={{ marginLeft: 'auto', padding: '6px 12px', border: '1.5px solid var(--border)', borderRadius: 8, background: 'var(--bg-card2)', color: 'var(--text-main)', fontSize: 13, width: 200 }}
             placeholder="🔍 Buscar peça ou fornecedor..."

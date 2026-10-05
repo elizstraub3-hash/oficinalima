@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import './Caixa.css'
+import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS } from './Periodo.jsx'
 
 const KEY = 'ol_caixa'
 const CATS = ['Serviço', 'Estoque', 'Manutenção', 'Outros']
@@ -45,7 +46,9 @@ export default function Caixa() {
   const [entries, setEntries] = useState(lancamentosCaixa)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(empty())
-  const [filtro, setFiltro] = useState({ tipo: 'todos', de: '', ate: '' })
+  const [filtro, setFiltro] = useState({ tipo: 'todos' })
+  const [periodoId, setPeriodoId] = useState('semana-0')
+  const periodo = acharPeriodo(periodoId)
 
   function refresh() { setEntries(lancamentosCaixa()) }
 
@@ -68,9 +71,7 @@ export default function Caixa() {
 
   const filtered = entries.filter(e => {
     if (filtro.tipo !== 'todos' && e.tipo !== filtro.tipo) return false
-    if (filtro.de && e.data < filtro.de) return false
-    if (filtro.ate && e.data > filtro.ate) return false
-    return true
+    return noPeriodo(e.data, periodo)
   })
 
   const totalEntrada = filtered.filter(e => e.tipo === 'entrada').reduce((s, e) => s + e.valor, 0)
@@ -79,8 +80,9 @@ export default function Caixa() {
 
   const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 
-  const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-  const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]')
+  const todasOrdens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+  const ordens = todasOrdens.filter(o => noPeriodo(dataOS(o), periodo))
+  const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]').filter(n => noPeriodo(n.data, periodo))
   const gastos = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
 
   // Helpers de data (devem vir antes de qualquer uso)
@@ -91,7 +93,7 @@ export default function Caixa() {
   const mesStr = hojeStr.slice(0, 7)
 
   function ordensDoPeriodo(de) {
-    return ordens.filter(o => {
+    return todasOrdens.filter(o => {
       const d = o.data || (o.inicio ? new Date(o.inicio).toISOString().split('T')[0] : null)
       return d && d >= de
     })
@@ -113,12 +115,9 @@ export default function Caixa() {
   const ordensMes = ordensDoPeriodo(mesStr + '-01')
 
   // Gastos do mês atual
-  const mesAtual = hojeStr.slice(0, 7)
-  const gastosMes = gastos.filter(g => (g.data || '').startsWith(mesAtual))
+  const gastosMes = gastos.filter(g => noPeriodo(g.data, periodo))
   const totalGastosMes = gastosMes.reduce((s, g) => s + Number(g.valor || 0), 0)
-  const receitaMes = somaValor(ordensMes)
-  const entradaMes = entries.filter(e => e.origem === 'manual' && e.tipo === 'entrada' && (e.data || '').startsWith(mesAtual)).reduce((s, e) => s + e.valor, 0)
-  const totalEntradasMes = receitaMes + entradaMes
+  const totalEntradasMes = entries.filter(e => e.tipo === 'entrada' && noPeriodo(e.data, periodo)).reduce((s, e) => s + e.valor, 0)
 
   // Categorias de gastos do mês
   const gastosPorCat = gastosMes.reduce((acc, g) => {
@@ -156,6 +155,7 @@ export default function Caixa() {
   return (
     <div>
       <div className="page-header">
+        <SeletorPeriodo value={periodoId} onChange={setPeriodoId} />
         <button className="btn-primary" onClick={() => { setForm(empty()); setModal(true) }}>
           + Novo Lançamento
         </button>
@@ -181,7 +181,7 @@ export default function Caixa() {
         <div className={`caixa-alerta-gasto ${alertaGasto.tipo}`}>
           <span>{alertaGasto.msg}</span>
           {totalEntradasMes > 0 && (
-            <span className="caixa-alerta-porc">{porcGastos.toFixed(0)}% da receita gasto</span>
+            <span className="caixa-alerta-porc">{porcGastos.toFixed(0)}% das entradas gasto</span>
           )}
         </div>
       )}
@@ -189,14 +189,14 @@ export default function Caixa() {
       {/* Gastos da oficina deste mês */}
       {gastosMes.length > 0 && (
         <div className="caixa-gastos-oficina">
-          <div className="mob-split-title">🧾 Gastos da Oficina — {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
+          <div className="mob-split-title">🧾 Gastos da Oficina — {periodo.label}</div>
           <div className="caixa-gastos-barra">
             <div style={{ flex: 1 }}>
-              <div className="caixa-barra-label">Receita do mês</div>
+              <div className="caixa-barra-label">Entradas do período</div>
               <div className="caixa-barra-val verde">{fmt(totalEntradasMes)}</div>
             </div>
             <div style={{ flex: 1 }}>
-              <div className="caixa-barra-label">Gastos do mês</div>
+              <div className="caixa-barra-label">Gastos do período</div>
               <div className="caixa-barra-val vermelho">{fmt(totalGastosMes)}</div>
             </div>
             <div style={{ flex: 1 }}>
@@ -294,7 +294,7 @@ export default function Caixa() {
 
       {/* Divisão mão de obra */}
       <div className="caixa-mob-split">
-        <div className="mob-split-title">🔧 Divisão de Mão de Obra (Total OS)</div>
+        <div className="mob-split-title">🔧 Divisão de Mão de Obra — {periodo.label}</div>
         <div className="mob-split-grid">
           <div className="mob-split-item total">
             <span className="mob-split-label">Total Mão de Obra</span>
@@ -339,12 +339,8 @@ export default function Caixa() {
             <option value="entrada">Entradas</option>
             <option value="saida">Saídas</option>
           </select>
-          <div className="filtro-datas">
-            <label>De: <input type="date" value={filtro.de} onChange={e => setFiltro(f => ({ ...f, de: e.target.value }))} /></label>
-            <label>Até: <input type="date" value={filtro.ate} onChange={e => setFiltro(f => ({ ...f, ate: e.target.value }))} /></label>
-          </div>
-          {(filtro.tipo !== 'todos' || filtro.de || filtro.ate) && (
-            <button className="btn-secondary" onClick={() => setFiltro({ tipo: 'todos', de: '', ate: '' })}>Limpar filtros</button>
+          {filtro.tipo !== 'todos' && (
+            <button className="btn-secondary" onClick={() => setFiltro({ tipo: 'todos' })}>Limpar filtro</button>
           )}
         </div>
 

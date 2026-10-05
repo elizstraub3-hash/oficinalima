@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SeletorPeriodo, acharPeriodo, noPeriodo } from './Periodo.jsx'
 import Modal from './Modal.jsx'
 import './Gastos.css'
 
@@ -34,6 +35,9 @@ export default function Gastos() {
   const [form, setForm] = useState(empty())
   const [filtrocat, setFiltrocat] = useState('todos')
   const [busca, setBusca] = useState('')
+  const [periodoId, setPeriodoId] = useState('semana-0')
+  const periodo = acharPeriodo(periodoId)
+  const doPeriodo = items.filter(g => noPeriodo(g.data, periodo))
 
   function refresh() { setItems(load()) }
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
@@ -64,7 +68,7 @@ export default function Gastos() {
     refresh()
   }
 
-  const filtered = items.filter(g => {
+  const filtered = doPeriodo.filter(g => {
     if (filtrocat !== 'todos' && g.categoria !== filtrocat) return false
     if (busca && !g.descricao.toLowerCase().includes(busca.toLowerCase()) && !(g.fornecedor || '').toLowerCase().includes(busca.toLowerCase())) return false
     return true
@@ -74,19 +78,20 @@ export default function Gastos() {
 
   const porCategoria = CATS.map(cat => ({
     cat,
-    total: items.filter(g => g.categoria === cat).reduce((s, g) => s + Number(g.valor), 0),
+    total: doPeriodo.filter(g => g.categoria === cat).reduce((s, g) => s + Number(g.valor), 0),
   })).filter(x => x.total > 0).sort((a, b) => b.total - a.total)
 
   return (
     <div>
       <div className="page-header">
+        <SeletorPeriodo value={periodoId} onChange={setPeriodoId} />
         <button className="btn-primary" onClick={openAdd}>+ Adicionar Gasto</button>
       </div>
 
       <div className="gastos-resumo">
         <div className="gastos-total-card">
-          <span className="resumo-label">Total de Gastos</span>
-          <strong>{fmt(items.reduce((s, g) => s + Number(g.valor), 0))}</strong>
+          <span className="resumo-label">Total de Gastos — {periodo.label}</span>
+          <strong>{fmt(doPeriodo.reduce((s, g) => s + Number(g.valor), 0))}</strong>
         </div>
         <div className="gastos-cats">
           {porCategoria.map(x => {

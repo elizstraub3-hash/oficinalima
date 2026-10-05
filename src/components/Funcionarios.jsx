@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
 import './Funcionarios.css'
+import { dataOS, listarPeriodos, SeletorPeriodo, acharPeriodo } from './Periodo.jsx'
+export { listarPeriodos }
+
 
 const KEY = 'ol_funcionarios'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
@@ -18,40 +21,6 @@ function formatMs(ms) {
   if (dias > 0) return `${dias}d ${h}h ${m}min`
   if (h > 0)    return `${h}h ${m}min`
   return `${m}min`
-}
-
-const dLocal = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
-const ddmm = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7)
-const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-
-// Data que conta para a OS: dia em que foi concluída, senão o dia de abertura
-function dataOS(o) {
-  if (o.fim) return dLocal(new Date(o.fim))
-  if (o.data) return o.data
-  if (o.inicio) return dLocal(new Date(o.inicio))
-  return ''
-}
-
-// Semanas (segunda a domingo) e meses disponíveis para consulta
-export function listarPeriodos() {
-  const hoje = new Date(); hoje.setHours(12, 0, 0, 0)
-  const seg = new Date(hoje); seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7))
-  const semanas = []
-  for (let i = 0; i < 8; i++) {
-    const ini = new Date(seg); ini.setDate(seg.getDate() - 7 * i)
-    const fim = new Date(ini); fim.setDate(ini.getDate() + 6)
-    const de = dLocal(ini), ate = dLocal(fim)
-    const nome = i === 0 ? 'Esta semana' : i === 1 ? 'Semana passada' : 'Semana'
-    semanas.push({ id: `semana-${i}`, de, ate, label: `${nome} (${ddmm(de)} – ${ddmm(ate)})` })
-  }
-  const datas = JSON.parse(localStorage.getItem('ol_ordens') || '[]').map(dataOS).filter(Boolean)
-  const meses = new Set([dLocal(hoje).slice(0, 7), ...datas.map(d => d.slice(0, 7))])
-  const listaMeses = [...meses].sort().reverse().map(m => {
-    const [a, mm] = m.split('-')
-    const ultimo = new Date(Number(a), Number(mm), 0).getDate()
-    return { id: `mes-${m}`, de: `${m}-01`, ate: `${m}-${String(ultimo).padStart(2, '0')}`, label: `${MESES[Number(mm) - 1]} de ${a}` }
-  })
-  return { semanas, meses: listaMeses }
 }
 
 export function calcResumoFuncionario(nome, periodo) {
@@ -104,8 +73,7 @@ export default function Funcionarios() {
   const [form, setForm] = useState(empty())
   const [expanded, setExpanded] = useState(null)
   const [periodoId, setPeriodoId] = useState('semana-0')
-  const { semanas, meses } = listarPeriodos()
-  const periodo = [...semanas, ...meses].find(p => p.id === periodoId) || semanas[0]
+  const periodo = acharPeriodo(periodoId)
 
   function refresh() { setItems(load()) }
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
@@ -251,14 +219,7 @@ export default function Funcionarios() {
   return (
     <div>
       <div className="page-header">
-        <select value={periodoId} onChange={e => setPeriodoId(e.target.value)} style={{ minWidth: 240, fontWeight: 600 }} title="Período">
-          <optgroup label="Semanas">
-            {semanas.map(p => <option key={p.id} value={p.id}>📅 {p.label}</option>)}
-          </optgroup>
-          <optgroup label="Meses">
-            {meses.map(p => <option key={p.id} value={p.id}>🗓️ {p.label}</option>)}
-          </optgroup>
-        </select>
+        <SeletorPeriodo value={periodoId} onChange={setPeriodoId} />
         <button className="btn-primary" onClick={openAdd}>+ Novo Funcionário</button>
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-light)', margin: '-8px 0 16px' }}>
