@@ -66,7 +66,7 @@ export default function NotaFiscal() {
   function refresh() { setNfes(loadNFes()) }
 
   function carregarOrdens() {
-    setOrdens(loadOS().filter(o => o.status !== 'cancelado').sort((a, b) => Number(b.id) - Number(a.id)))
+    setOrdens(loadOS().filter(o => o.status === 'concluido').sort((a, b) => Number(b.id) - Number(a.id)))
   }
 
   function verificar() {
@@ -327,10 +327,10 @@ export default function NotaFiscal() {
             <div className="form-group">
               <label>Ordem de Serviço *</label>
               <select value={form.osId} onChange={e => { setForm(f => ({ ...f, osId: e.target.value })); preencherOS(e.target.value) }} required>
-                <option value="">Selecione a OS...</option>
+                <option value="">{ordens.length ? 'Selecione a OS concluída...' : 'Nenhuma OS concluída ainda'}</option>
                 {ordens.map(os => (
                   <option key={os.id} value={os.id}>
-                    {os.numero || `OS ${os.id}`} — {os.clienteNome || 'sem nome'}{os.placa ? ` — ${os.placa}` : ''} — {fmt(os.valor || 0)}{os.status === 'concluido' ? ' ✅' : ''}
+                    {os.numero || `OS ${os.id}`} — {os.clienteNome || 'sem nome'}{os.placa ? ` — ${os.placa}` : ''} — {fmt(os.valor || 0)}
                   </option>
                 ))}
               </select>
