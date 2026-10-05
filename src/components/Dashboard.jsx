@@ -31,41 +31,41 @@ function getFraseContextual(checkedIds, agora) {
   const faltam = ITEMS_FIXOS.length - checkedCount
 
   // Antes da abertura
-  if (min < 8 * 60) return { texto: 'A oficina abre às 8h — descanse bem, Leandra! Amanhã tem mais! 🌙', cor: '#6b7280' }
+  if (min < 8 * 60) return { texto: 'A oficina abre às 8h — descanse bem, Pedro! Amanhã tem mais! 🌙', cor: '#6b7280' }
 
   // Chegando
-  if (min >= 8 * 60 && min < 8 * 60 + 20) return { texto: 'Bom dia, Leandra! Que ótimo te ver por aqui! Vamos começar o dia com tudo? 💪', cor: '#000' }
+  if (min >= 8 * 60 && min < 8 * 60 + 20) return { texto: 'Bom dia, Pedro! Que ótimo te ver por aqui! Vamos começar o dia com tudo? 💪', cor: '#000' }
 
   // Manhã — checklist não feito
   if (min >= 8 * 60 + 20 && min < 12 * 60) {
-    if (checkedCount === 0) return { texto: 'Não esqueceu do checklist, né Leandra? Já está esperando por você! 📋', cor: '#e63946' }
-    if (faltam > 0) return { texto: `Boa, Leandra! Você já marcou ${checkedCount} item(s). Ainda faltam ${faltam} — bora lá! 🔥`, cor: '#f59e0b' }
-    return { texto: 'Checklist completo! Que começo de dia incrível, Leandra! Agora é só arrasar! ⭐', cor: '#10b981' }
+    if (checkedCount === 0) return { texto: 'Não esqueceu do checklist, né Pedro? Já está esperando por você! 📋', cor: '#e63946' }
+    if (faltam > 0) return { texto: `Boa, Pedro! Você já marcou ${checkedCount} item(s). Ainda faltam ${faltam} — bora lá! 🔥`, cor: '#f59e0b' }
+    return { texto: 'Checklist completo! Que começo de dia incrível, Pedro! Agora é só arrasar! ⭐', cor: '#10b981' }
   }
 
   // Pré-almoço (11h40–12h)
-  if (min >= 11 * 60 + 40 && min < 12 * 60) return { texto: 'Quase na hora do almoço, Leandra! Não para não — mais um pouquinho! 😄', cor: '#f59e0b' }
+  if (min >= 11 * 60 + 40 && min < 12 * 60) return { texto: 'Quase na hora do almoço, Pedro! Não para não — mais um pouquinho! 😄', cor: '#f59e0b' }
 
   // Almoço (12h–13h30)
-  if (min >= 12 * 60 && min < 13 * 60 + 30) return { texto: 'Hora de almoçar, Leandra! Você merece essa pausa. Volte renovada às 13h30! 🍽️', cor: '#f59e0b' }
+  if (min >= 12 * 60 && min < 13 * 60 + 30) return { texto: 'Hora de almoçar, Pedro! Você merece essa pausa. Volte renovado às 13h30! 🍽️', cor: '#f59e0b' }
 
   // Retorno do almoço
-  if (min >= 13 * 60 + 30 && min < 13 * 60 + 50) return { texto: 'Bem-vinda de volta, Leandra! Tarde produtiva te espera! ☕', cor: '#3b82f6' }
+  if (min >= 13 * 60 + 30 && min < 13 * 60 + 50) return { texto: 'Bem-vindo de volta, Pedro! Tarde produtiva te espera! ☕', cor: '#3b82f6' }
 
   // Tarde — meio da tarde
-  if (min >= 13 * 60 + 50 && min < 16 * 60) return { texto: 'A tarde está passando, Leandra! Como estão os carros com os mecânicos? Vale conferir! 🔧', cor: '#3b82f6' }
+  if (min >= 13 * 60 + 50 && min < 16 * 60) return { texto: 'A tarde está passando, Pedro! Como estão os carros com os mecânicos? Vale conferir! 🔧', cor: '#3b82f6' }
 
   // Pré-fechamento (16h–17h30)
-  if (min >= 16 * 60 && min < 17 * 60 + 30) return { texto: 'A tarde está acabando! Aproveita pra fechar os orçamentos e alinhar com os mecânicos, Leandra! 📋', cor: '#8b5cf6' }
+  if (min >= 16 * 60 && min < 17 * 60 + 30) return { texto: 'A tarde está acabando! Aproveita pra fechar os orçamentos e alinhar com os mecânicos, Pedro! 📋', cor: '#8b5cf6' }
 
   // Quase fechando (17h30–18h)
-  if (min >= 17 * 60 + 30 && min < 18 * 60) return { texto: 'Estamos quase fechando, não é mesmo, Leandra? Só mais um pouco — você chegou até aqui! 🏁', cor: '#e63946' }
+  if (min >= 17 * 60 + 30 && min < 18 * 60) return { texto: 'Estamos quase fechando, não é mesmo, Pedro? Só mais um pouco — você chegou até aqui! 🏁', cor: '#e63946' }
 
   // Fechamento (18h em ponto)
-  if (min >= 18 * 60 && min < 18 * 60 + 20) return { texto: 'Oficina fechada! Parabéns pelo dia de trabalho, Leandra! Descanse bem! 🎉', cor: '#10b981' }
+  if (min >= 18 * 60 && min < 18 * 60 + 20) return { texto: 'Oficina fechada! Parabéns pelo dia de trabalho, Pedro! Descanse bem! 🎉', cor: '#10b981' }
 
   // Após fechamento
-  return { texto: 'O expediente acabou, Leandra! Vai descansar — você merece! Até amanhã! 🌙', cor: '#6b7280' }
+  return { texto: 'O expediente acabou, Pedro! Vai descansar — você merece! Até amanhã! 🌙', cor: '#6b7280' }
 }
 
 const CHECKLIST_KEY = 'ol_checklist_'
@@ -300,7 +300,7 @@ export default function Dashboard({ setPage }) {
         <div className="dash-greeting-left">
           <span className="dash-greeting-emoji">{saudacao.emoji}</span>
           <div>
-            <h1>{saudacao.texto}, Leandra! 👋</h1>
+            <h1>{saudacao.texto}, Pedro! 👋</h1>
             <p className="dash-greeting-sub">
               {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {' · '}
@@ -317,10 +317,10 @@ export default function Dashboard({ setPage }) {
       {_diasSistema <= 8 && (() => {
         const urgente = _diasSistema <= 3
         const msg = _sistemaHoje
-          ? 'Lê, hoje vence a fatura do site! Bora pagar pra gente não ficar sem o sistema, hein! 😬💳'
+          ? 'Pedro, hoje vence a fatura do site! Bora pagar pra gente não ficar sem o sistema, hein! 😬💳'
           : _diasSistema === 1
-            ? 'Lê, amanhã vence a fatura do site! Não deixa pra última hora não! 😅'
-            : `Lê, fica de olho — daqui ${_diasSistema} dias vence a fatura do site! Vai separando o dinheirinho! 😄💻`
+            ? 'Pedro, amanhã vence a fatura do site! Não deixa pra última hora não! 😅'
+            : `Pedro, fica de olho — daqui ${_diasSistema} dias vence a fatura do site! Vai separando o dinheirinho! 😄💻`
         return (
           <div style={{
             background: urgente ? 'rgba(239,68,68,0.10)' : 'rgba(99,102,241,0.08)',
@@ -344,8 +344,8 @@ export default function Dashboard({ setPage }) {
         <div className="dash-almoco">
           <span className="dash-almoco-icon">🍽️</span>
           <div style={{ flex: 1 }}>
-            <strong>Leandra, está na hora da pausa para o almoço! (12:00 – 13:30)</strong>
-            <p>Você merece descansar — tire sua hora de almoço tranquila. Volte renovada! ☕😊</p>
+            <strong>Pedro, está na hora da pausa para o almoço! (12:00 – 13:30)</strong>
+            <p>Você merece descansar — tire sua hora de almoço tranquila. Volte renovado! ☕😊</p>
           </div>
           <button className="dash-almoco-btn" onClick={concluirAlmoco}>✔ Retornei</button>
         </div>
@@ -366,11 +366,11 @@ export default function Dashboard({ setPage }) {
 
       {/* === CONTAS COUNTDOWN === */}
       {[
-        { dia: 4,  icon: '⚡', nome: 'Luz (Copel)',  valor: null,      msg0: 'A conta de LUZ vence HOJE! Paga logo pra não cortar a energia da oficina! ⚡', msgN: d => `Ei Leandra, a conta de luz vence em ${d} dia${d>1?'s':''}! Não deixa acumular! ⚡` },
-        { dia: 16, icon: '📶', nome: 'Internet',      valor: null,      msg0: 'A INTERNET vence HOJE! Paga para não ficar sem sinal! 📶',                        msgN: d => `Leandra, a internet vence em ${d} dia${d>1?'s':''}! Não esquece! 📶` },
-        { dia: 20, icon: '🏠', nome: 'Aluguel',      valor: 'R$1.200', msg0: 'O ALUGUEL vence HOJE! Sem pagar não tem onde trabalhar! 🏠',                    msgN: d => `Leandra, o aluguel vence em ${d} dia${d>1?'s':''}! Já separa o dinheiro! 🏠` },
-        { dia: 22, icon: '💧', nome: 'Água',          valor: null,      msg0: 'A conta de ÁGUA vence HOJE! Paga antes de faltar água na oficina! 💧',           msgN: d => `Leandra, a água vence em ${d} dia${d>1?'s':''}! Não esquece! 💧` },
-        { dia: 30, icon: '💻', nome: 'Sistema',       valor: null,      msg0: 'O SISTEMA vence HOJE! Renova para não perder o acesso! 💻',                      msgN: d => `Leandra, o sistema vence em ${d} dia${d>1?'s':''}! Já avisa para renovar! 💻` },
+        { dia: 4,  icon: '⚡', nome: 'Luz (Copel)',  valor: null,      msg0: 'A conta de LUZ vence HOJE! Paga logo pra não cortar a energia da oficina! ⚡', msgN: d => `Ei Pedro, a conta de luz vence em ${d} dia${d>1?'s':''}! Não deixa acumular! ⚡` },
+        { dia: 16, icon: '📶', nome: 'Internet',      valor: null,      msg0: 'A INTERNET vence HOJE! Paga para não ficar sem sinal! 📶',                        msgN: d => `Pedro, a internet vence em ${d} dia${d>1?'s':''}! Não esquece! 📶` },
+        { dia: 20, icon: '🏠', nome: 'Aluguel',      valor: 'R$1.200', msg0: 'O ALUGUEL vence HOJE! Sem pagar não tem onde trabalhar! 🏠',                    msgN: d => `Pedro, o aluguel vence em ${d} dia${d>1?'s':''}! Já separa o dinheiro! 🏠` },
+        { dia: 22, icon: '💧', nome: 'Água',          valor: null,      msg0: 'A conta de ÁGUA vence HOJE! Paga antes de faltar água na oficina! 💧',           msgN: d => `Pedro, a água vence em ${d} dia${d>1?'s':''}! Não esquece! 💧` },
+        { dia: 30, icon: '💻', nome: 'Sistema',       valor: null,      msg0: 'O SISTEMA vence HOJE! Renova para não perder o acesso! 💻',                      msgN: d => `Pedro, o sistema vence em ${d} dia${d>1?'s':''}! Já avisa para renovar! 💻` },
       ].map(({ dia, icon, nome, valor, msg0, msgN }) => {
         const hoje = new Date()
         const venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia)
@@ -405,7 +405,7 @@ export default function Dashboard({ setPage }) {
         <div className="dash-checklist-header">
           <div>
             <h2 className="dash-checklist-title">
-              {saudacao.texto}, Leandra! Vamos fazer o checklist? {todosFeitos ? '🎉' : '📝'}
+              {saudacao.texto}, Pedro! Vamos fazer o checklist? {todosFeitos ? '🎉' : '📝'}
             </h2>
             <p className="dash-checklist-sub">
               {todosFeitos
@@ -455,7 +455,7 @@ export default function Dashboard({ setPage }) {
           {notinhasHoje.length === 0 ? (
             <div className="dash-notinha-lembrete">
               <span>📝</span>
-              <span>Leandra, chegou alguma notinha de peças hoje? Vai lá adicionar, não podemos esquecer! 😄</span>
+              <span>Pedro, chegou alguma notinha de peças hoje? Vai lá adicionar, não podemos esquecer! 😄</span>
             </div>
           ) : (
             <div className="dash-notinha-resumo">
@@ -476,7 +476,7 @@ export default function Dashboard({ setPage }) {
                 <strong style={{ color: '#3b82f6' }}>{fmt(comOficinaHoje)}</strong>
               </div>
               <div className="notinha-resumo-item destaque-leandra">
-                <span>👩 Ganho Leandra (3%)</span>
+                <span>👨 Ganho Pedro (3%)</span>
                 <strong style={{ color: '#d97706', fontSize: 20 }}>{fmt(comLeandraHoje)}</strong>
               </div>
             </div>
@@ -526,7 +526,7 @@ export default function Dashboard({ setPage }) {
                   <span>📈 Lucro: <strong style={{ color: lucroCalc >= 0 ? '#10b981' : '#ef4444' }}>{fmt(lucroCalc)}</strong></span>
                   <span>🏢 Oficina 30%: <strong style={{ color: '#3b82f6' }}>{fmt(custoCalc * 0.30)}</strong></span>
                   <span style={{ background: 'rgba(251,191,36,0.15)', borderRadius: 6, padding: '2px 8px' }}>
-                    👩 Leandra 3%: <strong style={{ color: '#d97706' }}>{fmt(custoCalc * 0.03)}</strong>
+                    👨 Pedro 3%: <strong style={{ color: '#d97706' }}>{fmt(custoCalc * 0.03)}</strong>
                   </span>
                 </div>
               )}
@@ -549,7 +549,7 @@ export default function Dashboard({ setPage }) {
                     <th>Venda</th>
                     <th>Lucro</th>
                     <th style={{ color: '#3b82f6' }}>Oficina 30%</th>
-                    <th style={{ color: '#d97706' }}>Leandra 3%</th>
+                    <th style={{ color: '#d97706' }}>Pedro 3%</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -631,11 +631,11 @@ export default function Dashboard({ setPage }) {
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <button onClick={() => confirmarNotinha('split')} style={{ background:'rgba(59,130,246,0.1)', border:'2px solid #3b82f6', borderRadius:10, padding:'14px 16px', cursor:'pointer', textAlign:'left' }}>
                   <div style={{ fontWeight:800, fontSize:14, color:'#3b82f6', marginBottom:4 }}>
-                    🏢 {(oficinaSplit*100).toFixed(1)}% Oficina + 👩 5% Leandra
+                    🏢 {(oficinaSplit*100).toFixed(1)}% Oficina + 👨 3% Pedro
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#3b82f6'}}>{fmt(cc * oficinaSplit)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
+                    &nbsp;&nbsp;Pedro: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
                     &nbsp;&nbsp;Total: <strong>{fmt(cc * pctDec)}</strong>
                   </div>
                 </button>
@@ -645,7 +645,7 @@ export default function Dashboard({ setPage }) {
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#10b981'}}>{fmt(cc * pctDec)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'var(--text-light)'}}>R$ 0,00</strong>
+                    &nbsp;&nbsp;Pedro: <strong style={{color:'var(--text-light)'}}>R$ 0,00</strong>
                   </div>
                 </button>
               </div>

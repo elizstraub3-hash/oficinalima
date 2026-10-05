@@ -100,10 +100,10 @@ export default function Caixa() {
   const porcGastos = totalEntradasMes > 0 ? (totalGastosMes / totalEntradasMes) * 100 : 0
   const alertaGasto = (() => {
     if (totalGastosMes === 0) return null
-    if (porcGastos >= 80) return { tipo: 'danger', msg: '🚨 Atenção, Leandra! Os gastos estão MAIORES do que está entrando! Corte os gastos urgente — a oficina precisa de cuidado!' }
-    if (porcGastos >= 60) return { tipo: 'danger', msg: '⚠️ Leandra, está entrando dinheiro sim, mas vocês estão gastando MUITO! Vale sentar e rever o que pode cortar!' }
-    if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Leandra. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
-    return { tipo: 'ok', msg: '✅ Ótimo controle, Leandra! Os gastos estão saudáveis este mês. Continue assim!' }
+    if (porcGastos >= 80) return { tipo: 'danger', msg: '🚨 Atenção, Pedro! Os gastos estão MAIORES do que está entrando! Corte os gastos urgente — a oficina precisa de cuidado!' }
+    if (porcGastos >= 60) return { tipo: 'danger', msg: '⚠️ Pedro, está entrando dinheiro sim, mas vocês estão gastando MUITO! Vale sentar e rever o que pode cortar!' }
+    if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Pedro. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
+    return { tipo: 'ok', msg: '✅ Ótimo controle, Pedro! Os gastos estão saudáveis este mês. Continue assim!' }
   })()
   const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
   const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)

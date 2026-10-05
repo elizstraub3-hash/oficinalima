@@ -372,8 +372,8 @@ export default function OrdemServico({ setPage }) {
   const [editMecanicoId, setEditMecanicoId] = useState(null)
   const [editStatusId, setEditStatusId] = useState(null)
   const [estCat, setEstCat] = useState('todas')
-  const [estBusca, setEstBusca] = useState('')
-  const [estoqueAberto, setEstoqueAberto] = useState(true)
+  const [estPecaId, setEstPecaId] = useState('')
+  const [estQtd, setEstQtd] = useState(1)
 
   const clientes = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
   const servicos = JSON.parse(localStorage.getItem('ol_servicos') || '[]')
@@ -433,13 +433,14 @@ export default function OrdemServico({ setPage }) {
     return Number(peca.qtd) + jaReservado - noForm
   }
 
-  function adicionarDoEstoque(peca) {
-    if (disponivel(peca) < 1 && !confirm(`⚠️ ${peca.nome} está sem estoque suficiente. Adicionar mesmo assim?`)) return
+  function adicionarDoEstoque(peca, qtd = 1) {
+    qtd = Number(qtd) || 1
+    if (disponivel(peca) < qtd && !confirm(`⚠️ ${peca.nome} está sem estoque suficiente. Adicionar mesmo assim?`)) return
     setForm(f => {
       const itens = [...(f.itens || [])]
       const idx = itens.findIndex(it => String(it.pecaId) === String(peca.id))
-      if (idx >= 0) itens[idx] = { ...itens[idx], qtd: Number(itens[idx].qtd || 0) + 1 }
-      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd: 1, valor: peca.precoVenda || 0, custo: peca.precoCusto || 0 })
+      if (idx >= 0) itens[idx] = { ...itens[idx], qtd: Number(itens[idx].qtd || 0) + qtd }
+      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd, valor: peca.precoVenda || 0, custo: peca.precoCusto || 0 })
       return { ...f, itens }
     })
   }
@@ -857,7 +858,7 @@ export default function OrdemServico({ setPage }) {
               <div className="os-pre-aviso">
                 <div className="os-pre-aviso-icon">⭐</div>
                 <div>
-                  <strong>Leandra, cadastre o cliente antes!</strong>
+                  <strong>Pedro, cadastre o cliente antes!</strong>
                   <p>É de <strong>extrema importância</strong> que o cliente seja cadastrado no painel de <strong>Clientes</strong> com o veículo dele antes de abrir uma OS.<br /><br />Assim o sistema preenche os dados automaticamente e mantém o histórico completo do cliente!</p>
                 </div>
               </div>
@@ -932,43 +933,31 @@ export default function OrdemServico({ setPage }) {
               const estoque = loadEstoque()
               if (!estoque.length) return <p style={{ fontSize: 12, color: 'var(--text-light)', margin: '0 0 8px' }}>Cadastre peças em "Estoque de Peças" para puxar direto daqui.</p>
               const cats = loadCategorias().filter(c => estoque.some(p => p.categoria === c))
-              const q = estBusca.toLowerCase().trim()
-              const lista = estoque.filter(p => (estCat === 'todas' || p.categoria === estCat) && (!q || p.nome?.toLowerCase().includes(q) || p.codigo?.toLowerCase().includes(q)))
-              const chip = ativo => ({ padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid ' + (ativo ? '#3b82f6' : 'var(--border)'), background: ativo ? '#3b82f6' : 'transparent', color: ativo ? '#fff' : 'var(--text-main)' })
+              const lista = estoque.filter(p => estCat === 'todas' || p.categoria === estCat)
+              const sel = estoque.find(p => String(p.id) === String(estPecaId))
+              const opcao = p => {
+                const d = disponivel(p)
+                return <option key={p.id} value={p.id}>{p.nome} — {d <= 0 ? 'SEM ESTOQUE' : `${d} ${p.un} disp.`} — R$ {Number(p.precoVenda || 0).toFixed(2).replace('.', ',')}</option>
+              }
+              const add = () => { if (!sel) return; adicionarDoEstoque(sel, estQtd); setEstPecaId(''); setEstQtd(1) }
               return (
-                <div style={{ border: '1.5px solid #3b82f6', borderRadius: 10, padding: 10, marginBottom: 10, background: 'rgba(59,130,246,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setEstoqueAberto(v => !v)}>
-                    <strong style={{ fontSize: 13, color: '#3b82f6' }}>📦 Puxar do Estoque (dá baixa automática)</strong>
-                    <span style={{ fontSize: 12 }}>{estoqueAberto ? '▲ fechar' : '▼ abrir'}</span>
-                  </div>
-                  {estoqueAberto && (<>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
-                      <button type="button" style={chip(estCat === 'todas')} onClick={() => setEstCat('todas')}>Todas</button>
-                      {cats.map(c => <button type="button" key={c} style={chip(estCat === c)} onClick={() => setEstCat(c)}>{c}</button>)}
-                    </div>
-                    <input placeholder="🔍 Buscar peça ou código..." value={estBusca} onChange={e => setEstBusca(e.target.value)} style={{ width: '100%', marginBottom: 8 }} />
-                    <div style={{ maxHeight: 190, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 6 }}>
-                      {lista.length === 0 && <span style={{ fontSize: 12, color: 'var(--text-light)' }}>Nenhuma peça encontrada.</span>}
-                      {lista.map(p => {
-                        const disp = disponivel(p)
-                        const cor = disp <= 0 ? '#ef4444' : disp <= Number(p.qtdMinima || 3) ? '#f59e0b' : '#10b981'
-                        return (
-                          <button type="button" key={p.id} onClick={() => adicionarDoEstoque(p)} title="Clique para adicionar 1 na nota"
-                            style={{ textAlign: 'left', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer' }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{p.nome}</div>
-                            <div style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-                              <span style={{ color: cor, fontWeight: 700 }}>{disp} {p.un} disp.</span>
-                              <span style={{ color: '#10b981' }}>R$ {Number(p.precoVenda || 0).toFixed(2).replace('.', ',')}</span>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </>)}
+                <div className="os-itens-add" style={{ marginBottom: 6 }}>
+                  <select value={estCat} onChange={e => { setEstCat(e.target.value); setEstPecaId('') }} style={{ flex: '0 0 150px' }} title="Categoria">
+                    <option value="todas">📦 Todas</option>
+                    {cats.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select value={estPecaId} onChange={e => setEstPecaId(e.target.value)} style={{ flex: 1, minWidth: 180 }}>
+                    <option value="">Escolha uma peça do estoque...</option>
+                    {estCat === 'todas'
+                      ? cats.map(c => <optgroup key={c} label={c}>{lista.filter(p => p.categoria === c).map(opcao)}</optgroup>)
+                      : lista.map(opcao)}
+                  </select>
+                  <input type="number" min="0.01" step="any" value={estQtd} onChange={e => setEstQtd(e.target.value)} className="os-item-qtd" title="Quantidade" />
+                  <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 16px' }} onClick={add} disabled={!sel}>+ Add</button>
                 </div>
               )
             })()}
-            <p style={{ fontSize: 12, color: 'var(--text-light)', margin: '0 0 4px' }}>Ou digite uma peça avulsa (não mexe no estoque):</p>
+            <p style={{ fontSize: 12, color: 'var(--text-light)', margin: '0 0 4px' }}>Peça avulsa (não mexe no estoque):</p>
             <div className="os-itens-add">
               <input
                 placeholder="Descrição da peça"

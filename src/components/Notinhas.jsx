@@ -36,7 +36,7 @@ function calcComissoes(valorCusto) {
 }
 
 function exportCSV(items) {
-  const header = ['ID', 'Data', 'Peça/Descrição', 'Fornecedor', 'Qtd', 'Custo Unit.', 'Preço Venda Unit.', 'Total Custo', 'Total Venda', 'Lucro', 'Comissão Oficina (30%)', 'Comissão Leandra (3%)']
+  const header = ['ID', 'Data', 'Peça/Descrição', 'Fornecedor', 'Qtd', 'Custo Unit.', 'Preço Venda Unit.', 'Total Custo', 'Total Venda', 'Lucro', 'Comissão Oficina (30%)', 'Comissão Pedro (3%)']
   const rows = items.map(n => [
     n.id,
     n.data,
@@ -93,7 +93,7 @@ function SummaryBox({ label, items }) {
           <strong>{fmt(comOficina)}</strong>
         </div>
         <div className="ns-item highlight-leandra">
-          <span>Comissão Leandra (3%)</span>
+          <span>Comissão Pedro (3%)</span>
           <strong>{fmt(comLeandra)}</strong>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function Notinhas() {
                   <th>Valor Venda</th>
                   <th>Lucro</th>
                   <th style={{ color: '#3b82f6' }}>Com. Oficina 30%</th>
-                  <th style={{ color: '#f59e0b' }}>Com. Leandra 3%</th>
+                  <th style={{ color: '#f59e0b' }}>Com. Pedro 3%</th>
                   <th></th>
                 </tr>
               </thead>
@@ -354,7 +354,7 @@ export default function Notinhas() {
                     <strong style={{ color: '#3b82f6' }}>{fmt(comOficinaCalc)}</strong>
                   </div>
                   <div style={{ textAlign: 'center', background: 'rgba(251,191,36,0.12)', borderRadius: 8, padding: '6px 0' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-light)' }}>Com. Leandra 3%</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-light)' }}>Com. Pedro 3%</div>
                     <strong style={{ color: '#d97706', fontSize: 16 }}>{fmt(comLeandraCalc)}</strong>
                   </div>
                 </div>
@@ -411,11 +411,11 @@ export default function Notinhas() {
                   borderRadius:10, padding:'14px 16px', cursor:'pointer', textAlign:'left',
                 }}>
                   <div style={{ fontWeight:800, fontSize:14, color:'#3b82f6', marginBottom:4 }}>
-                    🏢 {(oficinaSplit*100).toFixed(1)}% Oficina + 👩 5% Leandra
+                    🏢 {(oficinaSplit*100).toFixed(1)}% Oficina + 👨 3% Pedro
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#3b82f6'}}>{fmt(cc * oficinaSplit)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
+                    &nbsp;&nbsp;Pedro: <strong style={{color:'#d97706'}}>{fmt(cc * 0.03)}</strong>
                     &nbsp;&nbsp;Total: <strong>{fmt(cc * pctDec)}</strong>
                   </div>
                 </button>
@@ -429,7 +429,7 @@ export default function Notinhas() {
                   </div>
                   <div style={{ fontSize:12, color:'var(--text-light)' }}>
                     Oficina: <strong style={{color:'#10b981'}}>{fmt(cc * pctDec)}</strong>
-                    &nbsp;&nbsp;Leandra: <strong style={{color:'var(--text-light)'}}>R$ 0,00</strong>
+                    &nbsp;&nbsp;Pedro: <strong style={{color:'var(--text-light)'}}>R$ 0,00</strong>
                   </div>
                 </button>
               </div>

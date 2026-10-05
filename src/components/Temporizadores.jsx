@@ -263,7 +263,7 @@ export default function Temporizadores() {
             </div>
             <div className="modal-body">
               <div style={{ background: '#fef2f2', border: '2px solid #ef4444', borderRadius: 10, padding: '14px 16px', marginBottom: 16, fontSize: 14, color: '#991b1b', lineHeight: 1.6 }}>
-                <strong>Leandra, o carro <span style={{ fontFamily: 'monospace', fontSize: 16 }}>{alertaDemora.placa}</span> está há mais de 10 horas em serviço!</strong><br />
+                <strong>Pedro, o carro <span style={{ fontFamily: 'monospace', fontSize: 16 }}>{alertaDemora.placa}</span> está há mais de 10 horas em serviço!</strong><br />
                 Por favor, informe o motivo da demora para que possamos registrar no histórico.
               </div>
               <div className="form-group">
