@@ -16,11 +16,9 @@ import Estoque from './components/Estoque.jsx'
 import NotaFiscal from './components/NotaFiscal.jsx'
 import { diasSemBackup } from './components/Sidebar.jsx'
 
-function nextClienteId(arr) { return arr.length ? Math.max(...arr.map(x => x.id||0)) + 1 : 1 }
 
 function seedData() {
   if (!localStorage.getItem('ol_seeded2')) {
-    const now = Date.now()
     if (!localStorage.getItem('ol_servicos')) {
       localStorage.setItem('ol_servicos', JSON.stringify([
         { id: 1, nome: 'Troca de Óleo', descricao: 'Troca completa de óleo e filtro', preco: 80, tempo: 30 },
@@ -29,136 +27,18 @@ function seedData() {
         { id: 4, nome: 'Revisão Completa', descricao: 'Revisão geral do veículo', preco: 350, tempo: 180 },
       ]))
     }
-    if (!localStorage.getItem('ol_funcionarios')) {
-      localStorage.setItem('ol_funcionarios', JSON.stringify([
-        { id: 1, nome: 'João Silva', cargo: 'Mecânico', telefone: '(11) 99999-1111', status: 'ativo' },
-        { id: 2, nome: 'Carlos Oliveira', cargo: 'Mecânico', telefone: '(11) 99999-2222', status: 'ativo' },
-        { id: 3, nome: 'Maria Santos', cargo: 'Atendente', telefone: '(11) 99999-3333', status: 'ativo' },
-      ]))
-    }
-    if (!localStorage.getItem('ol_caixa')) {
-      localStorage.setItem('ol_caixa', JSON.stringify([
-        { id: 1, descricao: 'Troca de óleo - Fiat Uno', valor: 80, tipo: 'entrada', categoria: 'Serviço', data: new Date().toISOString().split('T')[0] },
-        { id: 2, descricao: 'Compra de filtros de óleo', valor: 45, tipo: 'saida', categoria: 'Estoque', data: new Date().toISOString().split('T')[0] },
-      ]))
-    }
-    if (!localStorage.getItem('ol_clientes')) {
-      localStorage.setItem('ol_clientes', JSON.stringify([
-        { id: 1, nome: 'Roberto Lima', telefone: '(11) 98888-1111', email: '', cpf: '' },
-        { id: 2, nome: 'Ana Paula', telefone: '(11) 97777-2222', email: '', cpf: '' },
-      ]))
-    }
-    if (!localStorage.getItem('ol_ordens')) {
-      localStorage.setItem('ol_ordens', JSON.stringify([
-        {
-          id: 1, numero: 'OS-001',
-          clienteNome: 'Roberto Lima', clienteTelefone: '(11) 98888-1111',
-          placa: 'ABC-1234', modelo: 'Fiat Uno', ano: '2018', cor: 'Branco',
-          servico: 'Revisão Completa', descricao: 'Revisão completa + troca de óleo',
-          funcionario: 'João Silva', valor: 350,
-          status: 'em_andamento', inicio: now - 3600000, fim: null,
-          data: new Date().toISOString().split('T')[0],
-        },
-        {
-          id: 2, numero: 'OS-002',
-          clienteNome: 'Ana Paula', clienteTelefone: '(11) 97777-2222',
-          placa: 'XYZ-5678', modelo: 'Honda Civic', ano: '2020', cor: 'Prata',
-          servico: 'Alinhamento', descricao: 'Alinhamento e balanceamento',
-          funcionario: 'Carlos Oliveira', valor: 120,
-          status: 'aguardando', inicio: null, fim: null,
-          data: new Date().toISOString().split('T')[0],
-        },
-      ]))
-    }
-    if (!localStorage.getItem('ol_gastos')) {
-      localStorage.setItem('ol_gastos', JSON.stringify([
-        { id: 1, descricao: 'Filtros de óleo', categoria: 'Peças', valor: 45, fornecedor: 'Auto Peças Brasil', data: new Date().toISOString().split('T')[0], nota: 'NF-001' },
-        { id: 2, descricao: 'Abastecimento moto de serviço', categoria: 'Posto', valor: 80, fornecedor: 'Posto Shell', data: new Date().toISOString().split('T')[0], nota: '' },
-        { id: 3, descricao: 'Material de limpeza', categoria: 'Mercado', valor: 35, fornecedor: 'Supermercado X', data: new Date().toISOString().split('T')[0], nota: '' },
-      ]))
-    }
-    if (!localStorage.getItem('ol_contas')) {
-      localStorage.setItem('ol_contas', JSON.stringify([
-        { id: 1, descricao: 'Luz (Copel)',  valor: 0,    vencimento: 4,  status: 'pendente', categoria: 'Fixo' },
-        { id: 2, descricao: 'Aluguel',      valor: 1200, vencimento: 20, status: 'pendente', categoria: 'Fixo' },
-        { id: 3, descricao: 'Água',         valor: 0,    vencimento: 22, status: 'pendente', categoria: 'Fixo' },
-        { id: 4, descricao: 'Sistema',      valor: 0,    vencimento: 30, status: 'pendente', categoria: 'Fixo' },
-      ]))
-    }
-    // Cadastro do cliente Max e OS recuperada
-    const clientes = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
-    if (!clientes.find(c => c.nome === 'Max')) {
-      clientes.push({ id: nextClienteId(clientes), nome: 'Max', telefone: '41 9148-2990', email: '', cpf: '' })
-      localStorage.setItem('ol_clientes', JSON.stringify(clientes))
-    }
-    const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-    if (!clientes.find(c => c.nome === 'Cezar')) {
-      const cl2 = JSON.parse(localStorage.getItem('ol_clientes') || '[]')
-      cl2.push({ id: nextClienteId(cl2), nome: 'Cezar', telefone: '', email: '', cpf: '' })
-      localStorage.setItem('ol_clientes', JSON.stringify(cl2))
-    }
-    const ordens2 = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-    if (!ordens2.find(o => o.placa === 'CEJ6F00')) {
-      const maxId2 = ordens2.reduce((m,o) => Math.max(m, o.id||0), 0)
-      ordens2.push({
-        id: maxId2+1, numero: 'OS-'+(maxId2+1),
-        clienteNome: 'Cezar', clienteTelefone: '',
-        placa: 'CEJ6F00', modelo: 'Uno Fire', ano: '', cor: 'Preto',
-        servico: 'Montagem e Desmontagem do Cabeçote',
-        descricao: 'Plaina no cabeçote + Junta + Correia + Interruptor do radiador — Peças: R$503,00 | Mão de Obra: R$1.100,00',
-        funcionario: '', valor: 1603, maoDeObra: 1100,
-        status: 'orcamento', inicio: null, fim: null,
-        data: '2026-08-05', criadoEm: Date.now(),
-        itens: [
-          {desc:'PLAINA NO CABEÇOTE',qtd:1,un:'UN',valorUnit:250,total:250},
-          {desc:'JUNTA DO CABEÇOTE',qtd:1,un:'UN',valorUnit:73,total:73},
-          {desc:'CORREIA DENTADA',qtd:1,un:'UN',valorUnit:73,total:73},
-          {desc:'INTERRUPTOR DO RADIADOR',qtd:1,un:'UN',valorUnit:107,total:107},
-        ],
-        servicos: [
-          {desc:'MONTAGEM E DESMONTAGEM DO CABEÇOTE',maoDeObra:1100},
-        ]
-      })
-      localStorage.setItem('ol_ordens', JSON.stringify(ordens2))
-    }
-    if (!ordens.find(o => o.placa === 'EDB1577')) {
-      const maxId = ordens.reduce((m,o) => Math.max(m, o.id||0), 0)
-      ordens.push({
-        id: maxId+1, numero: 'OS-'+(maxId+1),
-        clienteNome: 'Max', clienteTelefone: '41 9148-2990',
-        placa: 'EDB1577', modelo: 'Corsa', ano: '2008', cor: '',
-        servico: 'Motor Completo + Retifica',
-        descricao: 'Motor Completo + Retifica — Peças: R$2.500,00 | Mão de Obra: R$4.900,00',
-        funcionario: '', valor: 7400, maoDeObra: 4900,
-        status: 'orcamento', inicio: null, fim: null,
-        data: '2026-08-05', criadoEm: Date.now(),
-        itens: [
-          {desc:'BOMBA DE OLEO',qtd:1,un:'UN',valorUnit:242,total:242},
-          {desc:'BRONZINA DE BIELA 0,25',qtd:1,un:'UN',valorUnit:84,total:84},
-          {desc:'BRONZINA DE MANCAL 0,25',qtd:1,un:'UN',valorUnit:164,total:164},
-          {desc:'ANEIS 0,50',qtd:1,un:'JG',valorUnit:373,total:373},
-          {desc:'PISTÕES',qtd:4,un:'UN',valorUnit:134,total:536},
-          {desc:'RETENTOR TRASEIRO',qtd:1,un:'UN',valorUnit:78,total:78},
-          {desc:'RETENTOR COMANDO',qtd:1,un:'UN',valorUnit:33,total:33},
-          {desc:'COLA DE SILICONE',qtd:1,un:'UN',valorUnit:38,total:38},
-          {desc:'OLEO SEMISINTETICO 15W40',qtd:4,un:'UN',valorUnit:63,total:252},
-          {desc:'FILTRO DE OLEO',qtd:1,un:'UN',valorUnit:18,total:18},
-          {desc:'PERINHA DO OLEO',qtd:1,un:'UN',valorUnit:83,total:83},
-          {desc:'PESCADOR',qtd:1,un:'UN',valorUnit:161,total:161},
-          {desc:'SELO DO BLOCO',qtd:7,un:'UN',valorUnit:6,total:42},
-          {desc:'JUNTA DO CABEÇOTE',qtd:1,un:'UN',valorUnit:141,total:141},
-          {desc:'JUNTA DA TAMPA DE VALVULA',qtd:1,un:'UN',valorUnit:45,total:45},
-          {desc:'JUNTA DO ESCAPAMENTO',qtd:1,un:'UN',valorUnit:35,total:35},
-          {desc:'PARAFUSO DO CABEÇOTE',qtd:1,un:'UN',valorUnit:175,total:175},
-        ],
-        servicos: [
-          {desc:'MOTOR COMPLETO',maoDeObra:3000},
-          {desc:'RETIFICA',maoDeObra:1900},
-        ]
-      })
-      localStorage.setItem('ol_ordens', JSON.stringify(ordens))
-    }
     localStorage.setItem('ol_seeded2', '1')
+  }
+
+  // Limpeza única: remove OS e dados de exemplo que vinham com o painel
+  if (!localStorage.getItem('ol_limpeza_exemplos_1')) {
+    const placas = ['ABC-1234', 'XYZ-5678', 'EDB1577', 'CEJ6F00', 'MHW1C36', 'QPP3D71']
+    const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
+    localStorage.setItem('ol_ordens', JSON.stringify(ler('ol_ordens').filter(o => !placas.includes(o.placa))))
+    localStorage.setItem('ol_clientes', JSON.stringify(ler('ol_clientes').filter(c => !['Roberto Lima', 'Ana Paula'].includes(c.nome))))
+    localStorage.setItem('ol_caixa', JSON.stringify(ler('ol_caixa').filter(c => !['Troca de óleo - Fiat Uno', 'Compra de filtros de óleo'].includes(c.descricao))))
+    localStorage.setItem('ol_gastos', JSON.stringify(ler('ol_gastos').filter(g => !['Abastecimento moto de serviço', 'Material de limpeza'].includes(g.descricao) && !(g.descricao === 'Filtros de óleo' && g.fornecedor === 'Auto Peças Brasil'))))
+    localStorage.setItem('ol_limpeza_exemplos_1', '1')
   }
   if (!localStorage.getItem('ol_estoque_lubrax_2309')) {
     const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
