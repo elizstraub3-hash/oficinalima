@@ -53,6 +53,13 @@ function seedData() {
     localStorage.setItem('ol_paraflu_1', '1')
   }
 
+  if (!localStorage.getItem('ol_paraflu_preco_1')) {
+    const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
+    est.forEach(p => { if (/paraflu/i.test(p.nome || '') && /aditivo|rosa/i.test(p.nome || '')) p.precoVenda = 23.9 })
+    localStorage.setItem('ol_estoque', JSON.stringify(est))
+    localStorage.setItem('ol_paraflu_preco_1', '1')
+  }
+
   // Limpeza única: remove OS e dados de exemplo que vinham com o painel
   if (!localStorage.getItem('ol_limpeza_exemplos_1')) {
     const placas = ['ABC-1234', 'XYZ-5678', 'EDB1577', 'CEJ6F00', 'MHW1C36', 'QPP3D71']
