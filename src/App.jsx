@@ -41,6 +41,18 @@ function seedData() {
     localStorage.setItem('ol_ncm_oleo_1', '1')
   }
 
+  // Paraflu: NCM do aditivo rosa e fluido de freio DOT 4
+  if (!localStorage.getItem('ol_paraflu_1')) {
+    const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
+    est.forEach(p => { if (/paraflu/i.test(p.nome || '') && /aditivo|rosa/i.test(p.nome || '') && !p.ncm) p.ncm = '38249941' })
+    if (!est.some(p => /fluido.*freio/i.test(p.nome || ''))) {
+      const id = est.length ? Math.max(...est.map(x => x.id)) + 1 : 1
+      est.push({ id, nome: 'Fluido de Freio DOT 4 Paraflu', codigo: '', categoria: 'Freios', fornecedor: 'Paraflu', un: 'UN', qtd: 0, qtdMinima: 3, precoCusto: 0, precoVenda: 29.9, ncm: '38190000', localizacao: '', obs: '', criadoEm: Date.now() })
+    }
+    localStorage.setItem('ol_estoque', JSON.stringify(est))
+    localStorage.setItem('ol_paraflu_1', '1')
+  }
+
   // Limpeza única: remove OS e dados de exemplo que vinham com o painel
   if (!localStorage.getItem('ol_limpeza_exemplos_1')) {
     const placas = ['ABC-1234', 'XYZ-5678', 'EDB1577', 'CEJ6F00', 'MHW1C36', 'QPP3D71']
