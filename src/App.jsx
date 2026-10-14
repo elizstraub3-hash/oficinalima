@@ -60,6 +60,21 @@ function seedData() {
     localStorage.setItem('ol_paraflu_preco_1', '1')
   }
 
+  if (!localStorage.getItem('ol_paraflu_qtd_1')) {
+    const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
+    const mov = JSON.parse(localStorage.getItem('ol_estoque_mov') || '[]')
+    est.forEach(p => {
+      if (!(/paraflu/i.test(p.nome || '') && /aditivo|rosa/i.test(p.nome || ''))) return
+      const delta = 5 - Number(p.qtd || 0)
+      if (!delta) return
+      p.qtd = 5
+      mov.push({ id: mov.length ? Math.max(...mov.map(x => x.id)) + 1 : 1, peca: p.nome, pecaId: p.id, tipo: delta > 0 ? 'entrada' : 'saida', qtd: Math.abs(delta), obs: 'Ajuste de contagem', data: new Date().toISOString().split('T')[0], hora: new Date().toLocaleString('pt-BR') })
+    })
+    localStorage.setItem('ol_estoque', JSON.stringify(est))
+    localStorage.setItem('ol_estoque_mov', JSON.stringify(mov))
+    localStorage.setItem('ol_paraflu_qtd_1', '1')
+  }
+
   // Limpeza única: remove OS e dados de exemplo que vinham com o painel
   if (!localStorage.getItem('ol_limpeza_exemplos_1')) {
     const placas = ['ABC-1234', 'XYZ-5678', 'EDB1577', 'CEJ6F00', 'MHW1C36', 'QPP3D71']
