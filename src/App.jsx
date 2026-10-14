@@ -30,6 +30,17 @@ function seedData() {
     localStorage.setItem('ol_seeded2', '1')
   }
 
+  // NCM do óleo lubrificante (informado pela oficina) nas peças de óleo sem NCM
+  if (!localStorage.getItem('ol_ncm_oleo_1')) {
+    const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
+    est.forEach(p => {
+      const oleo = p.categoria === 'Óleos' || /óleo|oleo/i.test(p.nome || '')
+      if (oleo && !p.ncm) p.ncm = '27101932'
+    })
+    localStorage.setItem('ol_estoque', JSON.stringify(est))
+    localStorage.setItem('ol_ncm_oleo_1', '1')
+  }
+
   // Limpeza única: remove OS e dados de exemplo que vinham com o painel
   if (!localStorage.getItem('ol_limpeza_exemplos_1')) {
     const placas = ['ABC-1234', 'XYZ-5678', 'EDB1577', 'CEJ6F00', 'MHW1C36', 'QPP3D71']
@@ -49,7 +60,7 @@ function seedData() {
     novos.forEach(n => {
       if (est.some(p => p.nome?.toLowerCase() === n.nome.toLowerCase())) return
       const id = est.length ? Math.max(...est.map(x => x.id)) + 1 : 1
-      est.push({ id, codigo: '', categoria: 'Óleos', fornecedor: 'Lubrax', un: 'UN', qtdMinima: 3, precoCusto: 0, localizacao: '', obs: '', criadoEm: Date.now(), ...n })
+      est.push({ id, codigo: '', categoria: 'Óleos', fornecedor: 'Lubrax', ncm: '27101932', un: 'UN', qtdMinima: 3, precoCusto: 0, localizacao: '', obs: '', criadoEm: Date.now(), ...n })
     })
     localStorage.setItem('ol_estoque', JSON.stringify(est))
     localStorage.setItem('ol_estoque_lubrax_2309', '1')
@@ -58,7 +69,7 @@ function seedData() {
   if (!localStorage.getItem('ol_estoque_lote_2309b')) {
     const est = JSON.parse(localStorage.getItem('ol_estoque') || '[]')
     const novos = [
-      { nome: 'Óleo Sintético Lubrax 5W40', qtd: 5, precoVenda: 63, categoria: 'Óleos', fornecedor: 'Lubrax' },
+      { nome: 'Óleo Sintético Lubrax 5W40', qtd: 5, precoVenda: 63, categoria: 'Óleos', fornecedor: 'Lubrax', ncm: '27101932' },
       { nome: 'Aditivo Paraflu (pronto pra uso)', qtd: 10, precoVenda: 24, categoria: 'Arrefecimento', fornecedor: 'Paraflu' },
     ]
     novos.forEach(n => {
