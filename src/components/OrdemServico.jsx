@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import { formatarDoc, tipoDoc } from './Documento.js'
 import { loadEstoque, loadCategorias, sincronizarEstoqueOS } from './Estoque.jsx'
 
 const itensAtivos = o => (o && o.status !== 'cancelado' ? (o.itens || []) : [])
@@ -89,7 +90,7 @@ function LiveTimer({ inicio }) {
 }
 
 const emptyForm = () => ({
-  clienteNome: '', clienteTelefone: '', placa: '', modelo: '', ano: '', cor: '',
+  clienteNome: '', clienteTelefone: '', clienteDoc: '', placa: '', modelo: '', ano: '', cor: '',
   descricao: '', descBreve: '', valor: '', status: '', funcionario: '',
   itens: [],
   servicos: [],
@@ -239,6 +240,7 @@ function gerarPDF(ordem) {
       <div class="info-box-body">
         <div class="info-row"><span class="info-label">Nome</span><span class="info-val">${ordem.clienteNome || '—'}</span></div>
         <div class="info-row"><span class="info-label">Telefone</span><span class="info-val">${ordem.clienteTelefone || '—'}</span></div>
+        ${ordem.clienteDoc ? `<div class="info-row"><span class="info-label">${tipoDoc(ordem.clienteDoc)}</span><span class="info-val">${ordem.clienteDoc}</span></div>` : ''}
       </div>
     </div>
     <div class="info-box">
@@ -391,7 +393,7 @@ export default function OrdemServico({ setPage }) {
       ? [{ id: Date.now(), desc: ordem.servico || 'Mao de Obra', funcionario: ordem.funcionario || '', maoDeObra: String(ordem.maoDeObra) }]
       : (ordem.servicos || [])
     setForm({
-      clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone,
+      clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone, clienteDoc: ordem.clienteDoc || '',
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
       descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
       valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
@@ -411,6 +413,7 @@ export default function OrdemServico({ setPage }) {
       ...f,
       clienteNome: c.nome,
       clienteTelefone: c.telefone || '',
+      clienteDoc: c.cpf || c.cnpj || f.clienteDoc || '',
       placa: c.placa || f.placa,
       modelo: c.modelo || f.modelo,
       ano: c.ano || f.ano,
@@ -522,7 +525,7 @@ export default function OrdemServico({ setPage }) {
       if (form.clienteNome) {
         const clis = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
         if (!clis.find(c => c.nome.toLowerCase() === form.clienteNome.toLowerCase())) {
-          clis.push({ id: nextId(clis), nome: form.clienteNome, telefone: form.clienteTelefone, email: '', cpf: '', endereco: '', obs: '' })
+          clis.push({ id: nextId(clis), nome: form.clienteNome, telefone: form.clienteTelefone, email: '', cpf: form.clienteDoc || '', endereco: '', obs: '' })
           localStorage.setItem(KEY_CLI, JSON.stringify(clis))
         }
       }
@@ -763,6 +766,7 @@ export default function OrdemServico({ setPage }) {
                   <h4>👤 Cliente</h4>
                   <p><strong>{viewing.clienteNome}</strong></p>
                   {viewing.clienteTelefone && <p>📞 {viewing.clienteTelefone}</p>}
+                  {viewing.clienteDoc && <p>🪪 {tipoDoc(viewing.clienteDoc)}: {viewing.clienteDoc}</p>}
                 </div>
                 <div className="os-detail-section">
                   <h4>🚗 Veículo</h4>
@@ -884,6 +888,10 @@ export default function OrdemServico({ setPage }) {
               <div className="form-group">
                 <label>Telefone</label>
                 <input value={form.clienteTelefone} onChange={e => setForm(f => ({ ...f, clienteTelefone: e.target.value }))} placeholder="(11) 99999-9999" />
+              </div>
+              <div className="form-group">
+                <label>CPF / CNPJ</label>
+                <input value={form.clienteDoc} onChange={e => setForm(f => ({ ...f, clienteDoc: formatarDoc(e.target.value) }))} placeholder="CPF ou CNPJ" />
               </div>
             </div>
 

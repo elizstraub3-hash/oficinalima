@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
+import { formatarDoc, tipoDoc } from './Documento.js'
 import './Clientes.css'
 
 const KEY = 'ol_clientes'
@@ -19,7 +20,7 @@ export default function Clientes() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ nome: item.nome, telefone: item.telefone, email: item.email || '', cpf: item.cpf || '', endereco: item.endereco || '', obs: item.obs || '', placa: item.placa || '', modelo: item.modelo || '', ano: item.ano || '', cor: item.cor || '' })
+    setForm({ nome: item.nome, telefone: item.telefone, email: item.email || '', cpf: item.cpf || item.cnpj || '', tipoDoc: item.tipoDoc || tipoDoc(item.cpf || item.cnpj), endereco: item.endereco || '', obs: item.obs || '', placa: item.placa || '', modelo: item.modelo || '', ano: item.ano || '', cor: item.cor || '' })
     setModal(true)
   }
 
@@ -73,7 +74,7 @@ export default function Clientes() {
               <tr>
                 <th>Nome</th>
                 <th>Telefone</th>
-                <th>CPF</th>
+                <th>CPF / CNPJ</th>
                 <th>Veículo</th>
                 <th>E-mail</th>
                 <th></th>
@@ -122,8 +123,17 @@ export default function Clientes() {
                 <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 99999-9999" />
               </div>
               <div className="form-group">
-                <label>CPF</label>
-                <input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" />
+                <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {['CPF', 'CNPJ'].map(t => (
+                    <span key={t} onClick={() => setForm(f => ({ ...f, tipoDoc: t, cpf: formatarDoc(f.cpf, t) }))}
+                      style={{ cursor: 'pointer', padding: '2px 10px', borderRadius: 12, border: '1px solid var(--border)', fontWeight: 700,
+                        background: (form.tipoDoc || tipoDoc(form.cpf)) === t ? '#3b82f6' : 'transparent', color: (form.tipoDoc || tipoDoc(form.cpf)) === t ? '#fff' : 'inherit' }}>
+                      {t}
+                    </span>
+                  ))}
+                </label>
+                <input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: formatarDoc(e.target.value, f.tipoDoc || 'CPF') }))}
+                  placeholder={(form.tipoDoc || tipoDoc(form.cpf)) === 'CNPJ' ? '00.000.000/0000-00' : '000.000.000-00'} />
               </div>
             </div>
             <div className="form-group">
