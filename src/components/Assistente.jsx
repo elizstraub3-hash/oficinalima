@@ -117,7 +117,7 @@ function responder(intencao, texto = '') {
       }
     }
     default:
-      return { texto: 'Ainda não sei responder isso 😅. Escolha uma das opções abaixo:', mostrarAtalhos: true }
+      return { texto: 'Minha criadora não me preparou para essa pergunta, Pedro 😅. Mas posso te ajudar com uma destas:', mostrarAtalhos: true }
   }
 }
 
@@ -130,9 +130,15 @@ function entender(texto) {
   return INTENCOES.find(i => i.p.some(p => t.includes(p)))?.id || null
 }
 
+function saudacao() {
+  const h = new Date().getHours()
+  const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
+  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
+}
+
 export default function Assistente() {
   const [aberto, setAberto] = useState(false)
-  const [msgs, setMsgs] = useState([{ de: 'bot', texto: 'Oi, Pedro! 👋 Sou o assistente da oficina. Pergunte ou toque numa opção:', mostrarAtalhos: true }])
+  const [msgs, setMsgs] = useState([saudacao()])
   const [entrada, setEntrada] = useState('')
   const fim = useRef(null)
 
@@ -153,7 +159,7 @@ export default function Assistente() {
 
   return (
     <>
-      <button onClick={() => setAberto(a => !a)} title="Assistente da oficina" className="no-print"
+      <button onClick={() => { if (!aberto) setMsgs([saudacao()]); setAberto(a => !a) }} title="Assistente da oficina" className="no-print"
         style={{ position: 'fixed', right: 20, bottom: 20, zIndex: 9500, width: 58, height: 58, borderRadius: '50%', border: 'none', background: '#3b82f6', color: '#fff', fontSize: 26, cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,0.35)' }}>
         {aberto ? '✕' : '💬'}
       </button>
