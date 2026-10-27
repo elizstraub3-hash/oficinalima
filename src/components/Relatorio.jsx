@@ -86,10 +86,10 @@ export default function Relatorio() {
 
       <Bloco titulo="👷 Quanto deu para cada um">
         {r.mecanicos.map(m => (
-          <Linha key={m.nome} label={`${m.nome} — ${m.concluidas} OS · mão de obra ${fmt(m.maoDeObra)}`} valor={`pagar ${fmt(m.maoDeObra * 0.5)}`} cor="#3b82f6" />
+          <Linha key={m.nome} label={`${m.nome} — ${m.concluidas} OS · mão de obra ${fmt(m.maoDeObra)}`} valor={`pagar ${fmt(m.aPagar)} (${Math.round(m.pct * 100)}%)${m.despesa ? ' · despesa' : ''}`} cor="#3b82f6" />
         ))}
         <Linha label="👨 Pedro — comissão de peças (3%)" valor={fmt(r.pecas.comPedro)} cor="#d97706" />
-        <Linha label="🏢 Oficina — 50% da mão de obra" valor={fmt(r.maoDeObra * 0.5)} />
+        <Linha label="🏢 Oficina — o que sobra da mão de obra" valor={fmt(r.maoDeObra - r.mecanicos.reduce((s, m) => s + m.aPagar, 0))} />
         <Linha label="🏢 Oficina — comissão de peças" valor={fmt(r.pecas.comOficina)} />
       </Bloco>
 

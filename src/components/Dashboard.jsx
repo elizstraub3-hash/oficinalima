@@ -459,7 +459,7 @@ export default function Dashboard({ setPage }) {
                 <span>💸 Saídas: <strong style={{ color: '#ef4444' }}>{fmtR(r.saidas)}</strong></span>
                 <span>📈 Saldo: <strong>{fmtR(r.saldo)}</strong></span>
                 {r.mecanicos.filter(m => m.maoDeObra > 0).map(m => (
-                  <span key={m.nome}>👷 {m.nome}: <strong style={{ color: '#3b82f6' }}>{fmtR(m.maoDeObra * 0.5)}</strong></span>
+                  <span key={m.nome}>👷 {m.nome}: <strong style={{ color: '#3b82f6' }}>{fmtR(m.aPagar)}</strong></span>
                 ))}
               </div>
               <button className="btn-primary" onClick={() => setPage && setPage('relatorio')}>Ver relatório completo →</button>
@@ -489,7 +489,7 @@ export default function Dashboard({ setPage }) {
                         {r.concluidas} OS concluída(s) · {r.emAndamento} em andamento
                       </div>
                       <div style={{ fontSize: 13, marginTop: 6 }}>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>
-                      <div style={{ fontSize: 13 }}>A pagar (50%): <strong style={{ color: '#3b82f6' }}>{fmtR(r.maoDeObra * 0.5)}</strong></div>
+                      <div style={{ fontSize: 13 }}>A pagar ({Math.round(r.pct * 100)}%): <strong style={{ color: '#3b82f6' }}>{fmtR(r.aPagar)}</strong></div>
                     </div>
                   )
                 })}

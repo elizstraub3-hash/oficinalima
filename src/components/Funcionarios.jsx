@@ -9,7 +9,14 @@ const KEY = 'ol_funcionarios'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo' })
+const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo', comissao: 50, despesa: false })
+
+// Porcentagem da mão de obra que o funcionário recebe (padrão 50%)
+export function pctFuncionario(nome) {
+  const f = load().find(x => x.nome === nome)
+  const n = Number(f?.comissao)
+  return (f?.comissao === undefined || f?.comissao === '' || Number.isNaN(n) ? 50 : n) / 100
+}
 const CARGOS = ['Mecânico', 'Eletricista', 'Atendente', 'Gerente', 'Auxiliar', 'Outros']
 
 function formatMs(ms) {
@@ -54,6 +61,9 @@ export function calcResumoFuncionario(nome, periodo) {
     return s
   }, 0)
   return {
+    pct: pctFuncionario(nome),
+    aPagar: totalMaoDeObra * pctFuncionario(nome),
+    despesa: !!load().find(x => x.nome === nome)?.despesa,
     total: minhas.length,
     concluidas: concluidas.length,
     emAndamento: minhas.filter(o => o.status === 'em_andamento').length,
@@ -79,7 +89,7 @@ export default function Funcionarios() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ nome: item.nome, cargo: item.cargo, telefone: item.telefone, status: item.status })
+    setForm({ nome: item.nome, cargo: item.cargo, telefone: item.telefone, status: item.status, comissao: item.comissao ?? 50, despesa: !!item.despesa })
     setModal(true)
   }
 
@@ -88,9 +98,9 @@ export default function Funcionarios() {
     if (!form.nome || !form.cargo) return
     const arr = load()
     if (editing) {
-      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form }
+      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form, comissao: Number(form.comissao) || 0 }
     } else {
-      arr.push({ ...form, id: nextId(arr) })
+      arr.push({ ...form, comissao: Number(form.comissao) || 0, id: nextId(arr) })
     }
     save(arr)
     setModal(false)
@@ -133,6 +143,9 @@ export default function Funcionarios() {
               <strong className="func-nome">{f.nome}</strong>
               <div style={{ fontSize: 13, color: 'var(--text-light)' }}>{f.cargo}</div>
               {f.telefone && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>📞 {f.telefone}</div>}
+              <div style={{ fontSize: 12, marginTop: 2 }}>
+                💰 Recebe <strong>{f.comissao ?? 50}%</strong> da mão de obra · Despesa: <strong style={{ color: f.despesa ? '#ef4444' : 'var(--text-light)' }}>{f.despesa ? 'Sim' : 'Não'}</strong>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -167,8 +180,8 @@ export default function Funcionarios() {
             <strong style={{ color: 'var(--text-main)', fontSize: 18 }}>{fmt(r.maoDeObra)}</strong>
           </div>
           <div className="func-resumo-item">
-            <span className="func-resumo-label">👷 A pagar (50%)</span>
-            <strong style={{ color: '#3b82f6' }}>{fmt(r.maoDeObra * 0.5)}</strong>
+            <span className="func-resumo-label">👷 A pagar ({Math.round(r.pct * 100)}%)</span>
+            <strong style={{ color: '#3b82f6' }}>{fmt(r.aPagar)}</strong>
           </div>
           <div className="func-resumo-item">
             <span className="func-resumo-label">Total em OS</span>
@@ -284,6 +297,27 @@ export default function Funcionarios() {
             <div className="form-group">
               <label>Telefone</label>
               <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 99999-9999" />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Porcentagem da mão de obra (%)</label>
+                <input type="number" min="0" max="100" step="1" value={form.comissao}
+                  onChange={e => setForm(f => ({ ...f, comissao: e.target.value }))} placeholder="50" />
+                <small style={{ color: 'var(--text-light)' }}>Quanto ele recebe de cada serviço que fizer.</small>
+              </div>
+              <div className="form-group">
+                <label>Entra como despesa?</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[[true, 'Sim'], [false, 'Não']].map(([v, l]) => (
+                    <button type="button" key={l} onClick={() => setForm(f => ({ ...f, despesa: v }))}
+                      style={{ flex: 1, padding: '10px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', border: '1.5px solid ' + (form.despesa === v ? (v ? '#ef4444' : '#10b981') : 'var(--border)'),
+                        background: form.despesa === v ? (v ? '#ef4444' : '#10b981') : 'transparent', color: form.despesa === v ? '#fff' : 'var(--text-main)' }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <small style={{ color: 'var(--text-light)' }}>Sim: o que ele recebe sai como despesa no Caixa e no relatório.</small>
+              </div>
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>

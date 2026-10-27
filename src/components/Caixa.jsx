@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import './Caixa.css'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS } from './Periodo.jsx'
+import { pctFuncionario } from './Funcionarios.jsx'
 
 const KEY = 'ol_caixa'
 const CATS = ['Serviço', 'Estoque', 'Manutenção', 'Outros']
@@ -35,10 +36,27 @@ export function lancamentosCaixa() {
     id: c.id, origem: 'conta', tipo: 'saida', categoria: 'Contas', valor: Number(c.valor),
     data: c.pagoEm, descricao: `Conta: ${c.descricao}`,
   }))
-  return [...manuais, ...os, ...gastos, ...contas].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+  // Mão de obra dos funcionários marcados como despesa: sai do caixa conforme a porcentagem de cada um
+  const funcs = ler('ol_funcionarios').filter(f => f.despesa)
+  const mecanicos = []
+  ler('ol_ordens').filter(o => o.status === 'concluido').forEach(o => {
+    (o.servicos || []).forEach((sv, k) => {
+      const f = funcs.find(x => x.nome === sv.funcionario)
+      const mo = parseFloat(sv.maoDeObra) || 0
+      if (!f || !mo) return
+      const pct = (f.comissao === undefined || f.comissao === '' ? 50 : Number(f.comissao)) / 100
+      if (!pct) return
+      mecanicos.push({
+        id: `${o.id}-${k}`, origem: 'mecanico', tipo: 'saida', categoria: 'Funcionários', valor: mo * pct,
+        data: o.fim ? dataLocal(o.fim) : (o.data || dataLocal(Date.now())),
+        descricao: `Mão de obra ${f.nome} (${Math.round(pct * 100)}%) — ${o.numero || 'OS ' + o.id}`,
+      })
+    })
+  })
+  return [...manuais, ...os, ...gastos, ...contas, ...mecanicos].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
 }
 
-const ORIGEM = { os: '🔗 OS concluída', gasto: '🧾 Planilha de Gastos', conta: '📄 Conta paga' }
+const ORIGEM = { os: '🔗 OS concluída', gasto: '🧾 Planilha de Gastos', conta: '📄 Conta paga', mecanico: '👷 Pagamento de funcionário' }
 
 const empty = () => ({ descricao: '', valor: '', tipo: 'entrada', categoria: 'Serviço', data: new Date().toISOString().split('T')[0] })
 
@@ -151,6 +169,8 @@ export default function Caixa() {
       porFuncionario[o.funcionario] += parseFloat(o.maoDeObra) || 0
     }
   })
+
+  const totalPagarMec = Object.entries(porFuncionario).reduce((s, [nome, total]) => s + total * pctFuncionario(nome), 0)
 
   return (
     <div>
@@ -301,12 +321,12 @@ export default function Caixa() {
             <strong>{fmt(totalMaoDeObra)}</strong>
           </div>
           <div className="mob-split-item oficina">
-            <span className="mob-split-label">💼 Fica na Oficina (50%)</span>
-            <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
+            <span className="mob-split-label">💼 Fica na Oficina</span>
+            <strong>{fmt(totalMaoDeObra - totalPagarMec)}</strong>
           </div>
           <div className="mob-split-item mecanico">
-            <span className="mob-split-label">👷 Pagar Mecânicos (50%)</span>
-            <strong>{fmt(totalMaoDeObra * 0.5)}</strong>
+            <span className="mob-split-label">👷 Pagar Mecânicos</span>
+            <strong>{fmt(totalPagarMec)}</strong>
           </div>
         </div>
 
@@ -323,7 +343,7 @@ export default function Caixa() {
                   <div>
                     <div className="mob-func-nome">{nome}</div>
                     <div className="mob-func-total">Total gerado: {fmt(total)}</div>
-                    <div className="mob-func-pagar">A pagar (50%): <strong style={{ color: '#2563eb' }}>{fmt(total * 0.5)}</strong></div>
+                    <div className="mob-func-pagar">A pagar ({Math.round(pctFuncionario(nome) * 100)}%): <strong style={{ color: '#2563eb' }}>{fmt(total * pctFuncionario(nome))}</strong></div>
                   </div>
                 </div>
               ))}

@@ -23,6 +23,7 @@ const ATALHOS = [
   { id: 'msg_pronto', label: '✅ Mensagem carro pronto' },
   { id: 'msg_orcamento', label: '💬 Mensagem de orçamento' },
   { id: 'ajuda', label: '❓ Como usar o painel' },
+  { id: 'melhoria', label: '💡 Pedir uma melhoria' },
 ]
 
 const KEY_LOG = 'ol_assistente_log'
@@ -91,7 +92,7 @@ function responder(intencao, texto = '') {
       if (!mecs.length) return { texto: 'Nenhum mecânico ativo cadastrado.' }
       const linhas = mecs.map(f => {
         const r = calcResumoFuncionario(f.nome, semana)
-        return `👷 ${f.nome}: ${r.concluidas} OS · mão de obra ${fmt(r.maoDeObra)} → pagar ${fmt(r.maoDeObra * 0.5)}`
+        return `👷 ${f.nome}: ${r.concluidas} OS · mão de obra ${fmt(r.maoDeObra)} → pagar ${fmt(r.aPagar)} (${Math.round(r.pct * 100)}%)`
       })
       return { texto: `Mecânicos — ${semana.label.toLowerCase()}:\n${linhas.join('\n')}\n\nSó conta a mão de obra de serviços com o mecânico escolhido na OS.` }
     }
@@ -135,6 +136,8 @@ function responder(intencao, texto = '') {
       if (!d.clienteNome && !d.placa) return { texto: 'Bora criar a OS! 🎤 Toque no microfone e fale tudo de uma vez, por exemplo:\n\n"Criar OS para o João, placa ABC1D23, Gol prata, troca de óleo, 150 reais, mecânico Celio"\n\nEu preencho e te mostro para conferir antes de salvar.' }
       return { texto: 'Entendi assim 👇 Confira, ajuste se precisar e toque em "Criar OS":', rascunho: d, ditado: texto }
     }
+    case 'melhoria':
+      return { texto: 'Pedro, tudo o que estamos conversando pode ser melhorado com a ajuda da minha criadora! 💡\n\nMe conta o que você gostaria que eu fizesse, ou o que quer mudar no painel. Eu anoto tudo e, futuramente, ela pode melhorar o que você está me pedindo.\n\nPode escrever ou falar 🎤 agora:', esperaSugestao: true }
     case 'ajuda':
       return { texto: 'Posso explicar como fazer qualquer coisa no painel. Toque num assunto ou pergunte, ex: "como emitir nota fiscal?"', ajuda: true }
     default: {
@@ -183,7 +186,7 @@ function entender(texto) {
 function saudacao() {
   const h = new Date().getHours()
   const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
-  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPosso te ajudar com os números da oficina e com dúvidas de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
+  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPedro, tudo o que estamos conversando pode ser melhorado com a ajuda da minha criadora — se quiser algo diferente, toque em "💡 Pedir uma melhoria".\n\nPosso te ajudar com os números da oficina e com dúvidas de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
 }
 
 export default function Assistente({ onMudou }) {
@@ -227,6 +230,12 @@ export default function Assistente({ onMudou }) {
 
   function perguntar(texto, intencao) {
     if (!texto.trim()) return
+    if (!intencao && msgs[msgs.length - 1]?.esperaSugestao) {
+      registrar(texto, 'sugestao', 'sugestao')
+      setMsgs(m => [...m, { de: 'eu', texto }, { de: 'bot', texto: 'Anotado, Pedro! 📝 Sua ideia ficou guardada para a minha criadora. Obrigado por me ajudar a melhorar! 😄\n\nQuer mais alguma coisa?', mostrarAtalhos: true }])
+      setEntrada('')
+      return
+    }
     const qual = intencao || entender(texto)
     registrar(texto, qual, intencao ? 'botao' : 'digitada')
     const r = responder(qual, texto)
