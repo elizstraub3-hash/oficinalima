@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
-import { formatarDoc, tipoDoc } from './Documento.js'
+import { formatarDoc, tipoDoc, soDigitos } from './Documento.js'
 import { loadEstoque, loadCategorias, sincronizarEstoqueOS } from './Estoque.jsx'
 
 const itensAtivos = o => (o && o.status !== 'cancelado' ? (o.itens || []) : [])
@@ -229,7 +229,7 @@ function gerarPDF(ordem) {
 
   <!-- BARRA OS + STATUS -->
   <div class="os-title-bar">
-    <span>${ordem.numero}</span>
+    <span>${ordem.numero}${ordem.placa ? ` &nbsp;·&nbsp; Placa ${ordem.placa}` : ''}</span>
     <span class="status-pill">${st.label}</span>
   </div>
 
@@ -408,9 +408,8 @@ export default function OrdemServico({ setPage }) {
     setModal(true)
   }
 
-  function selectCliente(nome) {
-    const c = clientes.find(x => x.nome === nome)
-    if (c) setForm(f => ({
+  function preencherCliente(c) {
+    setForm(f => ({
       ...f,
       clienteNome: c.nome,
       clienteTelefone: c.telefone || '',
@@ -421,7 +420,20 @@ export default function OrdemServico({ setPage }) {
       ano: c.ano || f.ano,
       cor: c.cor || f.cor,
     }))
+  }
+
+  function selectCliente(nome) {
+    const c = clientes.find(x => x.nome.trim().toLowerCase() === nome.trim().toLowerCase())
+    if (c) preencherCliente(c)
     else setForm(f => ({ ...f, clienteNome: nome }))
+  }
+
+  function digitarDoc(valor) {
+    const doc = formatarDoc(valor)
+    const dig = soDigitos(doc)
+    const c = (dig.length === 11 || dig.length === 14) && clientes.find(x => soDigitos(x.cpf || x.cnpj) === dig)
+    if (c) preencherCliente(c)
+    else setForm(f => ({ ...f, clienteDoc: doc }))
   }
 
   function adicionarItem() {
@@ -494,6 +506,28 @@ export default function OrdemServico({ setPage }) {
     return calcTotalPecas() + calcTotalMob()
   }
 
+  // Cria ou atualiza o cadastro do cliente com os dados digitados na OS
+  function salvarCliente() {
+    if (!form.clienteNome) return
+    const clis = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
+    const dig = soDigitos(form.clienteDoc)
+    let idx = dig ? clis.findIndex(c => soDigitos(c.cpf || c.cnpj) === dig) : -1
+    if (idx < 0) idx = clis.findIndex(c => (c.nome || '').trim().toLowerCase() === form.clienteNome.trim().toLowerCase())
+    const dados = {
+      nome: form.clienteNome.trim(),
+      ...(form.clienteTelefone ? { telefone: form.clienteTelefone } : {}),
+      ...(form.clienteDoc ? { cpf: form.clienteDoc, tipoDoc: tipoDoc(form.clienteDoc) } : {}),
+      ...(form.clienteEndereco ? { endereco: form.clienteEndereco } : {}),
+      ...(form.placa ? { placa: form.placa } : {}),
+      ...(form.modelo ? { modelo: form.modelo } : {}),
+      ...(form.ano ? { ano: form.ano } : {}),
+      ...(form.cor ? { cor: form.cor } : {}),
+    }
+    if (idx >= 0) clis[idx] = { ...clis[idx], ...dados }
+    else clis.push({ id: nextId(clis), telefone: '', email: '', cpf: '', endereco: '', obs: '', ...dados })
+    localStorage.setItem(KEY_CLI, JSON.stringify(clis))
+  }
+
   function _doSave() {
     if (!form.status) { setStatusError(true); return null }
     if (!form.clienteNome) { alert('Preencha o nome do cliente.'); return null }
@@ -524,14 +558,8 @@ export default function OrdemServico({ setPage }) {
       }
       arr.push(novaOrdem)
       savedOrdem = novaOrdem
-      if (form.clienteNome) {
-        const clis = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
-        if (!clis.find(c => c.nome.toLowerCase() === form.clienteNome.toLowerCase())) {
-          clis.push({ id: nextId(clis), nome: form.clienteNome, telefone: form.clienteTelefone, email: '', cpf: form.clienteDoc || '', endereco: form.clienteEndereco || '', obs: '' })
-          localStorage.setItem(KEY_CLI, JSON.stringify(clis))
-        }
-      }
     }
+    salvarCliente()
     save(arr)
     setModal(false)
     refresh()
@@ -894,7 +922,7 @@ export default function OrdemServico({ setPage }) {
               </div>
               <div className="form-group">
                 <label>CPF / CNPJ</label>
-                <input value={form.clienteDoc} onChange={e => setForm(f => ({ ...f, clienteDoc: formatarDoc(e.target.value) }))} placeholder="CPF ou CNPJ" />
+                <input value={form.clienteDoc} onChange={e => digitarDoc(e.target.value)} placeholder="Digite o CPF/CNPJ para buscar" />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label>Endereço</label>
