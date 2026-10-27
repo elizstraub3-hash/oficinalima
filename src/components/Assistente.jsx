@@ -133,7 +133,7 @@ function responder(intencao, texto = '') {
     default: {
       const a = AJUDA.find(x => x.id === intencao)
       if (a) return { texto: a.r }
-      return { texto: 'Minha criadora não me preparou para essa pergunta, Pedro 😅. Mas posso te ajudar com uma destas:', mostrarAtalhos: true }
+      return { texto: 'Minha criadora não me preparou para essa pergunta, Pedro 😅. Ainda estou em fase de adaptação e ela está fazendo melhorias em mim. Por enquanto, posso te ajudar com uma destas:', mostrarAtalhos: true }
     }
   }
 }
@@ -175,7 +175,7 @@ function entender(texto) {
 function saudacao() {
   const h = new Date().getHours()
   const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
-  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina. Posso te ajudar com os números da oficina e com qualquer dúvida de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
+  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPosso te ajudar com os números da oficina e com dúvidas de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
 }
 
 export default function Assistente() {
