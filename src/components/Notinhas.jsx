@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, hojeISO } from './Periodo.jsx'
 import Modal from './Modal.jsx'
+import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import './Notinhas.css'
 
 const KEY = 'ol_notinhas'
@@ -8,11 +9,10 @@ function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
 
-const MARGEM = 1.35
 const COM_OFICINA = 0.30
 const COM_LEANDRA = 0.03
 
-const emptyForm = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '' })
+const emptyForm = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '', margem: pctSalva('margem_notinha') })
 
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
 const fmtPct = v => `${Number(v || 0).toFixed(2).replace('.', ',')}%`
@@ -98,14 +98,16 @@ export default function Notinhas() {
   const [periodoId, setPeriodoId] = useState('semana-0')
   const [busca, setBusca]     = useState('')
   const [confirmModal, setConfirmModal] = useState(null) // { custoCalc, vendaCalc, lucroCalc, formData, pct }
-  const [pctInput, setPctInput] = useState('35')
+  const [pctInput, setPctInput] = useState(() => pctSalva('comissao_notinha'))
 
   const todayStr   = hojeISO()
   const periodo    = acharPeriodo(periodoId)
 
   const custoUnit    = parseFloat(form.custoUnit) || 0
   const qtd          = parseInt(form.qtd) || 1
-  const precoAuto    = form.precoVenda ? parseFloat(form.precoVenda) : Math.round(custoUnit * MARGEM)
+  const fator        = fatorMargem(form.margem)
+  const precoSugerido = custoUnit > 0 && fator ? Math.round(custoUnit * fator * 100) / 100 : 0
+  const precoAuto    = form.precoVenda ? parseFloat(form.precoVenda) : (precoSugerido || custoUnit)
   const custoCalc    = custoUnit * qtd
   const vendaCalc    = precoAuto * qtd
   const lucroCalc    = vendaCalc - custoCalc
@@ -116,13 +118,14 @@ export default function Notinhas() {
   function handleSave(e) {
     e.preventDefault()
     if (!form.desc || !form.custoUnit) return
-    setPctInput('35')
+    setPctInput(pctSalva('comissao_notinha'))
     setConfirmModal({ custoCalc, vendaCalc, lucroCalc, formData: { ...form, qtd, custoUnit, precoVenda: precoAuto } })
   }
 
   function confirmarSalvar(tipo) {
     const { custoCalc: cc, vendaCalc: vc, lucroCalc: lc, formData } = confirmModal
-    const pct = Math.max(0, parseFloat(pctInput) || 35) / 100
+    if (pctInput === '' || Number.isNaN(Number(pctInput))) return alert('Digite a porcentagem da comissão.')
+    const pct = Math.max(0, parseFloat(pctInput)) / 100
     const leandraFix = 0.03
     const oficinaPct = tipo === 'split' ? Math.max(0, pct - leandraFix) : pct
     const comOficina = parseFloat((cc * oficinaPct).toFixed(2))
@@ -295,14 +298,19 @@ export default function Notinhas() {
                 <input type="number" min="0" step="0.01" value={form.custoUnit} onChange={e => setForm(f => ({ ...f, custoUnit: e.target.value }))} placeholder="Quanto pagou por unidade" required />
               </div>
               <div className="form-group">
-                <label>Preço de Venda Unit. (R$) <span style={{ color: '#10b981', fontSize: 11 }}>+35% automático</span></label>
+                <label>Preço de Venda Unit. (R$) {fator && <span style={{ color: '#10b981', fontSize: 11 }}>+{form.margem}% automático</span>}</label>
                 <input
-                  type="number" min="0" step="1"
-                  value={form.precoVenda || (custoUnit > 0 ? Math.round(custoUnit * MARGEM) : '')}
+                  type="number" min="0" step="0.01"
+                  value={form.precoVenda || (precoSugerido || '')}
                   onChange={e => setForm(f => ({ ...f, precoVenda: e.target.value }))}
-                  placeholder={custoUnit > 0 ? `R$ ${Math.round(custoUnit * MARGEM)}` : 'Auto +35%'}
+                  placeholder={precoSugerido ? `R$ ${precoSugerido}` : 'Digite o preço ou a margem'}
                 />
               </div>
+            </div>
+            <div className="form-row">
+              <CampoPct chave="margem_notinha" label="Margem de lucro na venda (%)" value={form.margem ?? ''}
+                onChange={v => setForm(f => ({ ...f, margem: v, precoVenda: '' }))}
+                ajuda="Livre: a porcentagem que quiser sobre o custo." />
             </div>
 
             {/* Preview de cálculos */}
@@ -345,9 +353,9 @@ export default function Notinhas() {
       {/* === MODAL CONFIRMAÇÃO COMISSÃO === */}
       {confirmModal && (() => {
         const cc = confirmModal.custoCalc
-        const pctNum = Math.max(0, parseFloat(pctInput) || 35)
+        const pctNum = Math.max(0, parseFloat(pctInput) || 0)
         const pctDec = pctNum / 100
-        const oficinaSplit = Math.max(0, pctDec - 0.05)
+        const oficinaSplit = Math.max(0, pctDec - 0.03)
         return (
           <div style={{ position:'fixed', inset:0, zIndex:99999, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, maxWidth:440, width:'100%', padding:'28px 24px' }}>
@@ -363,18 +371,9 @@ export default function Notinhas() {
                 <label style={{ fontWeight:700, fontSize:13, display:'block', marginBottom:8 }}>
                   📊 Porcentagem total sobre o custo:
                 </label>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <input
-                    type="number" min="0" max="200" step="0.5"
-                    value={pctInput}
-                    onChange={e => setPctInput(e.target.value)}
-                    style={{ width:90, padding:'8px 12px', borderRadius:8, border:'2px solid #3b82f6', fontSize:18, fontWeight:800, textAlign:'center', background:'var(--bg-card)', color:'var(--text-main)' }}
-                  />
-                  <span style={{ fontSize:20, fontWeight:800, color:'#3b82f6' }}>%</span>
-                  <div style={{ fontSize:12, color:'var(--text-light)', lineHeight:1.4 }}>
-                    = <strong style={{color:'var(--text-main)'}}>{fmt(cc * pctDec)}</strong> de comissão total<br />
-                    <span style={{fontSize:11}}>Ex: 34%, 35%, 38%...</span>
-                  </div>
+                <CampoPct chave="comissao_notinha" label="" value={pctInput} onChange={setPctInput} placeholder="Ex: 35" />
+                <div style={{ fontSize:12, color:'var(--text-light)', lineHeight:1.4 }}>
+                  = <strong style={{color:'var(--text-main)'}}>{fmt(cc * pctDec)}</strong> de comissão total
                 </div>
               </div>
 

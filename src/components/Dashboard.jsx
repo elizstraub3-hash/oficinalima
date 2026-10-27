@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Dashboard.css'
+import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario, listarPeriodos } from './Funcionarios.jsx'
 import { resumoPeriodo } from './Relatorio.jsx'
@@ -8,8 +9,7 @@ const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
 function saveNotinhas(d) { localStorage.setItem(KEY_NOTINHAS, JSON.stringify(d)) }
 function nextNotinhaId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const MARGEM_PECAS = 1.35 // 35% fixo sobre o custo
-const emptyNotinha = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '' })
+const emptyNotinha = () => ({ desc: '', fornecedor: '', qtd: 1, custoUnit: '', precoVenda: '', margem: pctSalva('margem_notinha') })
 
 // Horário da oficina: 8h–12h / 13h30–18h
 function getSaudacao() {
@@ -173,7 +173,7 @@ export default function Dashboard({ setPage }) {
   const [notinhaForm, setNotinhaForm] = useState(emptyNotinha())
   const [notinhaOpen, setNotinhaOpen] = useState(false)
   const [notinhaConfirm, setNotinhaConfirm] = useState(null)
-  const [dashPctInput, setDashPctInput] = useState('35')
+  const [dashPctInput, setDashPctInput] = useState(() => pctSalva('comissao_notinha'))
   const saudacao = getSaudacao()
   const fraseCtx = getFraseContextual(checked, agora)
 
@@ -187,8 +187,10 @@ export default function Dashboard({ setPage }) {
 
   const custoUnit = parseFloat(notinhaForm.custoUnit) || 0
   const qtd = parseInt(notinhaForm.qtd) || 1
-  // Preço de venda = custo * 1.35, arredondado; campo editável sobrescreve
-  const precoAutoUnit = notinhaForm.precoVenda ? parseFloat(notinhaForm.precoVenda) : Math.round(custoUnit * MARGEM_PECAS)
+  // Preço de venda = custo + margem escolhida pelo Pedro; campo editável sobrescreve
+  const fatorN = fatorMargem(notinhaForm.margem)
+  const precoSugeridoN = custoUnit > 0 && fatorN ? Math.round(custoUnit * fatorN * 100) / 100 : 0
+  const precoAutoUnit = notinhaForm.precoVenda ? parseFloat(notinhaForm.precoVenda) : (precoSugeridoN || custoUnit)
   const custoCalc = custoUnit * qtd
   const vendaCalc = precoAutoUnit * qtd
   const lucroCalc = vendaCalc - custoCalc
@@ -197,13 +199,14 @@ export default function Dashboard({ setPage }) {
   function salvarNotinha(e) {
     e.preventDefault()
     if (!notinhaForm.desc || !notinhaForm.custoUnit) return
-    setDashPctInput('35')
+    setDashPctInput(pctSalva('comissao_notinha'))
     setNotinhaConfirm({ custoCalc, vendaCalc, lucroCalc, porcCalc })
   }
 
   function confirmarNotinha(tipo) {
     const { custoCalc: cc, vendaCalc: vc, lucroCalc: lc, porcCalc: pc } = notinhaConfirm
-    const pct = Math.max(0, parseFloat(dashPctInput) || 35) / 100
+    if (dashPctInput === '' || Number.isNaN(Number(dashPctInput))) return alert('Digite a porcentagem da comissão.')
+    const pct = Math.max(0, parseFloat(dashPctInput)) / 100
     const oficinaPct = tipo === 'split' ? Math.max(0, pct - 0.03) : pct
     const arr = loadNotinhas()
     arr.push({
@@ -580,19 +583,19 @@ export default function Dashboard({ setPage }) {
                   <input type="number" min="0" step="0.01" value={notinhaForm.custoUnit} onChange={e => setNotinhaForm(f => ({ ...f, custoUnit: e.target.value }))} placeholder="Quanto pagou" required />
                 </div>
                 <div className="form-group">
-                  <label>Preço de Venda Unit. (R$) <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>+35% automático</span></label>
+                  <label>Preço de Venda Unit. (R$) {fatorN && <span style={{ color: '#10b981', fontWeight: 700, fontSize: 11 }}>+{notinhaForm.margem}% automático</span>}</label>
                   <input
-                    type="number" min="0" step="1"
-                    value={notinhaForm.precoVenda || (custoUnit > 0 ? Math.round(custoUnit * MARGEM_PECAS) : '')}
+                    type="number" min="0" step="0.01"
+                    value={notinhaForm.precoVenda || (precoSugeridoN || '')}
                     onChange={e => setNotinhaForm(f => ({ ...f, precoVenda: e.target.value }))}
-                    placeholder={custoUnit > 0 ? `R$ ${Math.round(custoUnit * MARGEM_PECAS)}` : 'Preenchido auto com +35%'}
+                    placeholder={precoSugeridoN ? `R$ ${precoSugeridoN}` : 'Digite o preço ou a margem'}
                   />
-                  {custoUnit > 0 && !notinhaForm.precoVenda && (
-                    <small style={{ color: '#10b981', fontSize: 11, marginTop: 3, display: 'block' }}>
-                      ✅ Valor sugerido: R$ {Math.round(custoUnit * MARGEM_PECAS)} (custo R$ {custoUnit.toFixed(0)} + 35%)
-                    </small>
-                  )}
                 </div>
+              </div>
+              <div className="form-row">
+                <CampoPct chave="margem_notinha" label="Margem de lucro na venda (%)" value={notinhaForm.margem ?? ''}
+                  onChange={v => setNotinhaForm(f => ({ ...f, margem: v, precoVenda: '' }))}
+                  ajuda="Livre: a porcentagem que quiser sobre o custo." />
               </div>
               {(custoCalc > 0 || vendaCalc > 0) && (
                 <div className="dash-notinha-calc">
@@ -671,7 +674,7 @@ export default function Dashboard({ setPage }) {
       {/* === CONFIRMAÇÃO COMISSÃO NOTINHA === */}
       {notinhaConfirm && (() => {
         const cc = notinhaConfirm.custoCalc
-        const pctNum = Math.max(0, parseFloat(dashPctInput) || 35)
+        const pctNum = Math.max(0, parseFloat(dashPctInput) || 0)
         const pctDec = pctNum / 100
         const oficinaSplit = Math.max(0, pctDec - 0.03)
         return (
@@ -689,18 +692,9 @@ export default function Dashboard({ setPage }) {
                 <label style={{ fontWeight:700, fontSize:13, display:'block', marginBottom:8 }}>
                   📊 Porcentagem total sobre o custo:
                 </label>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <input
-                    type="number" min="0" max="200" step="0.5"
-                    value={dashPctInput}
-                    onChange={e => setDashPctInput(e.target.value)}
-                    style={{ width:90, padding:'8px 12px', borderRadius:8, border:'2px solid #3b82f6', fontSize:18, fontWeight:800, textAlign:'center', background:'var(--bg-card)', color:'var(--text-main)' }}
-                  />
-                  <span style={{ fontSize:20, fontWeight:800, color:'#3b82f6' }}>%</span>
-                  <div style={{ fontSize:12, color:'var(--text-light)', lineHeight:1.4 }}>
-                    = <strong style={{color:'var(--text-main)'}}>{fmt(cc * pctDec)}</strong> de comissão total<br />
-                    <span style={{fontSize:11}}>Ex: 34%, 35%, 38%...</span>
-                  </div>
+                <CampoPct chave="comissao_notinha" label="" value={dashPctInput} onChange={setDashPctInput} placeholder="Ex: 35" />
+                <div style={{ fontSize:12, color:'var(--text-light)', lineHeight:1.4 }}>
+                  = <strong style={{color:'var(--text-main)'}}>{fmt(cc * pctDec)}</strong> de comissão total
                 </div>
               </div>
 

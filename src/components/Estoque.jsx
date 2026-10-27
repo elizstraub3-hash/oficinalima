@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import Modal from './Modal.jsx'
 import './Estoque.css'
 import { adicionarLancamento } from './Caixa.jsx'
+import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 
 const KEY       = 'ol_estoque'
 const KEY_MOV   = 'ol_estoque_mov'
@@ -89,8 +90,8 @@ export default function Estoque() {
 
   function refresh() { setItems(load()); setMovs(loadMov()) }
 
-  function openAdd()  { setEditing(null); setForm({ ...emptyForm(), categoria: catFiltro !== 'todas' ? catFiltro : 'Outros' }); setModal('add') }
-  function openEdit(p){ setEditing(p.id); setForm({ ...p }); setModal('edit') }
+  function openAdd()  { setEditing(null); setForm({ ...emptyForm(), margem: pctSalva('margem_estoque'), categoria: catFiltro !== 'todas' ? catFiltro : 'Outros' }); setModal('add') }
+  function openEdit(p){ setEditing(p.id); setForm({ ...p, margem: p.margem ?? '' }); setModal('edit') }
   function openBaixa(p){ setSelected(p); setMovForm({ qtd: 1, obs: '' }); setModal('baixa') }
   function openEntrada(p){ setSelected(p); setMovForm({ qtd: 1, obs: '', lancarCaixa: true, valorCompra: '' }); setModal('entrada') }
   function openHist(p){ setSelected(p); setModal('hist') }
@@ -103,7 +104,7 @@ export default function Estoque() {
       qtd:       Number(form.qtd)       || 0,
       qtdMinima: Number(form.qtdMinima) || 3,
       precoCusto: parseFloat(form.precoCusto) || 0,
-      precoVenda: parseFloat(form.precoVenda) || parseFloat((form.precoCusto * 1.35).toFixed(2)) || 0,
+      precoVenda: parseFloat(form.precoVenda) || vendaAuto || parseFloat(form.precoCusto) || 0,
     }
     if (editing) {
       arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...item }
@@ -167,7 +168,9 @@ export default function Estoque() {
   const histPeca = selected ? movs.filter(m => m.pecaId === selected.id).reverse() : []
 
   const custoAuto = parseFloat(form.precoCusto) || 0
-  const vendaAuto = form.precoVenda ? parseFloat(form.precoVenda) : parseFloat((custoAuto * 1.35).toFixed(2))
+  const fator = fatorMargem(form.margem)
+  const vendaSugerida = custoAuto > 0 && fator ? parseFloat((custoAuto * fator).toFixed(2)) : 0
+  const vendaAuto = form.precoVenda ? parseFloat(form.precoVenda) : vendaSugerida
 
   return (
     <div>
@@ -331,12 +334,17 @@ export default function Estoque() {
                 <input type="number" min="0" step="0.01" value={form.precoCusto} onChange={e => setForm(f=>({...f, precoCusto: e.target.value, precoVenda: ''}))} placeholder="0,00" />
               </div>
               <div className="form-group">
-                <label>Preço de Venda (R$) <span style={{ color: '#10b981', fontSize: 11 }}>+35% automático</span></label>
+                <label>Preço de Venda (R$) {fator && <span style={{ color: '#10b981', fontSize: 11 }}>+{form.margem}% automático</span>}</label>
                 <input type="number" min="0" step="0.01"
-                  value={form.precoVenda || (custoAuto > 0 ? parseFloat((custoAuto*1.35).toFixed(2)) : '')}
+                  value={form.precoVenda || (vendaSugerida || '')}
                   onChange={e => setForm(f=>({...f, precoVenda: e.target.value}))}
-                  placeholder={custoAuto > 0 ? `R$ ${(custoAuto*1.35).toFixed(2)}` : '0,00'} />
+                  placeholder={vendaSugerida ? `R$ ${vendaSugerida.toFixed(2)}` : 'Digite o preço ou a margem'} />
               </div>
+            </div>
+            <div className="form-row">
+              <CampoPct chave="margem_estoque" label="Margem de lucro (%)" value={form.margem ?? ''}
+                onChange={v => setForm(f => ({ ...f, margem: v, precoVenda: '' }))}
+                ajuda="Livre: coloque a porcentagem que quiser. Em branco = você digita o preço de venda." />
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -349,7 +357,7 @@ export default function Estoque() {
               </div>
             </div>
 
-            {custoAuto > 0 && (
+            {custoAuto > 0 && vendaAuto > 0 && (
               <div style={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, display: 'flex', gap: 20 }}>
                 <span>💰 Custo: <strong style={{ color: '#ef4444' }}>{fmt(custoAuto)}</strong></span>
                 <span>💳 Venda: <strong style={{ color: '#10b981' }}>{fmt(vendaAuto)}</strong></span>
