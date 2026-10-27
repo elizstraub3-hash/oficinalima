@@ -99,9 +99,9 @@ export default function Funcionarios() {
     if (!form.nome || !form.cargo) return
     const arr = load()
     if (editing) {
-      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form, comissao: Number(form.comissao) || 0 }
+      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form, comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))) }
     } else {
-      arr.push({ ...form, comissao: Number(form.comissao) || 0, id: nextId(arr) })
+      arr.push({ ...form, comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))), id: nextId(arr) })
     }
     save(arr)
     setModal(false)

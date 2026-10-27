@@ -467,33 +467,52 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-        {/* === MECÂNICOS NA SEMANA === */}
+        {/* === FUNCIONÁRIOS NA SEMANA === */}
         {(() => {
           const semana = listarPeriodos().semanas[0]
-          const mecs = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => f.status === 'ativo')
-          if (!mecs.length) return null
+          const todos = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => (f.nome || '').trim())
+          const funcs = [...todos.filter(f => f.status !== 'inativo'), ...todos.filter(f => f.status === 'inativo')]
           const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const linha = { fontSize: 12, color: 'var(--text-light)', marginTop: 2 }
           return (
             <div className="card" style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>👷 Mecânicos — {semana.label.toLowerCase()}</h3>
-                <button className="btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setPage && setPage('funcionarios')}>Ver histórico →</button>
+                <h3 style={{ margin: 0 }}>👷 Funcionários — {semana.label.toLowerCase()}</h3>
+                <button className="btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setPage && setPage('funcionarios')}>Ver todos →</button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-                {mecs.map(f => {
-                  const r = calcResumoFuncionario(f.nome, semana)
-                  return (
-                    <div key={f.id} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px' }}>
-                      <strong>{f.nome}</strong>
-                      <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>
-                        {r.concluidas} OS concluída(s) · {r.emAndamento} em andamento
+              {!funcs.length ? (
+                <p style={{ fontSize: 13, color: 'var(--text-light)', margin: 0 }}>
+                  Nenhum funcionário cadastrado ainda. <button className="btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setPage && setPage('funcionarios')}>+ Cadastrar</button>
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
+                  {funcs.map(f => {
+                    const r = calcResumoFuncionario(f.nome, semana)
+                    const inativo = f.status === 'inativo'
+                    return (
+                      <div key={f.id ?? f.nome} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', opacity: inativo ? 0.55 : 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'flex-start' }}>
+                          <div>
+                            <strong>{f.nome}</strong>
+                            <div style={linha}>{f.cargo || 'Funcionário'}</div>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, whiteSpace: 'nowrap', background: inativo ? 'rgba(127,127,127,0.2)' : 'rgba(16,185,129,0.15)', color: inativo ? 'var(--text-light)' : '#10b981' }}>
+                            {inativo ? '○ Inativo' : '● Ativo'}
+                          </span>
+                        </div>
+                        {f.telefone && <div style={linha}>📞 {f.telefone}</div>}
+                        {f.entrada && <div style={linha}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
+                        <div style={linha}>💰 {Math.round(r.pct * 100)}% da mão de obra{r.despesa ? ' · entra como despesa' : ''}</div>
+                        <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 6, fontSize: 13 }}>
+                          <div>{r.concluidas} OS concluída(s) · {r.emAndamento} em andamento</div>
+                          <div>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>
+                          <div>A pagar: <strong style={{ color: '#3b82f6' }}>{fmtR(r.aPagar)}</strong></div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: 13, marginTop: 6 }}>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>
-                      <div style={{ fontSize: 13 }}>A pagar ({Math.round(r.pct * 100)}%): <strong style={{ color: '#3b82f6' }}>{fmtR(r.aPagar)}</strong></div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )
         })()}
