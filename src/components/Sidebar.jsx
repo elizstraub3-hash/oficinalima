@@ -18,7 +18,6 @@ const MENU = [
   { separator: true, label: 'CADASTROS' },
   { id: 'servicos',       label: 'Serviços',           icon: '🔧' },
   { id: 'funcionarios',   label: 'Funcionários',       icon: '👷' },
-  { id: 'perguntas',      label: 'Perguntas ao Assistente', icon: '💬' },
 ]
 
 function exportData() {
