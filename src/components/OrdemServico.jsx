@@ -90,7 +90,7 @@ function LiveTimer({ inicio }) {
 }
 
 const emptyForm = () => ({
-  clienteNome: '', clienteTelefone: '', clienteDoc: '', placa: '', modelo: '', ano: '', cor: '',
+  clienteNome: '', clienteTelefone: '', clienteDoc: '', clienteEndereco: '', placa: '', modelo: '', ano: '', cor: '',
   descricao: '', descBreve: '', valor: '', status: '', funcionario: '',
   itens: [],
   servicos: [],
@@ -240,6 +240,7 @@ function gerarPDF(ordem) {
       <div class="info-box-body">
         <div class="info-row"><span class="info-label">Nome</span><span class="info-val">${ordem.clienteNome || '—'}</span></div>
         <div class="info-row"><span class="info-label">Telefone</span><span class="info-val">${ordem.clienteTelefone || '—'}</span></div>
+        ${ordem.clienteEndereco ? `<div class="info-row"><span class="info-label">Endereço</span><span class="info-val">${ordem.clienteEndereco}</span></div>` : ''}
         ${ordem.clienteDoc ? `<div class="info-row"><span class="info-label">${tipoDoc(ordem.clienteDoc)}</span><span class="info-val">${ordem.clienteDoc}</span></div>` : ''}
       </div>
     </div>
@@ -393,7 +394,7 @@ export default function OrdemServico({ setPage }) {
       ? [{ id: Date.now(), desc: ordem.servico || 'Mao de Obra', funcionario: ordem.funcionario || '', maoDeObra: String(ordem.maoDeObra) }]
       : (ordem.servicos || [])
     setForm({
-      clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone, clienteDoc: ordem.clienteDoc || '',
+      clienteNome: ordem.clienteNome, clienteTelefone: ordem.clienteTelefone, clienteDoc: ordem.clienteDoc || '', clienteEndereco: ordem.clienteEndereco || '',
       placa: ordem.placa, modelo: ordem.modelo, ano: ordem.ano || '', cor: ordem.cor || '',
       descricao: ordem.descricao || '', descBreve: ordem.descBreve || '',
       valor: ordem.valor || '', status: ordem.status, funcionario: ordem.funcionario || '',
@@ -414,6 +415,7 @@ export default function OrdemServico({ setPage }) {
       clienteNome: c.nome,
       clienteTelefone: c.telefone || '',
       clienteDoc: c.cpf || c.cnpj || f.clienteDoc || '',
+      clienteEndereco: c.endereco || f.clienteEndereco || '',
       placa: c.placa || f.placa,
       modelo: c.modelo || f.modelo,
       ano: c.ano || f.ano,
@@ -525,7 +527,7 @@ export default function OrdemServico({ setPage }) {
       if (form.clienteNome) {
         const clis = JSON.parse(localStorage.getItem(KEY_CLI) || '[]')
         if (!clis.find(c => c.nome.toLowerCase() === form.clienteNome.toLowerCase())) {
-          clis.push({ id: nextId(clis), nome: form.clienteNome, telefone: form.clienteTelefone, email: '', cpf: form.clienteDoc || '', endereco: '', obs: '' })
+          clis.push({ id: nextId(clis), nome: form.clienteNome, telefone: form.clienteTelefone, email: '', cpf: form.clienteDoc || '', endereco: form.clienteEndereco || '', obs: '' })
           localStorage.setItem(KEY_CLI, JSON.stringify(clis))
         }
       }
@@ -766,6 +768,7 @@ export default function OrdemServico({ setPage }) {
                   <h4>👤 Cliente</h4>
                   <p><strong>{viewing.clienteNome}</strong></p>
                   {viewing.clienteTelefone && <p>📞 {viewing.clienteTelefone}</p>}
+                  {viewing.clienteEndereco && <p>📍 {viewing.clienteEndereco}</p>}
                   {viewing.clienteDoc && <p>🪪 {tipoDoc(viewing.clienteDoc)}: {viewing.clienteDoc}</p>}
                 </div>
                 <div className="os-detail-section">
@@ -892,6 +895,10 @@ export default function OrdemServico({ setPage }) {
               <div className="form-group">
                 <label>CPF / CNPJ</label>
                 <input value={form.clienteDoc} onChange={e => setForm(f => ({ ...f, clienteDoc: formatarDoc(e.target.value) }))} placeholder="CPF ou CNPJ" />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Endereço</label>
+                <input value={form.clienteEndereco} onChange={e => setForm(f => ({ ...f, clienteEndereco: e.target.value }))} placeholder="Rua, número, bairro, cidade" />
               </div>
             </div>
 
