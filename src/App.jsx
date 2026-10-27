@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard.jsx'
 import Caixa from './components/Caixa.jsx'
 import Relatorio from './components/Relatorio.jsx'
 import Assistente from './components/Assistente.jsx'
+import PerguntasAssistente from './components/PerguntasAssistente.jsx'
 import Servicos from './components/Servicos.jsx'
 import Funcionarios from './components/Funcionarios.jsx'
 import Temporizadores from './components/Temporizadores.jsx'
@@ -295,6 +296,7 @@ export default function App() {
         {page === 'clientes'      && <Clientes />}
         {page === 'caixa'         && <Caixa />}
         {page === 'relatorio'     && <Relatorio />}
+        {page === 'perguntas'     && <PerguntasAssistente />}
         {page === 'gastos'        && <Gastos />}
         {page === 'contas'        && <Contas />}
         {page === 'servicos'      && <Servicos />}

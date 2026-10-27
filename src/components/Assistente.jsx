@@ -3,6 +3,7 @@ import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario } from './Funcionarios.jsx'
 import { getAlertasEstoque } from './Estoque.jsx'
 import { listarPeriodos, noPeriodo, hojeISO } from './Periodo.jsx'
+import { AJUDA } from './AjudaPainel.js'
 
 const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
@@ -19,7 +20,18 @@ const ATALHOS = [
   { id: 'contas', label: '📄 Contas a vencer' },
   { id: 'msg_pronto', label: '✅ Mensagem carro pronto' },
   { id: 'msg_orcamento', label: '💬 Mensagem de orçamento' },
+  { id: 'ajuda', label: '❓ Como usar o painel' },
 ]
+
+const KEY_LOG = 'ol_assistente_log'
+export function lerPerguntas() { return ler(KEY_LOG) }
+function registrar(pergunta, intencao, origem) {
+  try {
+    const log = ler(KEY_LOG)
+    log.push({ id: Date.now(), quando: new Date().toISOString(), pergunta, intencao: intencao || null, origem })
+    localStorage.setItem(KEY_LOG, JSON.stringify(log.slice(-1000)))
+  } catch { /* sem espaço: ignora */ }
+}
 
 const INTENCOES = [
   { id: 'msg_pronto', p: ['pronto', 'pronta', 'buscar', 'retirar', 'liberado'] },
@@ -30,7 +42,7 @@ const INTENCOES = [
   { id: 'orcamentos', p: ['orcamento', 'aprovacao', 'aprovar'] },
   { id: 'contas', p: ['conta', 'vence', 'vencer', 'luz', 'agua', 'aluguel', 'internet', 'pagar conta'] },
   { id: 'semana', p: ['semana', 'semanal', 'relatorio'] },
-  { id: 'hoje', p: ['hoje', 'dia', 'caixa', 'entrou', 'saldo', 'faturamento', 'ganhou'] },
+  { id: 'hoje', p: ['hoje', 'caixa', 'entrou', 'saldo', 'faturamento', 'faturou'] },
 ]
 
 function resumoCaixa(periodo, titulo) {
@@ -116,24 +128,54 @@ function responder(intencao, texto = '') {
         opcoes: ordens.slice(0, 8).map(o => ({ label: `${o.clienteNome} · ${o.placa || ''}`, intencao })),
       }
     }
-    default:
+    case 'ajuda':
+      return { texto: 'Posso explicar como fazer qualquer coisa no painel. Toque num assunto ou pergunte, ex: "como emitir nota fiscal?"', ajuda: true }
+    default: {
+      const a = AJUDA.find(x => x.id === intencao)
+      if (a) return { texto: a.r }
       return { texto: 'Minha criadora não me preparou para essa pergunta, Pedro 😅. Mas posso te ajudar com uma destas:', mostrarAtalhos: true }
+    }
   }
+}
+
+// Casa a palavra-chave inteira (ou começo de palavra), para "dia" não casar com "ontem dia..." à toa
+const temPalavra = (t, p) => new RegExp(`(^|[^a-z0-9])${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(t)
+
+// Todas as palavras da frase-chave aparecem no texto, aceitando variações (concluir/concluida, claro/clara)
+function casaFrase(t, frase) {
+  const toks = t.split(/[^a-z0-9]+/).filter(Boolean)
+  const palavras = frase.split(' ').filter(w => w.length > 2 || ['os', 'nf'].includes(w))
+  return palavras.length > 0 && palavras.every(w => {
+    if (w.length <= 3) return toks.includes(w)
+    const raiz = w.slice(0, Math.max(4, w.length - 2))
+    return toks.some(tok => tok.startsWith(raiz))
+  })
+}
+
+function melhorAjuda(t) {
+  let melhor = null, pontos = 0
+  AJUDA.forEach(a => {
+    const n = a.p.reduce((s, p) => s + (casaFrase(t, p) ? p.length : 0), 0)
+    if (n > pontos) { melhor = a; pontos = n }
+  })
+  return melhor?.id || null
 }
 
 function entender(texto) {
   const t = sem(texto)
+  const ajuda = melhorAjuda(t)
+  if (ajuda && /\b(como|onde|o que|oque|qual o jeito|nao sei|ajuda|faz|faco|fazer|consigo|posso|cadastr|adicion|lanc|emit|cancel|edit|exclu|apag|mud|troc|import|export)/.test(t)) return ajuda
   if (/mensagem|msg|whats|avisar|avisa/.test(t)) {
     if (/orcamento/.test(t)) return 'msg_orcamento'
     return 'msg_pronto'
   }
-  return INTENCOES.find(i => i.p.some(p => t.includes(p)))?.id || null
+  return INTENCOES.find(i => i.p.some(p => temPalavra(t, p)))?.id || ajuda
 }
 
 function saudacao() {
   const h = new Date().getHours()
   const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
-  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
+  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina. Posso te ajudar com os números da oficina e com qualquer dúvida de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
 }
 
 export default function Assistente() {
@@ -146,7 +188,9 @@ export default function Assistente() {
 
   function perguntar(texto, intencao) {
     if (!texto.trim()) return
-    const r = responder(intencao || entender(texto), texto)
+    const qual = intencao || entender(texto)
+    registrar(texto, qual, intencao ? 'botao' : 'digitada')
+    const r = responder(qual, texto)
     setMsgs(m => [...m, { de: 'eu', texto }, { de: 'bot', ...r }])
     setEntrada('')
   }
@@ -186,6 +230,11 @@ export default function Assistente() {
                 {m.opcoes && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {m.opcoes.map((o, j) => <button key={j} style={botao} onClick={() => perguntar(o.label, o.intencao)}>{o.label}</button>)}
+                  </div>
+                )}
+                {m.ajuda && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                    {AJUDA.map(a => <button key={a.id} style={botao} onClick={() => perguntar(a.p[0].replace(/^./, c => c.toUpperCase()) + '?', a.id)}>{a.p[0]}</button>)}
                   </div>
                 )}
                 {m.mostrarAtalhos && (
