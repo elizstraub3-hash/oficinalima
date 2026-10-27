@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import Caixa from './components/Caixa.jsx'
 import Relatorio from './components/Relatorio.jsx'
+import Assistente from './components/Assistente.jsx'
 import Servicos from './components/Servicos.jsx'
 import Funcionarios from './components/Funcionarios.jsx'
 import Temporizadores from './components/Temporizadores.jsx'
@@ -287,6 +288,7 @@ export default function App() {
         </div>
       )}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
+      <Assistente />
       <main className="main-content">
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
         {page === 'ordens'        && <OrdemServico setPage={setPage} />}
