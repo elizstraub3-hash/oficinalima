@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
 import './Funcionarios.css'
+import { formatarDoc } from './Documento.js'
 import { dataOS, listarPeriodos, SeletorPeriodo, acharPeriodo } from './Periodo.jsx'
 export { listarPeriodos }
 
@@ -9,7 +10,7 @@ const KEY = 'ol_funcionarios'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo', comissao: 50, despesa: false })
+const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo', comissao: 50, despesa: false, cpf: '', endereco: '', entrada: '08:00', almocoSai: '12:00', almocoVolta: '13:30', saida: '18:00' })
 
 // Porcentagem da mão de obra que o funcionário recebe (padrão 50%)
 export function pctFuncionario(nome) {
@@ -89,7 +90,7 @@ export default function Funcionarios() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ nome: item.nome, cargo: item.cargo, telefone: item.telefone, status: item.status, comissao: item.comissao ?? 50, despesa: !!item.despesa })
+    setForm({ ...empty(), ...item, telefone: item.telefone || '', comissao: item.comissao ?? 50, despesa: !!item.despesa })
     setModal(true)
   }
 
@@ -143,6 +144,9 @@ export default function Funcionarios() {
               <strong className="func-nome">{f.nome}</strong>
               <div style={{ fontSize: 13, color: 'var(--text-light)' }}>{f.cargo}</div>
               {f.telefone && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>📞 {f.telefone}</div>}
+              {f.cpf && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>🪪 CPF {f.cpf}</div>}
+              {f.endereco && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>📍 {f.endereco}</div>}
+              {f.entrada && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
               <div style={{ fontSize: 12, marginTop: 2 }}>
                 💰 Recebe <strong>{f.comissao ?? 50}%</strong> da mão de obra · Despesa: <strong style={{ color: f.despesa ? '#ef4444' : 'var(--text-light)' }}>{f.despesa ? 'Sim' : 'Não'}</strong>
               </div>
@@ -295,8 +299,27 @@ export default function Funcionarios() {
               </div>
             </div>
             <div className="form-group">
-              <label>Telefone</label>
-              <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(11) 99999-9999" />
+              <label>Telefone pessoal</label>
+              <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(41) 99999-9999" />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>CPF</label>
+                <input value={form.cpf} onChange={e => setForm(f => ({ ...f, cpf: formatarDoc(e.target.value, 'CPF') }))} placeholder="000.000.000-00" />
+              </div>
+              <div className="form-group">
+                <label>Endereço</label>
+                <input value={form.endereco} onChange={e => setForm(f => ({ ...f, endereco: e.target.value }))} placeholder="Rua, número, bairro, cidade" />
+              </div>
+            </div>
+            <label style={{ fontWeight: 700, fontSize: 13, display: 'block', margin: '4px 0 6px' }}>🕗 Horário de trabalho</label>
+            <div className="form-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              {[['entrada', 'Entrada'], ['almocoSai', 'Sai p/ almoço'], ['almocoVolta', 'Volta do almoço'], ['saida', 'Saída']].map(([c, l]) => (
+                <div className="form-group" key={c}>
+                  <label>{l}</label>
+                  <input type="time" value={form[c] || ''} onChange={e => setForm(f => ({ ...f, [c]: e.target.value }))} />
+                </div>
+              ))}
             </div>
             <div className="form-row">
               <div className="form-group">
