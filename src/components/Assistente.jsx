@@ -4,6 +4,7 @@ import { calcResumoFuncionario } from './Funcionarios.jsx'
 import { getAlertasEstoque } from './Estoque.jsx'
 import { listarPeriodos, noPeriodo, hojeISO } from './Periodo.jsx'
 import { AJUDA } from './AjudaPainel.js'
+import { ehPedidoDeOS, extrairOS, criarOS } from './OsPorVoz.js'
 
 const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
@@ -11,6 +12,7 @@ const sem = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(
 const STATUS = { orcamento: 'Orçamento', aprovado: 'Aprovado', em_andamento: 'Em serviço', aguardando: 'Aguardando', concluido: 'Concluído', cancelado: 'Cancelado' }
 
 const ATALHOS = [
+  { id: 'criar_os', label: '🎤 Criar OS por voz' },
   { id: 'hoje', label: '💵 Caixa de hoje' },
   { id: 'semana', label: '📆 Caixa da semana' },
   { id: 'mecanicos', label: '👷 Pagar mecânicos' },
@@ -128,6 +130,11 @@ function responder(intencao, texto = '') {
         opcoes: ordens.slice(0, 8).map(o => ({ label: `${o.clienteNome} · ${o.placa || ''}`, intencao })),
       }
     }
+    case 'criar_os': {
+      const d = extrairOS(texto)
+      if (!d.clienteNome && !d.placa) return { texto: 'Bora criar a OS! 🎤 Toque no microfone e fale tudo de uma vez, por exemplo:\n\n"Criar OS para o João, placa ABC1D23, Gol prata, troca de óleo, 150 reais, mecânico Celio"\n\nEu preencho e te mostro para conferir antes de salvar.' }
+      return { texto: 'Entendi assim 👇 Confira, ajuste se precisar e toque em "Criar OS":', rascunho: d, ditado: texto }
+    }
     case 'ajuda':
       return { texto: 'Posso explicar como fazer qualquer coisa no painel. Toque num assunto ou pergunte, ex: "como emitir nota fiscal?"', ajuda: true }
     default: {
@@ -163,6 +170,7 @@ function melhorAjuda(t) {
 
 function entender(texto) {
   const t = sem(texto)
+  if (ehPedidoDeOS(t)) return 'criar_os'
   const ajuda = melhorAjuda(t)
   if (ajuda && /\b(como|onde|o que|oque|qual o jeito|nao sei|ajuda|faz|faco|fazer|consigo|posso|cadastr|adicion|lanc|emit|cancel|edit|exclu|apag|mud|troc|import|export)/.test(t)) return ajuda
   if (/mensagem|msg|whats|avisar|avisa/.test(t)) {
@@ -178,11 +186,42 @@ function saudacao() {
   return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPosso te ajudar com os números da oficina e com dúvidas de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
 }
 
-export default function Assistente() {
+export default function Assistente({ onMudou }) {
   const [aberto, setAberto] = useState(false)
   const [msgs, setMsgs] = useState([saudacao()])
   const [entrada, setEntrada] = useState('')
   const fim = useRef(null)
+  const [ouvindo, setOuvindo] = useState(false)
+  const rec = useRef(null)
+  const falado = useRef('')
+  const SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)
+
+  function microfone() {
+    if (!SR) return alert('Este navegador não reconhece voz. Use o Google Chrome (no computador ou no celular).')
+    if (ouvindo) { rec.current?.stop(); return }
+    const r = new SR()
+    r.lang = 'pt-BR'; r.interimResults = true; r.continuous = false
+    falado.current = ''
+    r.onresult = e => { falado.current = Array.from(e.results).map(x => x[0].transcript).join(' '); setEntrada(falado.current) }
+    r.onerror = e => { if (e.error === 'not-allowed') alert('Libere o microfone para o site (ícone de cadeado ao lado do endereço).') }
+    r.onend = () => { setOuvindo(false); if (falado.current.trim()) perguntar(falado.current) }
+    rec.current = r; setOuvindo(true); r.start()
+  }
+
+  function editarRascunho(i, campo, valor) {
+    setMsgs(ms => ms.map((m, j) => j === i ? { ...m, rascunho: { ...m.rascunho, [campo]: valor } } : m))
+  }
+
+  function confirmarOS(i) {
+    const m = msgs[i]
+    const d = m.rascunho
+    if (!d.clienteNome?.trim() || !d.placa?.trim()) return alert('Preencha pelo menos o nome do cliente e a placa.')
+    const os = criarOS(d, m.ditado)
+    registrar(`OS criada: ${os.numero}`, 'criar_os', 'voz')
+    setMsgs(ms => [...ms.map((x, j) => j === i ? { ...x, rascunho: null, texto: x.texto.replace(/Confira.*$/, 'Pronto!') } : x),
+      { de: 'bot', texto: `✅ ${os.numero} criada!\n👤 ${os.clienteNome}\n🚗 ${os.placa}${os.modelo ? ' · ' + os.modelo : ''}\n🔧 ${os.descBreve || '—'}\n💰 ${fmt(os.valor)}\n\nPara adicionar peças, abra em Ordens de Serviço e clique no ✏️.` }])
+    onMudou && onMudou()
+  }
 
   useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, aberto])
 
@@ -232,6 +271,30 @@ export default function Assistente() {
                     {m.opcoes.map((o, j) => <button key={j} style={botao} onClick={() => perguntar(o.label, o.intencao)}>{o.label}</button>)}
                   </div>
                 )}
+                {m.rascunho && (
+                  <div style={{ marginTop: 6, padding: 10, border: '1.5px solid #3b82f6', borderRadius: 10, display: 'grid', gap: 6 }}>
+                    {[['clienteNome', 'Cliente *'], ['placa', 'Placa *'], ['modelo', 'Carro'], ['clienteTelefone', 'Telefone'], ['servico', 'Serviço'], ['valor', 'Mão de obra (R$)']].map(([c, l]) => (
+                      <label key={c} style={{ fontSize: 11, fontWeight: 700, display: 'grid', gap: 2 }}>{l}
+                        <input value={m.rascunho[c] || ''} onChange={e => editarRascunho(i, c, c === 'placa' ? e.target.value.toUpperCase() : e.target.value)} style={{ padding: '5px 8px', fontSize: 13 }} />
+                      </label>
+                    ))}
+                    <label style={{ fontSize: 11, fontWeight: 700, display: 'grid', gap: 2 }}>Mecânico
+                      <select value={m.rascunho.funcionario || ''} onChange={e => editarRascunho(i, 'funcionario', e.target.value)} style={{ padding: '5px 8px', fontSize: 13 }}>
+                        <option value="">—</option>
+                        {ler('ol_funcionarios').filter(f => f.status === 'ativo').map(f => <option key={f.id}>{f.nome}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ fontSize: 11, fontWeight: 700, display: 'grid', gap: 2 }}>Status
+                      <select value={m.rascunho.status} onChange={e => editarRascunho(i, 'status', e.target.value)} style={{ padding: '5px 8px', fontSize: 13 }}>
+                        {Object.entries(STATUS).filter(([k]) => k !== 'cancelado').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn-primary" style={{ flex: 1, padding: '8px' }} onClick={() => confirmarOS(i)}>✅ Criar OS</button>
+                      <button style={botao} onClick={() => setMsgs(ms => ms.map((x, j) => j === i ? { ...x, rascunho: null, texto: 'OS cancelada. Pode falar de novo quando quiser 🎤' } : x))}>Cancelar</button>
+                    </div>
+                  </div>
+                )}
                 {m.ajuda && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {AJUDA.map(a => <button key={a.id} style={botao} onClick={() => perguntar(a.p[0].replace(/^./, c => c.toUpperCase()) + '?', a.id)}>{a.p[0]}</button>)}
@@ -248,7 +311,8 @@ export default function Assistente() {
           </div>
 
           <form onSubmit={e => { e.preventDefault(); perguntar(entrada) }} style={{ display: 'flex', gap: 6, padding: 10, borderTop: '1px solid var(--border)' }}>
-            <input value={entrada} onChange={e => setEntrada(e.target.value)} placeholder="Ex: quanto entrou hoje?" style={{ flex: 1 }} />
+            <button type="button" onClick={microfone} title="Falar" style={{ border: 'none', borderRadius: 8, padding: '0 12px', fontSize: 18, cursor: 'pointer', background: ouvindo ? '#ef4444' : 'var(--bg-card2, rgba(127,127,127,0.15))', color: ouvindo ? '#fff' : 'inherit' }}>{ouvindo ? '⏹' : '🎤'}</button>
+            <input value={entrada} onChange={e => setEntrada(e.target.value)} placeholder={ouvindo ? 'Ouvindo... pode falar' : 'Ex: quanto entrou hoje?'} style={{ flex: 1 }} />
             <button type="submit" className="btn-primary" style={{ padding: '8px 14px' }}>➤</button>
           </form>
         </div>

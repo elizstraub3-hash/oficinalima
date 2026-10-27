@@ -237,6 +237,7 @@ function OverduePopup() {
 export default function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('ol_auth') === '1')
   const [page, setPage] = useState('dashboard')
+  const [versao, setVersao] = useState(0)
   const [showExpiry, setShowExpiry] = useState(true)
   const [theme, setTheme] = useState(() => localStorage.getItem('ol_theme') || 'dark')
   const [backupDismissed, setBackupDismissed] = useState(false)
@@ -288,8 +289,8 @@ export default function App() {
         </div>
       )}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
-      <Assistente />
-      <main className="main-content">
+      <Assistente onMudou={() => setVersao(v => v + 1)} />
+      <main className="main-content" key={versao}>
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
         {page === 'ordens'        && <OrdemServico setPage={setPage} />}
         {page === 'clientes'      && <Clientes />}
