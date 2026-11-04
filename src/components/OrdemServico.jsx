@@ -661,6 +661,7 @@ export default function OrdemServico({ setPage }) {
             <thead>
               <tr>
                 <th>Nº OS</th>
+                <th>Data</th>
                 <th>Cliente</th>
                 <th>Veículo</th>
                 <th>Mecânico Responsável</th>
@@ -676,6 +677,10 @@ export default function OrdemServico({ setPage }) {
                 return (
                   <tr key={o.id} className="os-row" onClick={() => setViewing(o)} style={{ cursor: 'pointer' }}>
                     <td><strong className="os-numero">{o.numero}</strong></td>
+                    <td style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                      {o.data ? <div>📅 {o.data.split('-').reverse().join('/')}</div> : '—'}
+                      {o.fim && <div style={{ fontSize: 11, color: '#10b981' }}>✔ {new Date(o.fim).toLocaleDateString('pt-BR')}</div>}
+                    </td>
                     <td>
                       <strong>{o.clienteNome}</strong>
                       {o.clienteTelefone && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{o.clienteTelefone}</div>}
