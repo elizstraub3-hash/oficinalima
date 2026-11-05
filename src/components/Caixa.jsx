@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import './Caixa.css'
-import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS } from './Periodo.jsx'
+import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS, listarPeriodos } from './Periodo.jsx'
 import { pctFuncionario } from './Funcionarios.jsx'
 
 const KEY = 'ol_caixa'
@@ -116,18 +116,15 @@ export default function Caixa() {
   const gastos = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
 
   // Helpers de data (devem vir antes de qualquer uso)
-  const hoje = new Date()
-  const hojeStr = hoje.toISOString().split('T')[0]
-  const semanaInicio = new Date(hoje); semanaInicio.setDate(hoje.getDate() - hoje.getDay())
-  const semanaStr = semanaInicio.toISOString().split('T')[0]
+  const hojeStr = dataLocal(Date.now())
+  const semanaAtual = listarPeriodos().semanas[0]
   const mesStr = hojeStr.slice(0, 7)
 
-  function ordensDoPeriodo(de) {
-    return todasOrdens.filter(o => {
-      const d = o.data || (o.inicio ? new Date(o.inicio).toISOString().split('T')[0] : null)
-      return d && d >= de
-    })
+  // Faturamento = OS concluídas, na data em que foram concluídas (igual ao Caixa)
+  function ordensDoPeriodo(de, ate) {
+    return todasOrdens.filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), { de, ate }))
   }
+  const emAberto = todasOrdens.filter(o => !['concluido', 'cancelado'].includes(o.status))
 
   function somaValor(arr) { return arr.reduce((s, o) => s + Number(o.valor || 0), 0) }
   function somaMob(arr) {
@@ -140,9 +137,9 @@ export default function Caixa() {
   const totalMaoDeObra = somaMob(ordens)
 
   // Resumo por período
-  const ordensHoje = ordensDoPeriodo(hojeStr)
-  const ordensSemana = ordensDoPeriodo(semanaStr)
-  const ordensMes = ordensDoPeriodo(mesStr + '-01')
+  const ordensHoje = ordensDoPeriodo(hojeStr, hojeStr)
+  const ordensSemana = ordensDoPeriodo(semanaAtual.de, semanaAtual.ate)
+  const ordensMes = ordensDoPeriodo(mesStr + '-01', mesStr + '-31')
 
   // Gastos do mês atual
   const gastosMes = gastos.filter(g => noPeriodo(g.data, periodo))
@@ -252,7 +249,7 @@ export default function Caixa() {
 
       {/* Resumo OS por período */}
       <div className="caixa-periodo">
-        <div className="periodo-title">📅 Faturamento em OS</div>
+        <div className="periodo-title">📅 Faturamento em OS <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>(só OS concluídas, no dia da conclusão)</span></div>
         <div className="periodo-grid">
           <div className="periodo-item">
             <span className="periodo-label">Hoje</span>
@@ -268,6 +265,11 @@ export default function Caixa() {
             <span className="periodo-label">Este Mês</span>
             <strong>{fmt(somaValor(ordensMes))}</strong>
             <small>{ordensMes.length} OS</small>
+          </div>
+          <div className="periodo-item">
+            <span className="periodo-label">⏳ Em aberto</span>
+            <strong style={{ color: '#f59e0b' }}>{fmt(somaValor(emAberto))}</strong>
+            <small>{emAberto.length} OS ainda não concluídas</small>
           </div>
         </div>
       </div>
