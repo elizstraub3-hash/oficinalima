@@ -132,7 +132,8 @@ export default function Caixa() {
     }, 0)
   }
 
-  const totalMaoDeObra = somaMob(ordens)
+  const ordensConcl = ordens.filter(o => o.status === 'concluido')
+  const totalMaoDeObra = somaMob(ordensConcl)
 
   // Resumo por período
 
@@ -159,8 +160,10 @@ export default function Caixa() {
 
   // Por funcionário: agrupa servicos[]
   const porFuncionario = {}
-  ordens.forEach(o => {
+  let mobSemMecanico = 0
+  ordensConcl.forEach(o => {
     if (o.servicos && o.servicos.length) {
+      o.servicos.forEach(sv => { if (!sv.funcionario) mobSemMecanico += parseFloat(sv.maoDeObra) || 0 })
       o.servicos.forEach(sv => {
         if (!sv.funcionario) return
         if (!porFuncionario[sv.funcionario]) porFuncionario[sv.funcionario] = 0
@@ -300,21 +303,36 @@ export default function Caixa() {
 
       {/* Divisão mão de obra */}
       <div className="caixa-mob-split">
-        <div className="mob-split-title">🔧 Divisão de Mão de Obra — {periodo.label}</div>
-        <div className="mob-split-grid">
-          <div className="mob-split-item total">
-            <span className="mob-split-label">Total Mão de Obra</span>
-            <strong>{fmt(totalMaoDeObra)}</strong>
-          </div>
-          <div className="mob-split-item oficina">
-            <span className="mob-split-label">💼 Fica na Oficina</span>
-            <strong>{fmt(totalMaoDeObra - totalPagarMec)}</strong>
-          </div>
-          <div className="mob-split-item mecanico">
-            <span className="mob-split-label">👷 Pagar Mecânicos</span>
-            <strong>{fmt(totalPagarMec)}</strong>
-          </div>
-        </div>
+        <div className="mob-split-title">🔧 Mão de Obra — {periodo.label} <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>(OS concluídas)</span></div>
+        {(() => {
+          const salarios = entries.filter(e => e.origem === 'mecanico' && String(e.id).startsWith('sal-') && noPeriodo(e.data, periodo)).reduce((s2, e) => s2 + e.valor, 0)
+          const lucro = totalMaoDeObra - totalPagarMec
+          return (<>
+            <div className="mob-split-grid">
+              <div className="mob-split-item total">
+                <span className="mob-split-label">💰 Mão de obra total</span>
+                <strong>{fmt(totalMaoDeObra)}</strong>
+                <small style={{ fontSize: 11, opacity: 0.8 }}>cobrada dos clientes</small>
+              </div>
+              <div className="mob-split-item mecanico">
+                <span className="mob-split-label">👷 Paga aos mecânicos</span>
+                <strong>{fmt(totalPagarMec)}</strong>
+                <small style={{ fontSize: 11, opacity: 0.8 }}>comissão de cada um</small>
+              </div>
+              <div className="mob-split-item oficina">
+                <span className="mob-split-label">📈 Lucro na mão de obra</span>
+                <strong>{fmt(lucro)}</strong>
+                <small style={{ fontSize: 11, opacity: 0.8 }}>{totalMaoDeObra > 0 ? `${Math.round((lucro / totalMaoDeObra) * 100)}% fica na oficina` : '—'}</small>
+              </div>
+            </div>
+            {(salarios > 0 || mobSemMecanico > 0) && (
+              <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8, display: 'grid', gap: 2 }}>
+                {salarios > 0 && <span>💼 Salários fixos no período: <strong>{fmt(salarios)}</strong> → lucro na mão de obra descontando salários: <strong>{fmt(lucro - salarios)}</strong></span>}
+                {mobSemMecanico > 0 && <span style={{ color: '#f59e0b' }}>⚠️ {fmt(mobSemMecanico)} de mão de obra sem mecânico escolhido na OS (conta tudo como lucro da oficina).</span>}
+              </div>
+            )}
+          </>)
+        })()}
 
         {/* Por funcionário */}
         {Object.keys(porFuncionario).length > 0 && (
