@@ -10,11 +10,15 @@ const KEY = 'ol_funcionarios'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo', comissao: 50, despesa: false, cpf: '', endereco: '', entrada: '08:00', almocoSai: '12:00', almocoVolta: '13:30', saida: '18:00' })
+const empty = () => ({ nome: '', cargo: '', telefone: '', status: 'ativo', comissao: 50, despesa: false, tipoPagamento: 'comissao', salario: '', diaPagamento: 5, cpf: '', endereco: '', entrada: '08:00', almocoSai: '12:00', almocoVolta: '13:30', saida: '18:00' })
 
 // Porcentagem da mão de obra que o funcionário recebe (padrão 50%)
+export const TIPOS_PAGAMENTO = { comissao: 'Comissão', fixo: 'Salário fixo', ambos: 'Fixo + comissão' }
+export const tipoPag = f => f?.tipoPagamento || 'comissao'
+
 export function pctFuncionario(nome) {
   const f = load().find(x => x.nome === nome)
+  if (tipoPag(f) === 'fixo') return 0
   const n = Number(f?.comissao)
   return (f?.comissao === undefined || f?.comissao === '' || Number.isNaN(n) ? 50 : n) / 100
 }
@@ -65,6 +69,8 @@ export function calcResumoFuncionario(nome, periodo) {
     pct: pctFuncionario(nome),
     aPagar: totalMaoDeObra * pctFuncionario(nome),
     despesa: !!load().find(x => x.nome === nome)?.despesa,
+    tipoPagamento: tipoPag(load().find(x => x.nome === nome)),
+    salario: Number(load().find(x => x.nome === nome)?.salario) || 0,
     total: minhas.length,
     concluidas: concluidas.length,
     emAndamento: minhas.filter(o => o.status === 'em_andamento').length,
@@ -99,9 +105,9 @@ export default function Funcionarios() {
     if (!form.nome || !form.cargo) return
     const arr = load()
     if (editing) {
-      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form, comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))) }
+      arr[arr.findIndex(x => x.id === editing)] = { ...arr.find(x => x.id === editing), ...form, salario: Number(form.salario) || 0, diaPagamento: Math.min(28, Math.max(1, Number(form.diaPagamento) || 5)), comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))) }
     } else {
-      arr.push({ ...form, comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))), id: nextId(arr) })
+      arr.push({ ...form, criadoEm: new Date().toISOString().slice(0, 10), salario: Number(form.salario) || 0, diaPagamento: Math.min(28, Math.max(1, Number(form.diaPagamento) || 5)), comissao: form.comissao === '' || Number.isNaN(Number(form.comissao)) ? 50 : Math.min(100, Math.max(0, Number(form.comissao))), id: nextId(arr) })
     }
     save(arr)
     setModal(false)
@@ -148,7 +154,8 @@ export default function Funcionarios() {
               {f.endereco && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>📍 {f.endereco}</div>}
               {f.entrada && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
               <div style={{ fontSize: 12, marginTop: 2 }}>
-                💰 Recebe <strong>{f.comissao ?? 50}%</strong> da mão de obra · Despesa: <strong style={{ color: f.despesa ? '#ef4444' : 'var(--text-light)' }}>{f.despesa ? 'Sim' : 'Não'}</strong>
+                💰 {tipoPag(f) !== 'comissao' && <>Salário <strong>{fmt(f.salario)}</strong>/mês (dia {f.diaPagamento || 5}){tipoPag(f) === 'ambos' ? ' + ' : ''}</>}
+                {tipoPag(f) !== 'fixo' && <><strong>{f.comissao ?? 50}%</strong> da mão de obra</>} · Despesa: <strong style={{ color: f.despesa ? '#ef4444' : 'var(--text-light)' }}>{f.despesa ? 'Sim' : 'Não'}</strong>
               </div>
             </div>
           </div>
@@ -184,8 +191,9 @@ export default function Funcionarios() {
             <strong style={{ color: 'var(--text-main)', fontSize: 18 }}>{fmt(r.maoDeObra)}</strong>
           </div>
           <div className="func-resumo-item">
-            <span className="func-resumo-label">👷 A pagar ({Math.round(r.pct * 100)}%)</span>
-            <strong style={{ color: '#3b82f6' }}>{fmt(r.aPagar)}</strong>
+            <span className="func-resumo-label">👷 {r.tipoPagamento === 'fixo' ? 'Salário fixo' : `Comissão a pagar (${Math.round(r.pct * 100)}%)`}</span>
+            <strong style={{ color: '#3b82f6' }}>{r.tipoPagamento === 'fixo' ? `${fmt(r.salario)}/mês` : fmt(r.aPagar)}</strong>
+            {r.tipoPagamento === 'ambos' && <small style={{ color: 'var(--text-light)' }}>+ salário {fmt(r.salario)}/mês</small>}
           </div>
           <div className="func-resumo-item">
             <span className="func-resumo-label">Total em OS</span>
@@ -321,13 +329,37 @@ export default function Funcionarios() {
                 </div>
               ))}
             </div>
+            <label style={{ fontWeight: 700, fontSize: 13, display: 'block', margin: '4px 0 6px' }}>💰 Como ele recebe?</label>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+              {Object.entries(TIPOS_PAGAMENTO).map(([k, l]) => (
+                <button type="button" key={k} onClick={() => setForm(f => ({ ...f, tipoPagamento: k }))}
+                  style={{ flex: 1, minWidth: 110, padding: '10px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', border: '1.5px solid ' + ((form.tipoPagamento || 'comissao') === k ? '#3b82f6' : 'var(--border)'),
+                    background: (form.tipoPagamento || 'comissao') === k ? '#3b82f6' : 'transparent', color: (form.tipoPagamento || 'comissao') === k ? '#fff' : 'var(--text-main)' }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            {(form.tipoPagamento || 'comissao') !== 'comissao' && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Salário fixo por mês (R$)</label>
+                  <input type="number" min="0" step="0.01" value={form.salario} onChange={e => setForm(f => ({ ...f, salario: e.target.value }))} placeholder="Ex: 2000" />
+                </div>
+                <div className="form-group">
+                  <label>Dia do pagamento</label>
+                  <input type="number" min="1" max="28" value={form.diaPagamento} onChange={e => setForm(f => ({ ...f, diaPagamento: e.target.value }))} placeholder="5" />
+                </div>
+              </div>
+            )}
             <div className="form-row">
+              {(form.tipoPagamento || 'comissao') !== 'fixo' ? (
               <div className="form-group">
                 <label>Porcentagem da mão de obra (%)</label>
                 <input type="number" min="0" max="100" step="1" value={form.comissao}
                   onChange={e => setForm(f => ({ ...f, comissao: e.target.value }))} placeholder="50" />
                 <small style={{ color: 'var(--text-light)' }}>Quanto ele recebe de cada serviço que fizer.</small>
               </div>
+              ) : <div />}
               <div className="form-group">
                 <label>Entra como despesa?</label>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -339,7 +371,7 @@ export default function Funcionarios() {
                     </button>
                   ))}
                 </div>
-                <small style={{ color: 'var(--text-light)' }}>Sim: o que ele recebe sai como despesa no Caixa e no relatório.</small>
+                <small style={{ color: 'var(--text-light)' }}>Sim: a comissão e o salário saem como despesa no Caixa e no relatório (o salário no dia do pagamento).</small>
               </div>
             </div>
             <div className="modal-actions">

@@ -505,7 +505,7 @@ export default function Dashboard({ setPage }) {
                         </div>
                         {f.telefone && <div style={linha}>📞 {f.telefone}</div>}
                         {f.entrada && <div style={linha}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
-                        <div style={linha}>💰 {Math.round(r.pct * 100)}% da mão de obra{r.despesa ? ' · entra como despesa' : ''}</div>
+                        <div style={linha}>💰 {r.tipoPagamento !== 'comissao' ? `Salário ${fmtR(r.salario)}/mês` : ''}{r.tipoPagamento === 'ambos' ? ' + ' : ''}{r.tipoPagamento !== 'fixo' ? `${Math.round(r.pct * 100)}% da mão de obra` : ''}{r.despesa ? ' · entra como despesa' : ''}</div>
                         <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 6, fontSize: 13 }}>
                           <div>{r.concluidas} OS concluída(s) · {r.emAndamento} em andamento</div>
                           <div>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>

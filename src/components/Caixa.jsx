@@ -43,7 +43,7 @@ export function lancamentosCaixa() {
     (o.servicos || []).forEach((sv, k) => {
       const f = funcs.find(x => x.nome === sv.funcionario)
       const mo = parseFloat(sv.maoDeObra) || 0
-      if (!f || !mo) return
+      if (!f || !mo || f.tipoPagamento === 'fixo') return
       const pct = (f.comissao === undefined || f.comissao === '' ? 50 : Number(f.comissao)) / 100
       if (!pct) return
       mecanicos.push({
@@ -52,6 +52,18 @@ export function lancamentosCaixa() {
         descricao: `Mão de obra ${f.nome} (${Math.round(pct * 100)}%) — ${o.numero || 'OS ' + o.id}`,
       })
     })
+  })
+  // Salário fixo dos funcionários marcados como despesa: sai todo mês no dia do pagamento
+  const hojeStr = dataLocal(Date.now())
+  funcs.filter(f => (f.tipoPagamento === 'fixo' || f.tipoPagamento === 'ambos') && Number(f.salario) > 0).forEach(f => {
+    const dia = String(Math.min(28, Math.max(1, Number(f.diaPagamento) || 5))).padStart(2, '0')
+    const inicio = (f.criadoEm || hojeStr).slice(0, 7)
+    let [a, m] = inicio.split('-').map(Number)
+    while (`${a}-${String(m).padStart(2, '0')}` <= hojeStr.slice(0, 7)) {
+      const data = `${a}-${String(m).padStart(2, '0')}-${dia}`
+      if (data <= hojeStr) mecanicos.push({ id: `sal-${f.id}-${a}-${m}`, origem: 'mecanico', tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome}` })
+      m++; if (m > 12) { m = 1; a++ }
+    }
   })
   return [...manuais, ...os, ...gastos, ...contas, ...mecanicos].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
 }
