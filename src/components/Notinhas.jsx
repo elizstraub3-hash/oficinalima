@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, hojeISO, listarPeriodos } from './Periodo.jsx'
 import Modal from './Modal.jsx'
-import BoletoPecas from './BoletoPecas.jsx'
 import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import './Notinhas.css'
 
@@ -116,8 +115,6 @@ export default function Notinhas() {
 
   function refresh() { setItems(load()) }
 
-  const [boleto, setBoleto] = useState(false)
-
   function handleSave(e) {
     e.preventDefault()
     if (!form.desc || !form.custoUnit) return
@@ -175,7 +172,6 @@ export default function Notinhas() {
       <div className="page-header">
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-primary" onClick={() => { setForm(emptyForm()); setModal(true) }}>+ Nova Notinha</button>
-          <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={() => setBoleto(true)}>🧾 Boleto da semana</button>
           <button className="btn-secondary" onClick={() => exportCSV([...items].reverse())} disabled={items.length === 0}>
             ⬇️ Exportar CSV
           </button>
@@ -279,8 +275,6 @@ export default function Notinhas() {
       </div>
 
       {/* Modal nova notinha */}
-      {boleto && <BoletoPecas onClose={() => setBoleto(false)} onSalvo={refresh} />}
-
       {modal && (
         <Modal title="Nova Notinha de Peça" onClose={() => setModal(false)}>
           <form onSubmit={handleSave}>

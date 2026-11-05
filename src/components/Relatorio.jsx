@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS } from './Periodo.jsx'
 import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario } from './Funcionarios.jsx'
+import { pecasDasOS } from './FaixasPecas.js'
 
 const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
@@ -32,6 +33,7 @@ export function resumoPeriodo(periodo) {
     entradas, saidas, saldo: entradas - saidas,
     osConcluidas: concluidas.length, valorOs: soma(concluidas, o => o.valor),
     maoDeObra, mecanicos,
+    pecasOS: pecasDasOS(periodo),
     pecas: {
       qtd: notinhas.length,
       custo: soma(notinhas, n => n.totalCusto),
@@ -93,7 +95,7 @@ export default function Relatorio() {
         <Linha label="🏢 Oficina — comissão de peças" valor={fmt(r.pecas.comOficina)} />
       </Bloco>
 
-      <Bloco titulo="📄 Contas pagas (luz, internet, aluguel...)">
+      <Bloco titulo="📄 Contas marcadas como pagas (só lembrete — o valor entra pela Planilha de Gastos)">
         {r.contasPagas.length ? r.contasPagas.map(c => (
           <Linha key={c.id} label={`${c.descricao} — paga em ${c.pagoEm.split('-').reverse().join('/')}`} valor={fmt(c.valor)} cor="#ef4444" />
         )) : vazio}
@@ -106,11 +108,12 @@ export default function Relatorio() {
         </>) : vazio}
       </Bloco>
 
-      <Bloco titulo="🔩 Peças (notinhas)">
-        {r.pecas.qtd ? (<>
-          <Linha label={`${r.pecas.qtd} notinha(s) — custo`} valor={fmt(r.pecas.custo)} cor="#ef4444" />
-          <Linha label="Venda" valor={fmt(r.pecas.venda)} cor="#3b82f6" />
-          <Linha label="Lucro" valor={fmt(r.pecas.lucro)} cor="#10b981" forte />
+      <Bloco titulo="🔩 Peças vendidas nas OS">
+        {r.pecasOS.qtdPecas ? (<>
+          <Linha label={`${r.pecasOS.qtdPecas} peça(s) — custo`} valor={fmt(r.pecasOS.custo)} cor="#ef4444" />
+          <Linha label="Vendido ao cliente" valor={fmt(r.pecasOS.venda)} cor="#3b82f6" />
+          <Linha label="Lucro com peças" valor={fmt(r.pecasOS.lucro)} cor="#10b981" forte />
+          {r.pecasOS.semCusto > 0 && <p style={{ fontSize: 12, color: '#f59e0b', margin: '6px 0 0' }}>⚠️ {r.pecasOS.semCusto} peça(s) sem custo informado não entram no lucro.</p>}
         </>) : vazio}
       </Bloco>
 

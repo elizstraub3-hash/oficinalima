@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import { formatarDoc, tipoDoc, soDigitos } from './Documento.js'
+import { lerFaixas, salvarFaixas, vendaPorFaixa, pctDaFaixa } from './FaixasPecas.js'
 import { loadEstoque, loadCategorias, sincronizarEstoqueOS } from './Estoque.jsx'
 
 const itensAtivos = o => (o && o.status !== 'cancelado' ? (o.itens || []) : [])
@@ -377,7 +378,9 @@ export default function OrdemServico({ setPage }) {
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [busca, setBusca] = useState('')
   const [statusError, setStatusError] = useState(false)
-  const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
+  const [novoItem, setNovoItem] = useState({ desc: '', qtd: 1, uni: 'UN', cod: '', custo: '', valor: '' })
+  const [faixas, setFaixas] = useState(lerFaixas)
+  const [editFaixas, setEditFaixas] = useState(false)
   const [novoServico, setNovoServico] = useState({ desc: '', funcionario: '', maoDeObra: '' })
   const [editMecanico, setEditMecanico] = useState(false)
   const [editMecanicoId, setEditMecanicoId] = useState(null)
@@ -447,7 +450,7 @@ export default function OrdemServico({ setPage }) {
   function adicionarItem() {
     if (!novoItem.desc || !novoItem.valor) return
     setForm(f => ({ ...f, itens: [...(f.itens || []), { ...novoItem, id: Date.now() }] }))
-    setNovoItem({ desc: '', qtd: 1, uni: 'UN', cod: '', valor: '' })
+    setNovoItem({ desc: '', qtd: 1, uni: 'UN', cod: '', custo: '', valor: '' })
   }
 
   // Quanto da peça já está reservado nesta OS (salvo) — volta a ficar disponível ao editar
@@ -465,7 +468,7 @@ export default function OrdemServico({ setPage }) {
       const itens = [...(f.itens || [])]
       const idx = itens.findIndex(it => String(it.pecaId) === String(peca.id))
       if (idx >= 0) itens[idx] = { ...itens[idx], qtd: Number(itens[idx].qtd || 0) + qtd }
-      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd, valor: peca.precoVenda || 0, custo: peca.precoCusto || 0 })
+      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd, valor: peca.precoVenda || vendaPorFaixa(peca.precoCusto, faixas) || 0, custo: peca.precoCusto || 0 })
       return { ...f, itens }
     })
   }
@@ -1047,18 +1050,39 @@ export default function OrdemServico({ setPage }) {
                 className="os-item-qtd"
               />
               <input
-                type="number" min="0" step="0.01" placeholder="Valor unit. R$"
+                type="number" min="0" step="0.01" placeholder="Custo R$"
+                value={novoItem.custo}
+                onChange={e => { const c = e.target.value; setNovoItem(n => ({ ...n, custo: c, valor: vendaPorFaixa(c, faixas) })) }}
+                className="os-item-valor" title="Quanto a peça custou para a oficina"
+              />
+              <input
+                type="number" min="0" step="0.01" placeholder="Venda R$"
                 value={novoItem.valor}
                 onChange={e => setNovoItem(n => ({ ...n, valor: e.target.value }))}
-                className="os-item-valor"
+                className="os-item-valor" title="Preço para o cliente (calculado pela faixa, pode mudar)"
               />
               <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap', padding: '10px 16px' }} onClick={adicionarItem}>+ Add</button>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-light)', margin: '-2px 0 8px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {novoItem.custo > 0 && <span style={{ color: '#10b981', fontWeight: 700 }}>+{pctDaFaixa(novoItem.custo, faixas)}% sobre o custo</span>}
+              {!editFaixas ? (
+                <span>⚙️ Margem: peça até R$ {faixas.limite} → <strong>{faixas.ate}%</strong> · acima → <strong>{faixas.acima}%</strong>{' '}
+                  <button type="button" onClick={() => setEditFaixas(true)} style={{ border: 'none', background: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>mudar</button>
+                </span>
+              ) : (
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  até R$ <input type="number" value={faixas.limite} onChange={e => setFaixas(f => ({ ...f, limite: e.target.value }))} style={{ width: 60, padding: '2px 6px' }} />
+                  → <input type="number" value={faixas.ate} onChange={e => setFaixas(f => ({ ...f, ate: e.target.value }))} style={{ width: 55, padding: '2px 6px' }} />%
+                  · acima → <input type="number" value={faixas.acima} onChange={e => setFaixas(f => ({ ...f, acima: e.target.value }))} style={{ width: 55, padding: '2px 6px' }} />%
+                  <button type="button" className="btn-primary" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => { salvarFaixas(faixas); setFaixas(lerFaixas()); setEditFaixas(false) }}>Salvar</button>
+                </span>
+              )}
             </div>
 
             {form.itens && form.itens.length > 0 && (
               <div style={{ marginBottom: 8, border: '1px solid var(--border)', borderRadius: 8, overflowX: 'auto' }}>
                 <table style={{ fontSize: 13, marginBottom: 0 }}>
-                  <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Unit. R$</th><th>Total</th><th></th></tr></thead>
+                  <thead><tr><th>Descrição</th><th>Uni.</th><th>Cód.</th><th>Qtd</th><th>Custo R$</th><th>Venda R$</th><th>Total</th><th></th></tr></thead>
                   <tbody>
                     {form.itens.map((it, idx) => {
                       const inputStyle = { width: '100%', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 5, background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: 13 }
@@ -1079,13 +1103,23 @@ export default function OrdemServico({ setPage }) {
                           </td>
                           <td>
                             <input
+                              type="number" min="0" step="0.01" value={it.custo ?? ''} placeholder="—"
+                              onChange={e => { const c = e.target.value; updateItem(idx, 'custo', c); if (c) updateItem(idx, 'valor', vendaPorFaixa(c, faixas)) }}
+                              style={{ ...inputStyle, width: 85 }}
+                            />
+                          </td>
+                          <td>
+                            <input
                               type="number" min="0" step="0.01"
                               value={it.valor}
                               onChange={e => updateItem(idx, 'valor', e.target.value)}
                               style={{ ...inputStyle, width: 90 }}
                             />
                           </td>
-                          <td><strong style={{ color: '#10b981' }}>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong></td>
+                          <td>
+                            <strong style={{ color: '#10b981' }}>R$ {(Number(it.valor) * Number(it.qtd)).toFixed(2).replace('.', ',')}</strong>
+                            {Number(it.custo) > 0 && <div style={{ fontSize: 10, color: 'var(--text-light)' }}>lucro R$ {((Number(it.valor) - Number(it.custo)) * Number(it.qtd)).toFixed(2).replace('.', ',')}</div>}
+                          </td>
                           <td><button type="button" className="btn-danger" onClick={() => removerItem(it.id)}>✕</button></td>
                         </tr>
                       )

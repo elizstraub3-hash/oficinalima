@@ -3,7 +3,7 @@ import Modal from './Modal.jsx'
 import './Caixa.css'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS, listarPeriodos } from './Periodo.jsx'
 import { pctFuncionario } from './Funcionarios.jsx'
-import BoletoPecas from './BoletoPecas.jsx'
+import { pecasDasOS } from './FaixasPecas.js'
 
 const KEY = 'ol_caixa'
 const CATS = ['Serviço', 'Estoque', 'Manutenção', 'Outros']
@@ -33,10 +33,7 @@ export function lancamentosCaixa() {
     id: g.id, origem: 'gasto', tipo: 'saida', categoria: g.categoria || 'Gasto', valor: Number(g.valor),
     data: g.data || dataLocal(Date.now()), descricao: g.descricao || 'Gasto',
   }))
-  const contas = ler('ol_contas').filter(c => c.status === 'pago' && c.pagoEm && Number(c.valor) > 0).map(c => ({
-    id: c.id, origem: 'conta', tipo: 'saida', categoria: 'Contas', valor: Number(c.valor),
-    data: c.pagoEm, descricao: `Conta: ${c.descricao}`,
-  }))
+  // Contas da Oficina são só lembrete de vencimento: o que foi pago entra pela Planilha de Gastos
   // Mão de obra dos funcionários marcados como despesa: sai do caixa conforme a porcentagem de cada um
   const funcs = ler('ol_funcionarios').filter(f => f.despesa)
   const mecanicos = []
@@ -66,7 +63,7 @@ export function lancamentosCaixa() {
       m++; if (m > 12) { m = 1; a++ }
     }
   })
-  return [...manuais, ...os, ...gastos, ...contas, ...mecanicos].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+  return [...manuais, ...os, ...gastos, ...mecanicos].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
 }
 
 const ORIGEM = { os: '🔗 OS concluída', gasto: '🧾 Planilha de Gastos', conta: '📄 Conta paga', mecanico: '👷 Pagamento de funcionário' }
@@ -80,7 +77,6 @@ export default function Caixa() {
   const [filtro, setFiltro] = useState({ tipo: 'todos' })
   const [periodoId, setPeriodoId] = useState('semana-0')
   const periodo = acharPeriodo(periodoId)
-  const [boleto, setBoleto] = useState(false)
 
   function refresh() { setEntries(lancamentosCaixa()) }
 
@@ -114,7 +110,6 @@ export default function Caixa() {
 
   const todasOrdens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
   const ordens = todasOrdens.filter(o => noPeriodo(dataOS(o), periodo))
-  const notinhas = JSON.parse(localStorage.getItem('ol_notinhas') || '[]').filter(n => noPeriodo(n.data, periodo))
   const gastos = JSON.parse(localStorage.getItem('ol_gastos') || '[]')
 
   // Helpers de data (devem vir antes de qualquer uso)
@@ -156,8 +151,6 @@ export default function Caixa() {
     if (porcGastos >= 40) return { tipo: 'warning', msg: '💛 Os gastos da oficina estão subindo, Pedro. Fique de olho! Ainda dá tempo de ajustar antes de passar do limite.' }
     return { tipo: 'ok', msg: '✅ Ótimo controle, Pedro! Os gastos estão saudáveis este mês. Continue assim!' }
   })()
-  const totalGastoPecas = notinhas.reduce((s, n) => s + (n.totalCusto || 0), 0)
-  const totalLucroPecas = notinhas.reduce((s, n) => s + (n.lucro || 0), 0)
 
   // Por funcionário: agrupa servicos[]
   const porFuncionario = {}
@@ -194,7 +187,7 @@ export default function Caixa() {
         <div className="resumo-card red">
           <span className="resumo-label">Total Saídas</span>
           <strong>{fmt(totalSaida)}</strong>
-          <small style={{ fontSize: 11, opacity: 0.8 }}>gastos, contas, boletos e funcionários</small>
+          <small style={{ fontSize: 11, opacity: 0.8 }}>planilha de gastos e funcionários</small>
         </div>
         <div className={`resumo-card ${saldo >= 0 ? 'blue' : 'red'} saldo`}>
           <span className="resumo-label">Saldo</span>
@@ -266,58 +259,33 @@ export default function Caixa() {
         )
       })()}
 
-      {/* Gasto e Lucro com Peças */}
-      <div className="caixa-pecas-split">
-        <div className="mob-split-title">🔩 Controle de Peças — {periodo.label}</div>
-        <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981', fontSize: 13, padding: '7px 14px', marginBottom: 10 }} onClick={() => setBoleto(true)}>🧾 Lançar boleto da semana</button>
-        <div className="mob-split-grid">
-          <div className="mob-split-item" style={{ background: '#fef2f2', borderColor: '#fca5a5' }}>
-            <span className="mob-split-label">🛒 Gasto Total com Peças</span>
-            <strong style={{ color: '#ef4444', fontSize: 18, fontWeight: 800 }}>{fmt(totalGastoPecas)}</strong>
+      {/* Peças vendidas nas OS */}
+      {(() => {
+        const pc = pecasDasOS(periodo)
+        return (
+          <div className="caixa-pecas-split">
+            <div className="mob-split-title">🔩 Peças vendidas nas OS — {periodo.label}</div>
+            <div className="mob-split-grid">
+              <div className="mob-split-item" style={{ background: '#fef2f2', borderColor: '#fca5a5' }}>
+                <span className="mob-split-label">🛒 Custo das peças</span>
+                <strong style={{ color: '#ef4444', fontSize: 18, fontWeight: 800 }}>{fmt(pc.custo)}</strong>
+              </div>
+              <div className="mob-split-item" style={{ background: '#eff6ff', borderColor: '#93c5fd' }}>
+                <span className="mob-split-label">💳 Vendido ao cliente</span>
+                <strong style={{ color: '#2563eb', fontSize: 18, fontWeight: 800 }}>{fmt(pc.venda)}</strong>
+              </div>
+              <div className="mob-split-item" style={{ background: '#f0fdf4', borderColor: '#6ee7b7' }}>
+                <span className="mob-split-label">📈 Lucro com peças</span>
+                <strong style={{ color: '#059669', fontSize: 18, fontWeight: 800 }}>{fmt(pc.lucro)}</strong>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8 }}>
+              {pc.qtdPecas} peça(s) em {pc.ordens} OS concluída(s). O lucro vem do custo e da venda que você coloca em cada peça na OS.
+              {pc.semCusto > 0 && <span style={{ color: '#f59e0b' }}> ⚠️ {pc.semCusto} peça(s) sem custo informado — não entram no lucro.</span>}
+            </div>
           </div>
-          <div className="mob-split-item" style={{ background: '#f0fdf4', borderColor: '#6ee7b7' }}>
-            <span className="mob-split-label">📈 Lucro com Peças</span>
-            <strong style={{ color: '#059669', fontSize: 18, fontWeight: 800 }}>{fmt(totalLucroPecas)}</strong>
-          </div>
-          <div className="mob-split-item" style={{ background: '#eff6ff', borderColor: '#93c5fd' }}>
-            <span className="mob-split-label">📊 Margem Média</span>
-            <strong style={{ color: '#2563eb', fontSize: 18, fontWeight: 800 }}>
-              {totalGastoPecas > 0 ? ((totalLucroPecas / totalGastoPecas) * 100).toFixed(0) : 0}%
-            </strong>
-          </div>
-        </div>
-        {notinhas.length > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: 8 }}>Últimas Notinhas</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Peça</th>
-                  <th>Fornecedor</th>
-                  <th>Qtd</th>
-                  <th>Custo Total</th>
-                  <th>Venda Total</th>
-                  <th>Lucro</th>
-                  <th>%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...notinhas].reverse().slice(0, 10).map(n => (
-                  <tr key={n.id}>
-                    <td><strong>{n.desc}</strong><br /><span style={{ fontSize: 11, color: 'var(--text-light)' }}>{n.data}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--text-light)' }}>{n.fornecedor || '—'}</td>
-                    <td>{n.qtd}</td>
-                    <td><strong style={{ color: '#ef4444' }}>{fmt(n.totalCusto)}</strong></td>
-                    <td>{n.precoVenda > 0 ? <strong style={{ color: '#3b82f6' }}>{fmt(n.precoVenda * n.qtd)}</strong> : '—'}</td>
-                    <td><strong style={{ color: n.lucro >= 0 ? '#059669' : '#ef4444' }}>{fmt(n.lucro)}</strong></td>
-                    <td><span style={{ background: '#ede9fe', color: '#7c3aed', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{(n.porcLucro || 0).toFixed(0)}%</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        )
+      })()}
 
       {/* Divisão mão de obra */}
       <div className="caixa-mob-split">
@@ -414,8 +382,6 @@ export default function Caixa() {
           </table>
         )}
       </div>
-
-      {boleto && <BoletoPecas onClose={() => setBoleto(false)} onSalvo={refresh} />}
 
       {modal && (
         <Modal title="Novo Lançamento" onClose={() => setModal(false)}>

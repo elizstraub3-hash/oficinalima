@@ -184,6 +184,10 @@ export default function Contas() {
         )
       })()}
 
+      <div style={{ fontSize: 13, color: 'var(--text-light)', background: 'rgba(59,130,246,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+        📌 As contas aqui são <strong>lembrete de vencimento</strong> e <strong>não somam no Caixa</strong>. Quando pagar, lance o valor na <strong>Planilha de Gastos</strong> — é ela que entra no Caixa.
+      </div>
+
       <div className="contas-resumo">
         <div className="contas-card pendente">
           <span className="resumo-label">⏳ A Pagar</span>
