@@ -3,7 +3,7 @@ import Modal from './Modal.jsx'
 import './Caixa.css'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS, listarPeriodos } from './Periodo.jsx'
 import { pctFuncionario } from './Funcionarios.jsx'
-import { pecasDasOS } from './FaixasPecas.js'
+import { pecasDasOS, lerFaixas } from './FaixasPecas.js'
 
 const KEY = 'ol_caixa'
 const CATS = ['Serviço', 'Estoque', 'Manutenção', 'Outros']
@@ -271,6 +271,7 @@ export default function Caixa() {
       {/* Peças vendidas nas OS */}
       {(() => {
         const pc = pecasDasOS(periodo)
+        const ab = pecasDasOS(null, true)
         return (
           <div className="caixa-pecas-split">
             <div className="mob-split-title">🔩 Peças vendidas nas OS — {periodo.label}</div>
@@ -290,7 +291,8 @@ export default function Caixa() {
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8 }}>
               {pc.qtdPecas} peça(s) em {pc.ordens} OS concluída(s). O lucro vem do custo e da venda que você coloca em cada peça na OS.
-              {pc.semCusto > 0 && <span style={{ color: '#f59e0b' }}> ⚠️ {pc.semCusto} peça(s) sem custo informado — não entram no lucro.</span>}
+              {ab.qtdPecas > 0 && <div style={{ marginTop: 4 }}>⏳ Em OS ainda abertas: {ab.qtdPecas} peça(s) — venda {fmt(ab.venda)}, lucro {fmt(ab.lucro)}. Entram aqui quando a OS for concluída.</div>}
+              {pc.estimadas > 0 && <span style={{ color: '#f59e0b' }}> ⓘ {pc.estimadas} peça(s) sem custo informado: o custo foi calculado pela margem (até R$ {lerFaixas().limite} → {lerFaixas().ate}%, acima → {lerFaixas().acima}%).</span>}
             </div>
           </div>
         )

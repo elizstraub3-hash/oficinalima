@@ -115,7 +115,7 @@ export default function Relatorio() {
           <Linha label={`${r.pecasOS.qtdPecas} peça(s) — custo`} valor={fmt(r.pecasOS.custo)} cor="#ef4444" />
           <Linha label="Vendido ao cliente" valor={fmt(r.pecasOS.venda)} cor="#3b82f6" />
           <Linha label="Lucro com peças" valor={fmt(r.pecasOS.lucro)} cor="#10b981" forte />
-          {r.pecasOS.semCusto > 0 && <p style={{ fontSize: 12, color: '#f59e0b', margin: '6px 0 0' }}>⚠️ {r.pecasOS.semCusto} peça(s) sem custo informado não entram no lucro.</p>}
+          {r.pecasOS.estimadas > 0 && <p style={{ fontSize: 12, color: '#f59e0b', margin: '6px 0 0' }}>ⓘ {r.pecasOS.estimadas} peça(s) sem custo informado: custo calculado pela margem.</p>}
         </>) : vazio}
       </Bloco>
 

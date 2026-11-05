@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import { formatarDoc, tipoDoc, soDigitos } from './Documento.js'
-import { lerFaixas, salvarFaixas, vendaPorFaixa, pctDaFaixa } from './FaixasPecas.js'
+import { lerFaixas, salvarFaixas, vendaPorFaixa, pctDaFaixa, custoPorVenda } from './FaixasPecas.js'
 import { loadEstoque, loadCategorias, sincronizarEstoqueOS } from './Estoque.jsx'
 
 const itensAtivos = o => (o && o.status !== 'cancelado' ? (o.itens || []) : [])
@@ -449,7 +449,8 @@ export default function OrdemServico({ setPage }) {
 
   function adicionarItem() {
     if (!novoItem.desc || !novoItem.valor) return
-    setForm(f => ({ ...f, itens: [...(f.itens || []), { ...novoItem, id: Date.now() }] }))
+    const custo = Number(novoItem.custo) || custoPorVenda(novoItem.valor, faixas)
+    setForm(f => ({ ...f, itens: [...(f.itens || []), { ...novoItem, custo, id: Date.now() }] }))
     setNovoItem({ desc: '', qtd: 1, uni: 'UN', cod: '', custo: '', valor: '' })
   }
 
@@ -468,7 +469,7 @@ export default function OrdemServico({ setPage }) {
       const itens = [...(f.itens || [])]
       const idx = itens.findIndex(it => String(it.pecaId) === String(peca.id))
       if (idx >= 0) itens[idx] = { ...itens[idx], qtd: Number(itens[idx].qtd || 0) + qtd }
-      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd, valor: peca.precoVenda || vendaPorFaixa(peca.precoCusto, faixas) || 0, custo: peca.precoCusto || 0 })
+      else itens.push({ id: Date.now(), pecaId: peca.id, desc: peca.nome, uni: peca.un === 'L' ? 'LT' : (peca.un || 'UN'), cod: peca.codigo || '', qtd, valor: peca.precoVenda || vendaPorFaixa(peca.precoCusto, faixas) || 0, custo: Number(peca.precoCusto) || custoPorVenda(peca.precoVenda, faixas) })
       return { ...f, itens }
     })
   }
