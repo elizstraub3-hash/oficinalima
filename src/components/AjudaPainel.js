@@ -30,7 +30,7 @@ export const AJUDA = [
     r: 'Gastos: Menu → Planilha de Gastos → "+ Adicionar Gasto". Ele entra sozinho como saída no Caixa e no relatório da semana.' },
   { id: 'contas_como', p: ['marcar conta', 'marco a conta', 'conta paga', 'como paga', 'como pago', 'paguei', 'pagar luz', 'valor da conta', 'contas da oficina'],
     r: 'Contas: Menu → Contas da Oficina. Clique no ✏️ para colocar o valor. Quando pagar, clique em "⏳ Pendente" para virar "✅ Pago" — aí entra no Caixa e no relatório.' },
-  { id: 'relatorio_como', p: ['relatorio', 'sexta', 'fechamento'],
+  { id: 'relatorio_como', p: ['onde vejo o relatorio', 'tela de relatorio', 'sexta'],
     r: 'Relatório: Menu → Relatório Semanal. Mostra entradas, saídas, quanto pagar para cada mecânico, contas pagas e gastos da semana (seg a sex). Escolha outras semanas ou meses no topo e use "🖨️ Imprimir / Salvar PDF".' },
   { id: 'backup', p: ['backup', 'exportar', 'importar', 'salvar dados', 'perder dados', 'outro computador'],
     r: 'Backup: clique em "☰ Menu" (canto de cima) → "⬇️ Exportar dados". Guarde o arquivo. Para colocar os dados em outro computador, use "Importar" no mesmo menu.\nFaça backup toda semana!' },

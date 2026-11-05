@@ -4,7 +4,9 @@ import { calcResumoFuncionario } from './Funcionarios.jsx'
 import { getAlertasEstoque } from './Estoque.jsx'
 import { listarPeriodos, noPeriodo, hojeISO } from './Periodo.jsx'
 import { AJUDA } from './AjudaPainel.js'
+import { resumoPeriodo } from './Relatorio.jsx'
 import { ehPedidoDeOS, extrairOS, criarOS } from './OsPorVoz.js'
+import { ehPedidoDeGasto, extrairGasto, salvarGasto, CATEGORIAS_GASTO, ehPedidoDeConcluir, acharOSAberta, concluirOS } from './AcoesAssistente.js'
 
 const ler = k => JSON.parse(localStorage.getItem(k) || '[]')
 const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
@@ -13,6 +15,9 @@ const STATUS = { orcamento: 'Orçamento', aprovado: 'Aprovado', em_andamento: 'E
 
 const ATALHOS = [
   { id: 'criar_os', label: '🎤 Criar OS por voz' },
+  { id: 'gasto', label: '💸 Lançar gasto' },
+  { id: 'concluir_os', label: '✅ Concluir OS' },
+  { id: 'relatorio', label: '📊 Relatório da semana' },
   { id: 'hoje', label: '💵 Caixa de hoje' },
   { id: 'semana', label: '📆 Caixa da semana' },
   { id: 'mecanicos', label: '👷 Pagar mecânicos' },
@@ -47,6 +52,35 @@ const INTENCOES = [
   { id: 'semana', p: ['semana', 'semanal', 'relatorio'] },
   { id: 'hoje', p: ['hoje', 'caixa', 'entrou', 'saldo', 'faturamento', 'faturou'] },
 ]
+
+function montarRelatorio(per) {
+  const r = resumoPeriodo(per)
+  const abertas = ler('ol_ordens').filter(o => !['concluido', 'cancelado'].includes(o.status))
+  const alertas = getAlertasEstoque()
+  const dia = new Date().getDate()
+  const contas = ler('ol_contas').filter(c => c.status === 'pendente' && Number(c.vencimento) >= dia && Number(c.vencimento) - dia <= 7)
+  const mob = r.mecanicos.reduce((s2, m) => s2 + m.aPagar, 0)
+  const L = []
+  L.push(`📊 RELATÓRIO — ${per.label}`)
+  L.push('')
+  L.push(`💵 Entradas: ${fmt(r.entradas)}`)
+  L.push(`   🔩 Peças: ${fmt(r.entPecas)}`)
+  L.push(`   🔧 Mão de obra: ${fmt(r.entMob)}`)
+  L.push(`💸 Saídas: ${fmt(r.saidas)}`)
+  L.push(`📈 Saldo: ${fmt(r.saldo)}`)
+  L.push('')
+  L.push(`🔧 OS concluídas: ${r.osConcluidas} (${fmt(r.valorOs)})`)
+  L.push(`⏳ OS em aberto: ${abertas.length} (${fmt(abertas.reduce((s2, o) => s2 + Number(o.valor || 0), 0))})`)
+  L.push('')
+  L.push(`🔩 Peças: custo ${fmt(r.pecasOS.custo)} · venda ${fmt(r.pecasOS.venda)} · lucro ${fmt(r.pecasOS.lucro)}`)
+  L.push(`🔧 Mão de obra: total ${fmt(r.maoDeObra)} · mecânicos ${fmt(mob)} · lucro ${fmt(r.maoDeObra - mob)}`)
+  const pagar = r.mecanicos.filter(m => m.aPagar > 0)
+  if (pagar.length) { L.push(''); L.push('👷 Pagar aos mecânicos:'); pagar.forEach(m => L.push(`   • ${m.nome}: ${fmt(m.aPagar)} (${m.concluidas} OS)`)) }
+  if (r.gastosPorCat.length) { L.push(''); L.push(`🧾 Gastos (${fmt(r.totalGastos)}):`); r.gastosPorCat.slice(0, 5).forEach(([c, v]) => L.push(`   • ${c}: ${fmt(v)}`)) }
+  if (alertas.length) { L.push(''); L.push(`⚠️ Peças acabando: ${alertas.map(p => `${p.nome} (${p.qtd})`).join(', ')}`) }
+  if (contas.length) { L.push(''); L.push(`📄 Contas vencendo em 7 dias: ${contas.map(c => `${c.descricao} dia ${c.vencimento}`).join(', ')}`) }
+  return L.join('\n')
+}
 
 function resumoCaixa(periodo, titulo) {
   const l = lancamentosCaixa().filter(e => noPeriodo(e.data, periodo))
@@ -133,6 +167,24 @@ function responder(intencao, texto = '') {
         opcoes: ordens.slice(0, 8).map(o => ({ label: `${o.clienteNome} · ${o.placa || ''}`, intencao })),
       }
     }
+    case 'relatorio': {
+      const t = sem(texto)
+      const { semanas, meses } = listarPeriodos()
+      const h = hojeISO()
+      const per = /\bmes\b/.test(t) ? meses[0] : /passad/.test(t) ? semanas[1] : /\bhoje\b|\bdia\b/.test(t) ? { de: h, ate: h, label: 'Hoje' } : semanas[0]
+      return { texto: montarRelatorio(per), copiar: true }
+    }
+    case 'gasto': {
+      const g = extrairGasto(texto)
+      if (!g.valor) return { texto: 'Me fala o gasto com o valor 💸, por exemplo:\n\n"Gastei 670 no elevador" ou "Paguei 45 reais de café"\n\nEu lanço na Planilha de Gastos e já entra no Caixa.' }
+      return { texto: 'Vou lançar este gasto 👇 Confira e toque em "Confirmar gasto":', gastoRascunho: g }
+    }
+    case 'concluir_os': {
+      const { os, abertas } = acharOSAberta(texto)
+      if (os) return { texto: `Concluir a ${os.numero} — ${os.clienteNome}${os.placa ? ' (' + os.placa + ')' : ''} — ${fmt(os.valor)}?\n\nO valor entra no Caixa hoje.`, concluir: os.id }
+      if (!abertas.length) return { texto: 'Não tem nenhuma OS aberta agora ✅' }
+      return { texto: 'Qual OS você quer concluir?', opcoes: abertas.slice(0, 8).map(o => ({ label: `Concluir ${o.numero} · ${o.clienteNome} · ${o.placa || ''}`, intencao: 'concluir_os' })) }
+    }
     case 'criar_os': {
       const d = extrairOS(texto)
       if (!d.clienteNome && !d.placa) return { texto: 'Bora criar a OS! 🎤 Toque no microfone e fale tudo de uma vez, por exemplo:\n\n"Criar OS para o João, placa ABC1D23, Gol prata, troca de óleo, 150 reais, mecânico Celio"\n\nEu preencho e te mostro para conferir antes de salvar.' }
@@ -175,7 +227,11 @@ function melhorAjuda(t) {
 
 function entender(texto) {
   const t = sem(texto)
+  if (/\b(relatorio|resumo|balanco|fechamento|como foi|como esta a oficina)\b/.test(t)) return 'relatorio'
+  if (/\b(mensagem|msg|whats|whatsapp|avisar|avisa)\b/.test(t)) return /orcamento/.test(t) ? 'msg_orcamento' : 'msg_pronto'
+  if (ehPedidoDeConcluir(t)) return 'concluir_os'
   if (ehPedidoDeOS(t)) return 'criar_os'
+  if (ehPedidoDeGasto(t)) return 'gasto'
   const ajuda = melhorAjuda(t)
   if (ajuda && /\b(como|onde|o que|oque|qual o jeito|nao sei|ajuda|faz|faco|fazer|consigo|posso|cadastr|adicion|lanc|emit|cancel|edit|exclu|apag|mud|troc|import|export)/.test(t)) return ajuda
   if (/mensagem|msg|whats|avisar|avisa/.test(t)) {
@@ -188,7 +244,7 @@ function entender(texto) {
 function saudacao() {
   const h = new Date().getHours()
   const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
-  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPedro, tudo o que estamos conversando pode ser melhorado com a ajuda da minha criadora — se quiser algo diferente, toque em "💡 Pedir uma melhoria".\n\nPosso te ajudar com os números da oficina e com dúvidas de como usar o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
+  return { de: 'bot', texto: `${s}, Pedro! 👋 Sou o assistente da oficina.\n\nEstou em fase de adaptação aqui no sistema 🛠️ — minha criadora está fazendo melhorias em mim, então ainda posso não saber de tudo. Tenha paciência comigo! 😄\n\nPedro, tudo o que estamos conversando pode ser melhorado com a ajuda da minha criadora — se quiser algo diferente, toque em "💡 Pedir uma melhoria".\n\nPosso criar OS, lançar gastos, concluir OS, fazer relatórios, mandar mensagem pro cliente e responder sobre os números e o painel. Pergunte ou toque numa opção:`, mostrarAtalhos: true }
 }
 
 export default function Assistente({ onMudou }) {
@@ -211,6 +267,30 @@ export default function Assistente({ onMudou }) {
     r.onerror = e => { if (e.error === 'not-allowed') alert('Libere o microfone para o site (ícone de cadeado ao lado do endereço).') }
     r.onend = () => { setOuvindo(false); if (falado.current.trim()) perguntar(falado.current) }
     rec.current = r; setOuvindo(true); r.start()
+  }
+
+  function editarGasto(i, campo, valor) {
+    setMsgs(ms => ms.map((m, j) => j === i ? { ...m, gastoRascunho: { ...m.gastoRascunho, [campo]: valor } } : m))
+  }
+
+  function confirmarGasto(i) {
+    const g = msgs[i].gastoRascunho
+    if (!g.descricao?.trim() || !(parseFloat(g.valor) > 0)) return alert('Preencha a descrição e o valor.')
+    salvarGasto(g)
+    registrar(`Gasto lançado: ${g.descricao} ${g.valor}`, 'gasto', 'acao')
+    setMsgs(ms => [...ms.map((x, j) => j === i ? { ...x, gastoRascunho: null, texto: 'Pronto!' } : x),
+      { de: 'bot', texto: `✅ Gasto lançado!\n🧾 ${g.descricao}\n🏷️ ${g.categoria}\n💸 ${fmt(g.valor)}\n\nJá está na Planilha de Gastos e no Caixa de hoje.` }])
+    onMudou && onMudou()
+  }
+
+  function confirmarConcluir(i) {
+    const os = concluirOS(msgs[i].concluir)
+    if (!os) return
+    registrar(`OS concluída: ${os.numero}`, 'concluir_os', 'acao')
+    setMsgs(ms => [...ms.map((x, j) => j === i ? { ...x, concluir: null } : x),
+      { de: 'bot', texto: `✅ ${os.numero} concluída! ${fmt(os.valor)} entrou no Caixa de hoje.\n\nQuer avisar o cliente? Toque abaixo 👇` },
+      { de: 'bot', texto: msgPronto(os), copiar: true, telefone: os.clienteTelefone }])
+    onMudou && onMudou()
   }
 
   function editarRascunho(i, campo, valor) {
@@ -280,6 +360,30 @@ export default function Assistente({ onMudou }) {
                 {m.opcoes && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                     {m.opcoes.map((o, j) => <button key={j} style={botao} onClick={() => perguntar(o.label, o.intencao)}>{o.label}</button>)}
+                  </div>
+                )}
+                {m.gastoRascunho && (
+                  <div style={{ marginTop: 6, padding: 10, border: '1.5px solid #ef4444', borderRadius: 10, display: 'grid', gap: 6 }}>
+                    {[['descricao', 'Descrição *'], ['valor', 'Valor (R$) *']].map(([c, l]) => (
+                      <label key={c} style={{ fontSize: 11, fontWeight: 700, display: 'grid', gap: 2 }}>{l}
+                        <input type={c === 'valor' ? 'number' : 'text'} value={m.gastoRascunho[c] || ''} onChange={e => editarGasto(i, c, e.target.value)} style={{ padding: '5px 8px', fontSize: 13 }} />
+                      </label>
+                    ))}
+                    <label style={{ fontSize: 11, fontWeight: 700, display: 'grid', gap: 2 }}>Categoria
+                      <select value={m.gastoRascunho.categoria} onChange={e => editarGasto(i, 'categoria', e.target.value)} style={{ padding: '5px 8px', fontSize: 13 }}>
+                        {CATEGORIAS_GASTO.map(c => <option key={c}>{c}</option>)}
+                      </select>
+                    </label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn-primary" style={{ flex: 1, padding: '8px' }} onClick={() => confirmarGasto(i)}>✅ Confirmar gasto</button>
+                      <button style={botao} onClick={() => setMsgs(ms => ms.map((x, j) => j === i ? { ...x, gastoRascunho: null, texto: 'Gasto cancelado.' } : x))}>Cancelar</button>
+                    </div>
+                  </div>
+                )}
+                {m.concluir && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                    <button className="btn-primary" style={{ padding: '7px 12px' }} onClick={() => confirmarConcluir(i)}>✅ Sim, concluir</button>
+                    <button style={botao} onClick={() => setMsgs(ms => ms.map((x, j) => j === i ? { ...x, concluir: null, texto: 'Ok, não concluí.' } : x))}>Cancelar</button>
                   </div>
                 )}
                 {m.rascunho && (
