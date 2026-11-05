@@ -3,6 +3,7 @@ import Modal from './Modal.jsx'
 import './Caixa.css'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, dataOS, listarPeriodos } from './Periodo.jsx'
 import { pctFuncionario } from './Funcionarios.jsx'
+import BoletoPecas from './BoletoPecas.jsx'
 
 const KEY = 'ol_caixa'
 const CATS = ['Serviço', 'Estoque', 'Manutenção', 'Outros']
@@ -79,6 +80,7 @@ export default function Caixa() {
   const [filtro, setFiltro] = useState({ tipo: 'todos' })
   const [periodoId, setPeriodoId] = useState('semana-0')
   const periodo = acharPeriodo(periodoId)
+  const [boleto, setBoleto] = useState(false)
 
   function refresh() { setEntries(lancamentosCaixa()) }
 
@@ -120,10 +122,6 @@ export default function Caixa() {
   const semanaAtual = listarPeriodos().semanas[0]
   const mesStr = hojeStr.slice(0, 7)
 
-  // Faturamento = OS concluídas, na data em que foram concluídas (igual ao Caixa)
-  function ordensDoPeriodo(de, ate) {
-    return todasOrdens.filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), { de, ate }))
-  }
   const emAberto = todasOrdens.filter(o => !['concluido', 'cancelado'].includes(o.status))
 
   function somaValor(arr) { return arr.reduce((s, o) => s + Number(o.valor || 0), 0) }
@@ -137,9 +135,6 @@ export default function Caixa() {
   const totalMaoDeObra = somaMob(ordens)
 
   // Resumo por período
-  const ordensHoje = ordensDoPeriodo(hojeStr, hojeStr)
-  const ordensSemana = ordensDoPeriodo(semanaAtual.de, semanaAtual.ate)
-  const ordensMes = ordensDoPeriodo(mesStr + '-01', mesStr + '-31')
 
   // Gastos do mês atual
   const gastosMes = gastos.filter(g => noPeriodo(g.data, periodo))
@@ -194,10 +189,12 @@ export default function Caixa() {
         <div className="resumo-card green">
           <span className="resumo-label">Total Entradas</span>
           <strong>{fmt(totalEntrada)}</strong>
+          <small style={{ fontSize: 11, opacity: 0.8 }}>OS concluídas {fmt(filtered.filter(e => e.origem === 'os').reduce((s, e) => s + e.valor, 0))} + outros {fmt(filtered.filter(e => e.tipo === 'entrada' && e.origem !== 'os').reduce((s, e) => s + e.valor, 0))}</small>
         </div>
         <div className="resumo-card red">
           <span className="resumo-label">Total Saídas</span>
           <strong>{fmt(totalSaida)}</strong>
+          <small style={{ fontSize: 11, opacity: 0.8 }}>gastos, contas, boletos e funcionários</small>
         </div>
         <div className={`resumo-card ${saldo >= 0 ? 'blue' : 'red'} saldo`}>
           <span className="resumo-label">Saldo</span>
@@ -247,36 +244,32 @@ export default function Caixa() {
         </div>
       )}
 
-      {/* Resumo OS por período */}
-      <div className="caixa-periodo">
-        <div className="periodo-title">📅 Faturamento em OS <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-light)' }}>(só OS concluídas, no dia da conclusão)</span></div>
-        <div className="periodo-grid">
-          <div className="periodo-item">
-            <span className="periodo-label">Hoje</span>
-            <strong>{fmt(somaValor(ordensHoje))}</strong>
-            <small>{ordensHoje.length} OS</small>
+      {/* OS do período */}
+      {(() => {
+        const concl = todasOrdens.filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), periodo))
+        return (
+          <div className="caixa-periodo">
+            <div className="periodo-title">🔧 Ordens de Serviço — {periodo.label}</div>
+            <div className="periodo-grid">
+              <div className="periodo-item">
+                <span className="periodo-label">✅ Concluídas (já entraram no caixa)</span>
+                <strong style={{ color: '#10b981' }}>{fmt(somaValor(concl))}</strong>
+                <small>{concl.length} OS</small>
+              </div>
+              <div className="periodo-item">
+                <span className="periodo-label">⏳ Em aberto (ainda vão entrar)</span>
+                <strong style={{ color: '#f59e0b' }}>{fmt(somaValor(emAberto))}</strong>
+                <small>{emAberto.length} OS — conclua a OS para entrar no caixa</small>
+              </div>
+            </div>
           </div>
-          <div className="periodo-item">
-            <span className="periodo-label">Esta Semana</span>
-            <strong>{fmt(somaValor(ordensSemana))}</strong>
-            <small>{ordensSemana.length} OS</small>
-          </div>
-          <div className="periodo-item">
-            <span className="periodo-label">Este Mês</span>
-            <strong>{fmt(somaValor(ordensMes))}</strong>
-            <small>{ordensMes.length} OS</small>
-          </div>
-          <div className="periodo-item">
-            <span className="periodo-label">⏳ Em aberto</span>
-            <strong style={{ color: '#f59e0b' }}>{fmt(somaValor(emAberto))}</strong>
-            <small>{emAberto.length} OS ainda não concluídas</small>
-          </div>
-        </div>
-      </div>
+        )
+      })()}
 
       {/* Gasto e Lucro com Peças */}
       <div className="caixa-pecas-split">
-        <div className="mob-split-title">🔩 Controle de Peças (Notinhas)</div>
+        <div className="mob-split-title">🔩 Controle de Peças — {periodo.label}</div>
+        <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981', fontSize: 13, padding: '7px 14px', marginBottom: 10 }} onClick={() => setBoleto(true)}>🧾 Lançar boleto da semana</button>
         <div className="mob-split-grid">
           <div className="mob-split-item" style={{ background: '#fef2f2', borderColor: '#fca5a5' }}>
             <span className="mob-split-label">🛒 Gasto Total com Peças</span>
@@ -421,6 +414,8 @@ export default function Caixa() {
           </table>
         )}
       </div>
+
+      {boleto && <BoletoPecas onClose={() => setBoleto(false)} onSalvo={refresh} />}
 
       {modal && (
         <Modal title="Novo Lançamento" onClose={() => setModal(false)}>

@@ -99,7 +99,7 @@ export function criarOS(d, ditado) {
     itens: [],
     servicos: d.servico || valor ? [{ id: Date.now(), desc: d.servico || 'Serviço', funcionario: d.funcionario || '', maoDeObra: valor ? String(valor) : '' }] : [],
     valor, maoDeObra: valor,
-    inicio: d.status === 'em_andamento' ? Date.now() : null, fim: null,
+    inicio: d.status === 'em_andamento' ? Date.now() : null, fim: d.status === 'concluido' ? Date.now() : null,
     data: new Date().toISOString().split('T')[0],
   }
   ordens.push(os)

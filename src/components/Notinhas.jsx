@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { SeletorPeriodo, acharPeriodo, noPeriodo, hojeISO, listarPeriodos } from './Periodo.jsx'
 import Modal from './Modal.jsx'
+import BoletoPecas from './BoletoPecas.jsx'
 import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import './Notinhas.css'
 
@@ -115,26 +116,7 @@ export default function Notinhas() {
 
   function refresh() { setItems(load()) }
 
-  const [notaSemana, setNotaSemana] = useState(null)
-
-  function abrirNotaSemana() {
-    setNotaSemana({ semana: 'semana-1', fornecedor: '', total: '', margem: pctSalva('margem_nota_semana') })
-  }
-
-  // Lança a nota semanal como uma notinha só e segue para a comissão
-  function salvarNotaSemana(e) {
-    e.preventDefault()
-    const total = parseFloat(notaSemana.total) || 0
-    const fator = fatorMargem(notaSemana.margem)
-    if (!total) return alert('Coloque o valor total da nota.')
-    if (!fator) return alert('Coloque a porcentagem.')
-    const sem = listarPeriodos().semanas.find(x => x.id === notaSemana.semana)
-    const venda = Math.round(total * fator * 100) / 100
-    const formData = { desc: `Nota da semana ${sem.label.replace(/^[^(]*\(|\)$/g, '')}`, fornecedor: notaSemana.fornecedor, qtd: 1, custoUnit: total, precoVenda: venda, margem: notaSemana.margem }
-    setNotaSemana(null)
-    setPctInput(pctSalva('comissao_notinha'))
-    setConfirmModal({ custoCalc: total, vendaCalc: venda, lucroCalc: venda - total, formData })
-  }
+  const [boleto, setBoleto] = useState(false)
 
   function handleSave(e) {
     e.preventDefault()
@@ -193,7 +175,7 @@ export default function Notinhas() {
       <div className="page-header">
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-primary" onClick={() => { setForm(emptyForm()); setModal(true) }}>+ Nova Notinha</button>
-          <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={abrirNotaSemana}>🧾 Nota da semana</button>
+          <button className="btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }} onClick={() => setBoleto(true)}>🧾 Boleto da semana</button>
           <button className="btn-secondary" onClick={() => exportCSV([...items].reverse())} disabled={items.length === 0}>
             ⬇️ Exportar CSV
           </button>
@@ -297,49 +279,7 @@ export default function Notinhas() {
       </div>
 
       {/* Modal nova notinha */}
-      {notaSemana && (() => {
-        const total = parseFloat(notaSemana.total) || 0
-        const fator = fatorMargem(notaSemana.margem)
-        const venda = total && fator ? Math.round(total * fator * 100) / 100 : 0
-        return (
-          <Modal title="🧾 Nota da semana (fornecedor)" onClose={() => setNotaSemana(null)}>
-            <form onSubmit={salvarNotaSemana}>
-              <p style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 0 }}>Coloque o valor total da nota que chega na segunda e a porcentagem — o painel calcula o valor de venda e o lucro.</p>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Semana das peças</label>
-                  <select value={notaSemana.semana} onChange={e => setNotaSemana(n => ({ ...n, semana: e.target.value }))}>
-                    {listarPeriodos().semanas.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Fornecedor</label>
-                  <input value={notaSemana.fornecedor} onChange={e => setNotaSemana(n => ({ ...n, fornecedor: e.target.value }))} placeholder="Nome da loja" />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Valor total da nota (R$) *</label>
-                  <input type="number" min="0" step="0.01" value={notaSemana.total} onChange={e => setNotaSemana(n => ({ ...n, total: e.target.value }))} placeholder="Ex: 1000" required autoFocus />
-                </div>
-                <CampoPct chave="margem_nota_semana" label="Porcentagem sobre as peças (%)" value={notaSemana.margem ?? ''}
-                  onChange={v => setNotaSemana(n => ({ ...n, margem: v }))} placeholder="Ex: 40" />
-              </div>
-              {venda > 0 && (
-                <div style={{ background: 'rgba(16,185,129,0.08)', border: '1.5px solid #10b981', borderRadius: 10, padding: '12px 14px', marginBottom: 14, fontSize: 14, display: 'grid', gap: 4 }}>
-                  <span>💸 Peças (custo): <strong style={{ color: '#ef4444' }}>{fmt(total)}</strong></span>
-                  <span>➕ {notaSemana.margem}%: <strong style={{ color: '#10b981' }}>{fmt(venda - total)}</strong></span>
-                  <span>💳 Valor com a porcentagem: <strong style={{ color: '#3b82f6', fontSize: 17 }}>{fmt(venda)}</strong></span>
-                </div>
-              )}
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setNotaSemana(null)}>Cancelar</button>
-                <button type="submit" className="btn-primary">Continuar →</button>
-              </div>
-            </form>
-          </Modal>
-        )
-      })()}
+      {boleto && <BoletoPecas onClose={() => setBoleto(false)} onSalvo={refresh} />}
 
       {modal && (
         <Modal title="Nova Notinha de Peça" onClose={() => setModal(false)}>

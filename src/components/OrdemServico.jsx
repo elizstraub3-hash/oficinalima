@@ -12,6 +12,14 @@ const KEY_CLI = 'ol_clientes'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
+// Data de conclusão: marca agora ao concluir/cancelar, mantém se já estava assim, limpa ao reabrir
+function fimDaOS(old, novoStatus) {
+  const fechado = st => st === 'concluido' || st === 'cancelado'
+  if (!fechado(novoStatus)) return null
+  if (old && old.status === novoStatus && old.fim) return old.fim
+  return Date.now()
+}
+
 function nextNumero(arr) {
   if (!arr.length) return 'OS-001'
   const nums = arr.map(o => parseInt(o.numero?.replace('OS-', '') || '0'))
@@ -545,16 +553,16 @@ export default function OrdemServico({ setPage }) {
       const idx = arr.findIndex(x => x.id === editing || x.id === Number(editing))
       if (idx === -1) return null
       const old = arr[idx]
-      let inicio = old.inicio, fim = old.fim
+      let inicio = old.inicio
       if (form.status === 'em_andamento' && !inicio) inicio = Date.now()
-      if ((form.status === 'concluido' || form.status === 'cancelado') && !fim) fim = Date.now()
+      const fim = fimDaOS(old, form.status)
       arr[idx] = { ...old, ...formComMec, valor: total, maoDeObra: calcTotalMob(), inicio, fim }
       savedOrdem = arr[idx]
     } else {
       const novaOrdem = {
         ...formComMec, id: nextId(arr), numero: nextNumero(arr), valor: total, maoDeObra: calcTotalMob(),
         inicio: form.status === 'em_andamento' ? Date.now() : null,
-        fim: null, data: new Date().toISOString().split('T')[0],
+        fim: fimDaOS(null, form.status), data: new Date().toISOString().split('T')[0],
       }
       arr.push(novaOrdem)
       savedOrdem = novaOrdem
@@ -582,9 +590,9 @@ export default function OrdemServico({ setPage }) {
     const idx = arr.findIndex(x => x.id === id || x.id === Number(id))
     if (idx === -1) return
     const old = arr[idx]
-    let inicio = old.inicio, fim = old.fim
+    let inicio = old.inicio
     if (novoStatus === 'em_andamento' && !inicio) inicio = Date.now()
-    if ((novoStatus === 'concluido' || novoStatus === 'cancelado') && !fim) fim = Date.now()
+    const fim = fimDaOS(old, novoStatus)
     arr[idx] = { ...old, status: novoStatus, inicio, fim }
     sincronizarEstoqueOS(itensAtivos(old), itensAtivos(arr[idx]), `OS ${old.numero || old.id}`)
     save(arr)
