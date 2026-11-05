@@ -406,48 +406,6 @@ export default function Dashboard({ setPage }) {
 
       {/* === CHECKLIST + NOTINHAS LADO A LADO === */}
       <div className="dash-side-row">
-      {/* === CHECKLIST === */}
-      <div className="dash-checklist card">
-        <div className="dash-checklist-header">
-          <div>
-            <h2 className="dash-checklist-title">
-              {saudacao.texto}, Pedro! Vamos fazer o checklist? {todosFeitos ? '🎉' : '📝'}
-            </h2>
-            <p className="dash-checklist-sub">
-              {todosFeitos
-                ? 'Tudo concluído! Ótimo começo de dia! 🌟'
-                : `${totalChecked} de ${ITEMS_FIXOS.length} itens concluídos`}
-            </p>
-          </div>
-          <div className="dash-checklist-progress">
-            <svg viewBox="0 0 36 36" className="dash-progress-ring">
-              <path className="dash-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path
-                className="dash-progress-fill"
-                strokeDasharray={`${(totalChecked / ITEMS_FIXOS.length) * 100}, 100`}
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-            <span className="dash-progress-pct">{Math.round((totalChecked / ITEMS_FIXOS.length) * 100)}%</span>
-          </div>
-        </div>
-
-        <ul className="dash-checklist-list">
-          {ITEMS_FIXOS.map(item => {
-            const done = checked.includes(item.id)
-            return (
-              <li key={item.id} className={`dash-check-item ${done ? 'done' : ''} ${item.aviso && !done ? 'aviso' : ''}`} onClick={() => toggleCheck(item.id)}>
-                <span className={`dash-checkbox ${done ? 'checked' : ''}`}>
-                  {done ? '✔' : ''}
-                </span>
-                <span className="dash-check-label">{item.label}</span>
-                {!done && <span className={`dash-check-pending ${item.aviso ? 'urgente' : ''}`}>{item.aviso ? '❗ Urgente' : 'Pendente'}</span>}
-              </li>
-            )
-          })}
-        </ul>
-      </div>
-
         <div className="dash-col-direita">
         {/* === RELATÓRIO DE SEXTA === */}
         {new Date().getDay() === 5 && (() => {
@@ -466,6 +424,31 @@ export default function Dashboard({ setPage }) {
                 ))}
               </div>
               <button className="btn-primary" onClick={() => setPage && setPage('relatorio')}>Ver relatório completo →</button>
+            </div>
+          )
+        })()}
+
+        {/* === DESTAQUES DOS MECÂNICOS === */}
+        {(() => {
+          const semana = listarPeriodos().semanas[0]
+          const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'concluido' && (() => { const d = o.fim ? new Date(o.fim - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) : o.data; return d >= semana.de && d <= semana.ate })())
+          const nomes = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').map(f => f.nome).filter(Boolean)
+          const dados = nomes.map(nome => {
+            const mob = calcResumoFuncionario(nome, semana).maoDeObra || 0
+            const pecas = ordens.filter(o => o.funcionario === nome).reduce((s, o) => s + (o.itens || []).reduce((a, it) => a + (Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1), 0), 0)
+            return { nome, mob, pecas }
+          })
+          const topMob = [...dados].sort((x, y) => y.mob - x.mob)[0]
+          const topPecas = [...dados].sort((x, y) => y.pecas - x.pecas)[0]
+          if (!dados.length) return null
+          return (
+            <div className="card" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginTop: 0 }}>🏆 Destaques — {semana.label.toLowerCase()}</h3>
+              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14 }}>
+                <span>🔧 Mais mão de obra: <strong>{topMob.mob > 0 ? `${topMob.nome} (${fmtR(topMob.mob)})` : '—'}</strong></span>
+                <span>🔩 Mais vendeu peças: <strong>{topPecas.pecas > 0 ? `${topPecas.nome} (${fmtR(topPecas.pecas)})` : '—'}</strong></span>
+              </div>
             </div>
           )
         })()}

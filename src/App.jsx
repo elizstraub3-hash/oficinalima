@@ -1,3 +1,5 @@
+import BotaoNuvem from './components/BotaoNuvem.jsx'
+import { iniciarNuvem } from './nuvem.js'
 import { useState, useEffect } from 'react'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -244,7 +246,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('ol_theme') || 'dark')
   const [backupDismissed, setBackupDismissed] = useState(false)
 
-  useEffect(() => { seedData() }, [])
+  useEffect(() => { seedData(); iniciarNuvem(() => setVersao(v => v + 1)) }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -291,6 +293,7 @@ export default function App() {
         </div>
       )}
       <Sidebar page={page} setPage={setPage} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
+      <BotaoNuvem />
       <Assistente onMudou={() => setVersao(v => v + 1)} />
       <main className="main-content" key={versao}>
         {page === 'dashboard'     && <Dashboard setPage={setPage} />}
