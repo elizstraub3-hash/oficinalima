@@ -150,14 +150,16 @@ function seedData() {
     })
     if (_changed) localStorage.setItem('ol_contas', JSON.stringify(_contas))
   }
-  // Funcionários: apenas Pedro Lima e Celio Lima
-  {
+  // Funcionários iniciais: só cria Pedro e Celio quando ainda não há nenhum funcionário cadastrado
+  if (!localStorage.getItem('ol_funcionarios_ok')) {
     const _funcs = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]')
-    const _keep = _funcs.filter(f => f.nome === 'Pedro Lima' || f.nome === 'Celio Lima')
-    let _changed = _keep.length !== _funcs.length
-    if (!_keep.find(f => f.nome === 'Pedro Lima')) { _keep.push({ id: 1, nome: 'Pedro Lima', cargo: 'Mecânico', telefone: '', status: 'ativo' }); _changed = true }
-    if (!_keep.find(f => f.nome === 'Celio Lima'))  { _keep.push({ id: 2, nome: 'Celio Lima',  cargo: 'Mecânico', telefone: '', status: 'ativo' }); _changed = true }
-    if (_changed) localStorage.setItem('ol_funcionarios', JSON.stringify(_keep))
+    if (!_funcs.length) {
+      localStorage.setItem('ol_funcionarios', JSON.stringify([
+        { id: 1, nome: 'Pedro Lima', cargo: 'Mecânico', telefone: '', status: 'ativo' },
+        { id: 2, nome: 'Celio Lima', cargo: 'Mecânico', telefone: '', status: 'ativo' },
+      ]))
+    }
+    localStorage.setItem('ol_funcionarios_ok', '1')
   }
 }
 
