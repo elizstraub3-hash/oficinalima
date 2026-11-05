@@ -12,6 +12,8 @@ export function resumoPeriodo(periodo) {
   const caixa = lancamentosCaixa().filter(e => noPeriodo(e.data, periodo))
   const entradas = soma(caixa.filter(e => e.tipo === 'entrada'), e => e.valor)
   const saidas = soma(caixa.filter(e => e.tipo === 'saida'), e => e.valor)
+  const entPecas = soma(caixa.filter(e => e.parte === 'pecas'), e => e.valor)
+  const entMob = soma(caixa.filter(e => e.parte === 'mob'), e => e.valor)
 
   const ordens = ler('ol_ordens').filter(o => noPeriodo(dataOS(o), periodo))
   const concluidas = ordens.filter(o => o.status === 'concluido')
@@ -30,7 +32,7 @@ export function resumoPeriodo(periodo) {
   }, {})).sort((a, b) => b[1] - a[1])
 
   return {
-    entradas, saidas, saldo: entradas - saidas,
+    entradas, saidas, saldo: entradas - saidas, entPecas, entMob,
     osConcluidas: concluidas.length, valorOs: soma(concluidas, o => o.valor),
     maoDeObra, mecanicos,
     pecasOS: pecasDasOS(periodo),
@@ -80,7 +82,7 @@ export default function Relatorio() {
       <h2 style={{ marginTop: 0 }}>📊 Relatório — {periodo.label}</h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="card" style={{ margin: 0 }}><div style={{ fontSize: 13, color: 'var(--text-light)' }}>💵 Entradas</div><strong style={{ fontSize: 22, color: '#10b981' }}>{fmt(r.entradas)}</strong></div>
+        <div className="card" style={{ margin: 0 }}><div style={{ fontSize: 13, color: 'var(--text-light)' }}>💵 Entradas</div><strong style={{ fontSize: 22, color: '#10b981' }}>{fmt(r.entradas)}</strong><div style={{ fontSize: 12, marginTop: 4 }}>🔩 Peças {fmt(r.entPecas)} · 🔧 Mão de obra {fmt(r.entMob)}</div></div>
         <div className="card" style={{ margin: 0 }}><div style={{ fontSize: 13, color: 'var(--text-light)' }}>💸 Saídas</div><strong style={{ fontSize: 22, color: '#ef4444' }}>{fmt(r.saidas)}</strong></div>
         <div className="card" style={{ margin: 0 }}><div style={{ fontSize: 13, color: 'var(--text-light)' }}>📈 Saldo</div><strong style={{ fontSize: 22, color: r.saldo >= 0 ? '#3b82f6' : '#ef4444' }}>{fmt(r.saldo)}</strong></div>
         <div className="card" style={{ margin: 0 }}><div style={{ fontSize: 13, color: 'var(--text-light)' }}>🔧 OS concluídas</div><strong style={{ fontSize: 22 }}>{r.osConcluidas}</strong> <span style={{ fontSize: 13, color: 'var(--text-light)' }}>({fmt(r.valorOs)})</span></div>

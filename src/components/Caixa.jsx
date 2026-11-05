@@ -24,11 +24,16 @@ export function adicionarLancamento(l) {
 // Lançamentos manuais + automáticos (OS concluídas, gastos e contas pagas), sem duplicar dados
 export function lancamentosCaixa() {
   const manuais = load().map(e => ({ ...e, origem: 'manual' }))
-  const os = ler('ol_ordens').filter(o => o.status === 'concluido' && Number(o.valor) > 0).map(o => ({
-    id: o.id, origem: 'os', tipo: 'entrada', categoria: 'Serviço', valor: Number(o.valor),
-    data: o.fim ? dataLocal(o.fim) : (o.data || dataLocal(Date.now())),
-    descricao: [o.numero || `OS ${o.id}`, o.clienteNome, o.placa].filter(Boolean).join(' — '),
-  }))
+  // Cada OS concluída entra separada em Peças e Mão de obra
+  const os = []
+  ler('ol_ordens').filter(o => o.status === 'concluido' && Number(o.valor) > 0).forEach(o => {
+    const data = o.fim ? dataLocal(o.fim) : (o.data || dataLocal(Date.now()))
+    const nome = [o.numero || `OS ${o.id}`, o.clienteNome, o.placa].filter(Boolean).join(' — ')
+    const pecas = (o.itens || []).reduce((s2, it) => s2 + (Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1), 0)
+    const mob = Math.max(0, Number(o.valor) - pecas)
+    if (pecas > 0) os.push({ id: `${o.id}-p`, origem: 'os', parte: 'pecas', tipo: 'entrada', categoria: 'Peças', valor: pecas, data, descricao: `${nome} · peças` })
+    if (mob > 0) os.push({ id: `${o.id}-m`, origem: 'os', parte: 'mob', tipo: 'entrada', categoria: 'Mão de obra', valor: mob, data, descricao: `${nome} · mão de obra` })
+  })
   const gastos = ler('ol_gastos').filter(g => Number(g.valor) > 0).map(g => ({
     id: g.id, origem: 'gasto', tipo: 'saida', categoria: g.categoria || 'Gasto', valor: Number(g.valor),
     data: g.data || dataLocal(Date.now()), descricao: g.descricao || 'Gasto',
@@ -182,7 +187,11 @@ export default function Caixa() {
         <div className="resumo-card green">
           <span className="resumo-label">Total Entradas</span>
           <strong>{fmt(totalEntrada)}</strong>
-          <small style={{ fontSize: 11, opacity: 0.8 }}>OS concluídas {fmt(filtered.filter(e => e.origem === 'os').reduce((s, e) => s + e.valor, 0))} + outros {fmt(filtered.filter(e => e.tipo === 'entrada' && e.origem !== 'os').reduce((s, e) => s + e.valor, 0))}</small>
+          <small style={{ fontSize: 12, display: 'grid', gap: 1, marginTop: 4 }}>
+            <span>🔩 Peças: {fmt(filtered.filter(e => e.parte === 'pecas').reduce((s, e) => s + e.valor, 0))}</span>
+            <span>🔧 Mão de obra: {fmt(filtered.filter(e => e.parte === 'mob').reduce((s, e) => s + e.valor, 0))}</span>
+            <span style={{ opacity: 0.8 }}>Outros: {fmt(filtered.filter(e => e.tipo === 'entrada' && e.origem !== 'os').reduce((s, e) => s + e.valor, 0))}</span>
+          </small>
         </div>
         <div className="resumo-card red">
           <span className="resumo-label">Total Saídas</span>

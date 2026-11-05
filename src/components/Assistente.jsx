@@ -52,7 +52,9 @@ function resumoCaixa(periodo, titulo) {
   const l = lancamentosCaixa().filter(e => noPeriodo(e.data, periodo))
   const ent = l.filter(e => e.tipo === 'entrada').reduce((s, e) => s + e.valor, 0)
   const sai = l.filter(e => e.tipo === 'saida').reduce((s, e) => s + e.valor, 0)
-  return `${titulo}\n💵 Entradas: ${fmt(ent)}\n💸 Saídas: ${fmt(sai)}\n📈 Saldo: ${fmt(ent - sai)}`
+  const pec = l.filter(e => e.parte === 'pecas').reduce((s, e) => s + e.valor, 0)
+  const mob = l.filter(e => e.parte === 'mob').reduce((s, e) => s + e.valor, 0)
+  return `${titulo}\n💵 Entradas: ${fmt(ent)}\n   🔩 Peças: ${fmt(pec)}\n   🔧 Mão de obra: ${fmt(mob)}\n💸 Saídas: ${fmt(sai)}\n📈 Saldo: ${fmt(ent - sai)}`
 }
 
 function acharOS(texto, statusOk) {
