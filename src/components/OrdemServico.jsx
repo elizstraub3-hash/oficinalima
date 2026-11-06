@@ -639,12 +639,9 @@ export default function OrdemServico({ setPage }) {
 
   return (
     <div>
-      <div className="page-header">
-        <button className="btn-primary" onClick={openAdd}>+ Nova OS</button>
-      </div>
-
-      {/* Barra de status / filtro */}
-      <div className="os-status-bar">
+      {/* Barra de status / filtro + Nova OS ao lado */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div className="os-status-bar" style={{ flex: 1, marginBottom: 0 }}>
         <button className={`os-status-chip ${filtroStatus === 'todos' ? 'active' : ''}`} onClick={() => setFiltroStatus('todos')}>
           Todas ({ordens.length})
         </button>
@@ -658,6 +655,8 @@ export default function OrdemServico({ setPage }) {
             {v.icon} {v.label} ({counts[k]})
           </button>
         ))}
+      </div>
+        <button className="btn-primary" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}>+ Nova OS</button>
       </div>
 
       <div className="card">
