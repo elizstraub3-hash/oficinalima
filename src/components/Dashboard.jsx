@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import './Dashboard.css'
 import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import { lancamentosCaixa } from './Caixa.jsx'
-import { calcResumoFuncionario, listarPeriodos } from './Funcionarios.jsx'
+import { calcResumoFuncionario, listarPeriodos, pctFuncionario } from './Funcionarios.jsx'
 import { resumoPeriodo } from './Relatorio.jsx'
-import { noPeriodo } from './Periodo.jsx'
+import { noPeriodo, dataOS } from './Periodo.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
@@ -448,6 +448,45 @@ export default function Dashboard({ setPage }) {
                       <span>Lucro bruto da semana: <strong style={{ color: bW >= 0 ? '#10b981' : '#ef4444' }}>{f(bW)}</strong></span>
                       <span>Sobra depois de gastos e funcionários: <strong style={{ color: cor }}>{f(r.saldo)}</strong></span>
                       <span>{r.osConcluidas} OS concluídas</span>
+                    </div>
+                  </div>
+                )
+              })()}
+              {(() => {
+                const nomesF = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').map(x => x.nome)
+                let mob = 0, comissao = 0
+                JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+                  .filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), mes))
+                  .forEach(o => {
+                    const svs = o.servicos?.length ? o.servicos : [{ maoDeObra: o.maoDeObra, funcionario: o.funcionario }]
+                    svs.forEach(sv => {
+                      const v = parseFloat(sv.maoDeObra) || 0
+                      mob += v
+                      if (sv.funcionario && nomesF.includes(sv.funcionario)) comissao += v * pctFuncionario(sv.funcionario)
+                    })
+                  })
+                const ficaMob = mob - comissao
+                const p = r.pecasOS
+                const real = ficaMob + p.lucro
+                const Box = ({ t, children, c }) => <div style={{ flex: '1 1 220px', background: 'var(--bg-card2)', borderRadius: 10, padding: '10px 14px', borderTop: `3px solid ${c}` }}><div style={{ fontWeight: 700, marginBottom: 6 }}>{t}</div>{children}</div>
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <Box t="🔧 Mão de obra" c="#3b82f6">
+                        {L('Cobrado dos clientes', mob)}
+                        {L('− Comissão dos mecânicos', comissao, '#ef4444')}
+                        {L('= Fica para a oficina', ficaMob, '#10b981')}
+                      </Box>
+                      <Box t="🔩 Peças" c="#f59e0b">
+                        {L('Vendido aos clientes', p.venda)}
+                        {L('− Custo das peças', p.custo, '#ef4444')}
+                        {L('= Lucro nas peças', p.lucro, '#10b981')}
+                      </Box>
+                      <Box t="🏢 Lucro real da oficina" c="#10b981">
+                        <div style={{ fontSize: 28, fontWeight: 900, color: real >= 0 ? '#10b981' : '#ef4444' }}>{f(real)}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-light)' }}>O que fica para a oficina da mão de obra + lucro das peças, antes dos gastos da planilha.</div>
+                        <div style={{ fontSize: 13, marginTop: 6 }}>Depois dos gastos ({f(r.totalGastos)}): <strong style={{ color: real - r.totalGastos >= 0 ? '#10b981' : '#ef4444' }}>{f(real - r.totalGastos)}</strong></div>
+                      </Box>
                     </div>
                   </div>
                 )
