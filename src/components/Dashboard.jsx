@@ -493,29 +493,42 @@ export default function Dashboard({ setPage }) {
                       : 'Lucro bruto bom e gastos controlados. Continue assim!'}
                 </div>
               )}
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                  <thead><tr><th style={{ ...th, textAlign: 'left' }}></th><th style={th}>Esta semana</th><th style={th}>Este mês</th></tr></thead>
-                  <tbody>
-                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#3b82f6' }}>🔧 MÃO DE OBRA</td></tr>
+              {(() => {
+                const Sec = ({ t, c, children }) => (
+                  <div style={{ border: `1.5px solid ${c}`, borderRadius: 12, padding: '4px 6px 6px', marginBottom: 12, overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, tableLayout: 'fixed', minWidth: 420 }}>
+                      <colgroup><col style={{ width: '50%' }} /><col style={{ width: '25%' }} /><col style={{ width: '25%' }} /></colgroup>
+                      <thead><tr>
+                        <th style={{ ...th, textAlign: 'left', color: c, fontSize: 14, fontWeight: 800 }}>{t}</th>
+                        <th style={th}>Esta semana</th><th style={th}>Este mês</th>
+                      </tr></thead>
+                      <tbody>{children}</tbody>
+                    </table>
+                  </div>
+                )
+                return (<>
+                  <Sec t="🔧 MÃO DE OBRA" c="#3b82f6">
                     <Row t="Total vendido em mão de obra" k="mob" />
                     <Row t="− Comissão dos mecânicos" k="comissao" c="#ef4444" />
                     <Row t="= Lucro na mão de obra" k="lucroMob" c="auto" forte />
-                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#f59e0b' }}>🔩 PEÇAS / PRODUTOS</td></tr>
+                  </Sec>
+                  <Sec t="🔩 PEÇAS / PRODUTOS" c="#f59e0b">
                     <Row t="Total vendido em peças" k="pVenda" />
                     <Row t="− Custo das peças" k="pCusto" c="#ef4444" />
                     <Row t="= Lucro nas peças" k="pLucro" c="auto" forte />
-                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#ef4444' }}>🧾 GASTOS</td></tr>
+                  </Sec>
+                  <Sec t="🧾 GASTOS" c="#ef4444">
                     <Row t="Gastos da planilha" k="gastosPlan" />
                     <Row t="Salários fixos" k="salarios" />
                     <Row t="= Total de gastos" k="gastos" c="#ef4444" forte />
-                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#10b981' }}>📊 RESULTADO</td></tr>
+                  </Sec>
+                  <Sec t="📊 RESULTADO" c="#10b981">
                     <Row t="Total vendido (mão de obra + peças)" k="vendido" />
                     <Row t="Lucro bruto (mão de obra + peças)" k="bruto" c="auto" forte />
-                    <Row t="Lucro real (depois dos gastos)" k="real" c="auto" forte sep />
-                  </tbody>
-                </table>
-              </div>
+                    <Row t="Lucro real (depois dos gastos)" k="real" c="auto" forte />
+                  </Sec>
+                </>)
+              })()}
               <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8 }}>{S.os} OS concluídas na semana · {M.os} no mês. Só entram OS concluídas.</div>
             </div>
           )
