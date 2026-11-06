@@ -431,20 +431,6 @@ export default function Dashboard({ setPage }) {
         )
       })}
 
-      {/* === CARDS === */}
-      <div className="dash-cards">
-        {cards.map((c, i) => (
-          <button key={i} className="dash-card" onClick={() => setPage(c.page)}>
-            <div className="dash-card-icon" style={{ background: c.color + '18' }}>
-              <span>{c.icon}</span>
-            </div>
-            <div className="dash-card-info">
-              <span className="dash-card-label">{c.label}</span>
-              <strong className="dash-card-value" style={{ color: c.color }}>{c.value}</strong>
-            </div>
-          </button>
-        ))}
-      </div>
 
         {/* === RESUMO DA EMPRESA === */}
         {(() => {
