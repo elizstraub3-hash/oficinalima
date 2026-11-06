@@ -455,6 +455,39 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
+        {/* === CONSELHOS PARA O PEDRO === */}
+        {(() => {
+          const { semanas, meses } = listarPeriodos()
+          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const m = resumoPeriodo(meses[0]), w = resumoPeriodo(semanas[0]), wAnt = semanas[1] ? resumoPeriodo(semanas[1]) : null
+          const avisos = []
+          const ruim = t => avisos.push({ c: '#ef4444', i: '🛑', t })
+          const atencao = t => avisos.push({ c: '#f59e0b', i: '⚠️', t })
+          const bom = t => avisos.push({ c: '#10b981', i: '✅', t })
+          if (m.saldo < 0) ruim(`Pare de gastar, Pedro! Este mês saiu mais do que entrou (prejuízo de ${f(-m.saldo)}). Segure compras que não são urgentes.`)
+          else if (m.entradas > 0 && m.totalGastos > m.entradas * 0.5) atencao(`Os gastos já são ${Math.round(m.totalGastos / m.entradas * 100)}% do que entrou no mês. Evite gastos extras até fechar o mês.`)
+          if (wAnt && wAnt.totalGastos > 0 && w.totalGastos > wAnt.totalGastos * 1.3) atencao(`Você gastou mais esta semana (${f(w.totalGastos)}) do que na semana passada (${f(wAnt.totalGastos)}).`)
+          const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+          const paradas = ordens.filter(o => !['concluido', 'cancelado'].includes(o.status) && o.data && (Date.now() - new Date(o.data)) / 864e5 > 7)
+          if (paradas.length) atencao(`${paradas.length} OS aberta(s) há mais de 7 dias. Conclua ou cobre o cliente para o dinheiro entrar.`)
+          const orc = ordens.filter(o => o.status === 'orcamento').length
+          if (orc) atencao(`${orc} orçamento(s) esperando resposta. Vale mandar uma mensagem para o cliente.`)
+          const semCusto = ordens.filter(o => o.status === 'concluido').some(o => (o.itens || []).some(it => !Number(it.custo)))
+          if (semCusto) atencao('Tem peça nas OS sem o custo preenchido. Coloque o custo para o lucro das peças ficar certo.')
+          const baixo = JSON.parse(localStorage.getItem('ol_estoque') || '[]').filter(x => Number(x.qtd) <= Number(x.qtdMinima || 3))
+          if (baixo.length) atencao(`Estoque baixo: ${baixo.slice(0, 3).map(x => x.nome).join(', ')}${baixo.length > 3 ? '…' : ''}. Compre só o necessário.`)
+          if (m.saldo > 0 && m.totalGastos <= m.entradas * 0.5) bom(`Mês no positivo: lucro de ${f(m.saldo)}. Continue assim e guarde uma reserva.`)
+          if (!avisos.length) bom('Tudo em ordem por aqui, Pedro! Continue lançando OS e gastos para os números ficarem certinhos.')
+          return (
+            <div className="card" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginTop: 0 }}>🧭 O que fazer agora, Pedro</h3>
+              {avisos.map((a, k) => (
+                <div key={k} style={{ borderLeft: `4px solid ${a.c}`, padding: '6px 10px', margin: '6px 0', fontSize: 14, background: 'var(--bg-card2)', borderRadius: 6 }}>{a.i} {a.t}</div>
+              ))}
+            </div>
+          )
+        })()}
+
         {/* === RELATÓRIO DE SEXTA === */}
         {new Date().getDay() === 5 && (() => {
           const semana = listarPeriodos().semanas[0]
