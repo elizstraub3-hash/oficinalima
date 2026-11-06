@@ -106,7 +106,7 @@ const emptyForm = () => ({
 })
 
 // ─── Gerador de PDF ──────────────────────────────────────────────────────────
-function gerarPDF(ordem) {
+export function gerarPDF(ordem) {
   const fmt  = v => `R$${Number(v || 0).toFixed(2).replace('.', ',')}`
   const fmt2 = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
   const hoje = new Date().toLocaleDateString('pt-BR')
@@ -536,7 +536,7 @@ export default function OrdemServico({ setPage }) {
       ...(form.cor ? { cor: form.cor } : {}),
     }
     if (idx >= 0) clis[idx] = { ...clis[idx], ...dados }
-    else clis.push({ id: nextId(clis), telefone: '', email: '', cpf: '', endereco: '', obs: '', ...dados })
+    else clis.push({ id: nextId(clis), criadoEm: new Date().toISOString().slice(0, 10), telefone: '', email: '', cpf: '', endereco: '', obs: '', ...dados })
     localStorage.setItem(KEY_CLI, JSON.stringify(clis))
   }
 

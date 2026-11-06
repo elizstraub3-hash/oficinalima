@@ -1,11 +1,24 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
-import { formatarDoc, tipoDoc } from './Documento.js'
+import { formatarDoc, tipoDoc, soDigitos } from './Documento.js'
+import { gerarPDF } from './OrdemServico.jsx'
+import { dataOS } from './Periodo.jsx'
 import './Clientes.css'
 
 const KEY = 'ol_clientes'
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
+const fmt = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+const br = iso => iso ? iso.split('-').reverse().join('/') : '—'
+const sem = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+const STATUS_NOME = { orcamento: '💬 Orçamento', aprovado: '✅ Aprovado', em_servico: '🔧 Em serviço', aguardando: '⏳ Aguardando', concluido: '✔️ Concluído', cancelado: '✖️ Cancelado' }
+
+// OS de um cliente: pelo CPF/CNPJ, senão pelo nome
+export function ordensDoCliente(c, ordens) {
+  const doc = soDigitos(c.cpf || c.cnpj || '')
+  return ordens.filter(o => (doc && soDigitos(o.clienteDoc || '') === doc) || sem(o.clienteNome) === sem(c.nome))
+    .sort((a, b) => dataOS(b).localeCompare(dataOS(a)))
+}
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
 const empty = () => ({ nome: '', telefone: '', email: '', cpf: '', endereco: '', obs: '', placa: '', modelo: '', ano: '', cor: '' })
 
@@ -15,6 +28,9 @@ export default function Clientes() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(empty())
   const [busca, setBusca] = useState('')
+  const [historico, setHistorico] = useState(null)
+  const [aberta, setAberta] = useState(null)
+  const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
 
   function refresh() { setItems(load()) }
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
@@ -32,7 +48,7 @@ export default function Clientes() {
       const idx = arr.findIndex(x => x.id === editing)
       arr[idx] = { ...arr[idx], ...form }
     } else {
-      arr.push({ ...form, id: nextId(arr) })
+      arr.push({ ...form, id: nextId(arr), criadoEm: new Date().toISOString().slice(0, 10) })
     }
     save(arr)
     setModal(false)
@@ -51,10 +67,24 @@ export default function Clientes() {
     (c.cpf || '').includes(busca)
   )
 
+  const mesAtual = new Date().toISOString().slice(0, 7)
+  const infos = Object.fromEntries(items.map(c => {
+    const os = ordensDoCliente(c, ordens)
+    const concl = os.filter(o => o.status === 'concluido')
+    const primeira = os.length ? dataOS(os[os.length - 1]) : ''
+    return [c.id, { os, gasto: concl.reduce((t, o) => t + Number(o.valor || 0), 0), ultima: os.find(o => o.status !== 'cancelado'), desde: [c.criadoEm, primeira].filter(Boolean).sort()[0] || '' }]
+  }))
+  const novosMes = items.filter(c => (infos[c.id].desde || '').slice(0, 7) === mesAtual).length
+  const histC = historico && items.find(c => c.id === historico)
+
   return (
     <div>
-      <div className="page-header">
-        <button className="btn-primary" onClick={openAdd}>+ Novo Cliente</button>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+        <div className="card" style={{ margin: 0, padding: '10px 16px', display: 'flex', gap: 20, flex: 1, flexWrap: 'wrap', fontSize: 14 }}>
+          <span>👥 Clientes cadastrados: <strong>{items.length}</strong></span>
+          <span>🆕 Novos este mês: <strong style={{ color: '#10b981' }}>{novosMes}</strong></span>
+        </div>
+        <button className="btn-primary" onClick={openAdd} style={{ whiteSpace: 'nowrap' }}>+ Novo Cliente</button>
       </div>
 
       <div className="card">
@@ -76,7 +106,8 @@ export default function Clientes() {
                 <th>Telefone</th>
                 <th>CPF / CNPJ</th>
                 <th>Veículo</th>
-                <th>E-mail</th>
+                <th>Já gastou</th>
+                <th>Último serviço</th>
                 <th></th>
               </tr>
             </thead>
@@ -96,7 +127,14 @@ export default function Clientes() {
                       ? <span><strong style={{ fontFamily: 'monospace', color: '#3b82f6' }}>{c.placa}</strong>{c.modelo ? ` · ${c.modelo}` : ''}{c.ano ? ` (${c.ano})` : ''}</span>
                       : <span style={{ color: 'var(--text-light)' }}>—</span>}
                   </td>
-                  <td>{c.email || '—'}</td>
+                  <td><strong style={{ color: '#10b981' }}>{fmt(infos[c.id].gasto)}</strong></td>
+                  <td>
+                    {infos[c.id].ultima ? (
+                      <button className="btn-secondary" style={{ fontSize: 12, padding: '4px 10px', textAlign: 'left' }} onClick={() => { setHistorico(c.id); setAberta(null) }} title="Ver todos os serviços deste cliente">
+                        📅 {br(dataOS(infos[c.id].ultima))} · {infos[c.id].os.length} serviço(s) ›
+                      </button>
+                    ) : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button className="btn-edit" onClick={() => openEdit(c)}>✏️ Editar</button>
@@ -109,6 +147,30 @@ export default function Clientes() {
           </table>
         )}
       </div>
+
+      {histC && (
+        <Modal title={`📋 Serviços de ${histC.nome}`} onClose={() => setHistorico(null)}>
+          <p style={{ marginTop: 0, fontSize: 14 }}>
+            Já gastou <strong style={{ color: '#10b981' }}>{fmt(infos[histC.id].gasto)}</strong> · {infos[histC.id].os.length} serviço(s) · cliente desde {br(infos[histC.id].desde)}
+          </p>
+          {infos[histC.id].os.map(o => (
+            <div key={o.id} style={{ border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8, overflow: 'hidden' }}>
+              <button onClick={() => setAberta(aberta === o.id ? null : o.id)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 8, padding: '10px 12px', background: 'var(--bg-card2)', border: 'none', color: 'inherit', cursor: 'pointer', textAlign: 'left', fontSize: 14 }}>
+                <span><strong>{o.numero || 'OS ' + o.id}</strong> · {br(dataOS(o))} · {o.placa || ''} <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{STATUS_NOME[o.status] || o.status}</span></span>
+                <span><strong>{fmt(o.valor)}</strong> {aberta === o.id ? '▲' : '▼'}</span>
+              </button>
+              {aberta === o.id && (
+                <div style={{ padding: '10px 12px', fontSize: 13 }}>
+                  {(o.descBreve || o.descricao) && <p style={{ margin: '0 0 8px' }}>{o.descBreve || o.descricao}</p>}
+                  {(o.servicos || []).length > 0 && <><strong>🔧 Serviços</strong>{o.servicos.map((sv, i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}><span>{sv.desc || 'Serviço'}{sv.funcionario ? ` · ${sv.funcionario}` : ''}</span><span>{fmt(sv.maoDeObra)}</span></div>)}</>}
+                  {(o.itens || []).length > 0 && <><strong style={{ display: 'block', marginTop: 6 }}>🔩 Peças</strong>{o.itens.map((it, i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}><span>{it.qtd || 1}× {it.desc}</span><span>{fmt((Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1))}</span></div>)}</>}
+                  <button className="btn-secondary" style={{ marginTop: 10, fontSize: 12 }} onClick={() => gerarPDF(o)}>📄 Ver nota (PDF)</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </Modal>
+      )}
 
       {modal && (
         <Modal title={editing ? 'Editar Cliente' : 'Novo Cliente'} onClose={() => setModal(false)}>
