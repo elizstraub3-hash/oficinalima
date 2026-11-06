@@ -557,58 +557,54 @@ export default function Dashboard({ setPage }) {
 
         </div>
         <div className="dash-col-direita">
-        {/* === RESERVA DO MÊS === */}
+        {/* === RESERVA === */}
         {(() => {
-          const mes = listarPeriodos().meses[0]
-          const r = { saldo: lucroDoPeriodo(mes).real }
+          const { semanas, meses } = listarPeriodos()
+          const mes = meses[0]
           const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const pct = Math.max(0, Number(pctReserva) || 0)
-          const sugerido = r.saldo > 0 ? r.saldo * pct / 100 : 0
+          const pct = Math.max(0, Number(pctReserva) || 20)
+          const lS = lucroDoPeriodo(semanas[0]).real, lM = lucroDoPeriodo(mes).real
+          const gS = lS > 0 ? lS * pct / 100 : 0, gM = lM > 0 ? lM * pct / 100 : 0
           const mesId = mes.de.slice(0, 7)
           const guardadoMes = reservas.filter(x => x.mes === mesId).reduce((t, x) => t + x.valor, 0)
           const totalGuardado = reservas.reduce((t, x) => t + x.valor, 0)
+          const gravar = arr => { localStorage.setItem('ol_reservas', JSON.stringify(arr)); setReservas(arr) }
           const guardar = () => {
-            const v = parseFloat(String(prompt('Quanto você guardou? (R$)', sugerido.toFixed(2)) || '').replace(',', '.'))
-            if (!v || v <= 0) return
-            const arr = [...reservas, { id: Date.now(), mes: mesId, valor: v, data: new Date().toISOString().slice(0, 10) }]
-            localStorage.setItem('ol_reservas', JSON.stringify(arr)); setReservas(arr)
+            const v = parseFloat(String(prompt('Quanto você guardou? (R$)', gS.toFixed(2)) || '').replace(',', '.'))
+            if (v > 0) gravar([...reservas, { id: Date.now(), mes: mesId, valor: v, data: new Date().toISOString().slice(0, 10) }])
           }
           const desfazer = () => {
             const ult = [...reservas].reverse().find(x => x.mes === mesId)
-            if (!ult || !confirm(`Remover o último valor guardado (${f(ult.valor)})?`)) return
-            const arr = reservas.filter(x => x.id !== ult.id)
-            localStorage.setItem('ol_reservas', JSON.stringify(arr)); setReservas(arr)
+            if (ult && confirm(`Remover o último valor guardado (${f(ult.valor)})?`)) gravar(reservas.filter(x => x.id !== ult.id))
           }
+          const mudarPct = () => {
+            const v = parseFloat(String(prompt('Qual porcentagem do lucro você quer guardar?', pct) || '').replace(',', '.'))
+            if (v >= 0 && v <= 100) { setPctReserva(v); const sal = JSON.parse(localStorage.getItem('ol_pct_salvas') || '{}'); sal.reserva_mes = v; localStorage.setItem('ol_pct_salvas', JSON.stringify(sal)) }
+          }
+          const linha = (rot, v) => (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 14 }}>{rot}</span>
+              <strong style={{ fontSize: 20, color: v > 0 ? '#3b82f6' : 'var(--text-light)' }}>{v > 0 ? f(v) : '—'}</strong>
+            </div>
+          )
           return (
             <div className="card" style={{ marginBottom: 20, border: '2px solid #3b82f6' }}>
-              <h3 style={{ marginTop: 0 }}>🐷 Reserva do mês — {mes.label}</h3>
-              {r.saldo > 0 ? (
-                <p style={{ fontSize: 15, margin: '0 0 8px' }}>
-                  Pedro, seu lucro real do mês (depois de mecânicos e gastos) é <strong style={{ color: '#10b981' }}>{f(r.saldo)}</strong>.
-                  Recomendo guardar <strong style={{ color: '#3b82f6', fontSize: 18 }}>{f(sugerido)}</strong> ({pct}% do lucro).
-                </p>
-              ) : (
-                <p style={{ fontSize: 15, margin: '0 0 8px', color: '#f59e0b' }}>
-                  Este mês ainda não sobrou lucro, Pedro. Sem problema: quando o mês fechar no positivo, eu te digo quanto guardar.
-                </p>
-              )}
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
-                <span>Porcentagem para guardar:</span>
-                <div style={{ maxWidth: 260 }}><CampoPct chave="reserva_mes" label="" value={pctReserva} onChange={setPctReserva} placeholder="20" /></div>
+              <h3 style={{ marginTop: 0, marginBottom: 4 }}>🐷 Quanto guardar</h3>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginBottom: 6 }}>
+                {pct}% do lucro real · <button onClick={mudarPct} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: 0, fontSize: 13 }}>mudar</button>
               </div>
-              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14, margin: '10px 0' }}>
-                <span>✅ Guardado este mês: <strong>{f(guardadoMes)}</strong>{sugerido > 0 && guardadoMes >= sugerido ? ' 🎉 Meta batida!' : ''}</span>
-                <span>💰 Total já guardado: <strong style={{ color: '#3b82f6' }}>{f(totalGuardado)}</strong></span>
+              {linha('Esta semana', gS)}
+              {linha(`Este mês (${mes.label.split(' ')[0]})`, gM)}
+              <div style={{ fontSize: 13, margin: '10px 0' }}>
+                ✅ Guardado no mês: <strong>{f(guardadoMes)}</strong>{gM > 0 && guardadoMes >= gM ? ' 🎉' : ''} · 💰 Total guardado: <strong style={{ color: '#3b82f6' }}>{f(totalGuardado)}</strong>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-primary" onClick={guardar}>🐷 Guardei dinheiro</button>
-                {guardadoMes > 0 && <button className="btn-secondary" onClick={desfazer}>↩ Desfazer último</button>}
+                <button className="btn-primary" onClick={guardar}>🐷 Guardei</button>
+                {guardadoMes > 0 && <button className="btn-secondary" onClick={desfazer}>↩ Desfazer</button>}
               </div>
-              <p style={{ fontSize: 11, color: 'var(--text-light)', margin: '8px 0 0' }}>Lance as contas (luz, aluguel…) na Planilha de Gastos para o lucro já vir com elas descontadas. O que você guarda não conta como gasto.</p>
             </div>
           )
         })()}
-
         </div>
       </div>
 
