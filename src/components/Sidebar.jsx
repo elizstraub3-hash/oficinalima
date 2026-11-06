@@ -21,7 +21,7 @@ const MENU = [
 ]
 
 function exportData() {
-  const keys = ['ol_servicos','ol_funcionarios','ol_caixa','ol_timers','ol_timers_hist','ol_clientes','ol_ordens','ol_gastos','ol_contas','ol_notinhas','ol_timer_alertas','ol_nfes','ol_estoque','ol_estoque_mov','ol_estoque_cats','ol_assistente_log']
+  const keys = ['ol_servicos','ol_funcionarios','ol_caixa','ol_timers','ol_timers_hist','ol_clientes','ol_ordens','ol_gastos','ol_contas','ol_notinhas','ol_timer_alertas','ol_nfes','ol_estoque','ol_estoque_mov','ol_estoque_cats','ol_assistente_log','ol_reservas','ol_pct_salvas','ol_faixas_pecas']
   const data = {}
   keys.forEach(k => { data[k] = JSON.parse(localStorage.getItem(k) || '[]') })
   data._exportedAt = new Date().toISOString()
@@ -46,7 +46,7 @@ function importData(file) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result)
-      const keys = ['ol_servicos','ol_funcionarios','ol_caixa','ol_timers','ol_timers_hist','ol_clientes','ol_ordens','ol_gastos','ol_contas','ol_notinhas','ol_timer_alertas','ol_nfes','ol_estoque','ol_estoque_mov','ol_estoque_cats','ol_assistente_log']
+      const keys = ['ol_servicos','ol_funcionarios','ol_caixa','ol_timers','ol_timers_hist','ol_clientes','ol_ordens','ol_gastos','ol_contas','ol_notinhas','ol_timer_alertas','ol_nfes','ol_estoque','ol_estoque_mov','ol_estoque_cats','ol_assistente_log','ol_reservas','ol_pct_salvas','ol_faixas_pecas']
       keys.forEach(k => { if (data[k]) localStorage.setItem(k, JSON.stringify(data[k])) })
       alert('✅ Dados importados com sucesso! A página será recarregada.')
       window.location.reload()

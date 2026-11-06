@@ -173,6 +173,8 @@ export default function Dashboard({ setPage }) {
   const [notinhaForm, setNotinhaForm] = useState(emptyNotinha())
   const [notinhaOpen, setNotinhaOpen] = useState(false)
   const [notinhaConfirm, setNotinhaConfirm] = useState(null)
+  const [pctReserva, setPctReserva] = useState(() => pctSalva('reserva_mes') || 20)
+  const [reservas, setReservas] = useState(() => JSON.parse(localStorage.getItem('ol_reservas') || '[]'))
   const [dashPctInput, setDashPctInput] = useState(() => pctSalva('comissao_notinha'))
   const saudacao = getSaudacao()
   const fraseCtx = getFraseContextual(checked, agora)
@@ -451,6 +453,58 @@ export default function Dashboard({ setPage }) {
                 {col(`Este mês (${meses[0].label})`, meses[0])}
                 {col('Esta semana', semanas[0])}
               </div>
+            </div>
+          )
+        })()}
+
+        {/* === RESERVA DO MÊS === */}
+        {(() => {
+          const mes = listarPeriodos().meses[0]
+          const r = resumoPeriodo(mes)
+          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const pct = Math.max(0, Number(pctReserva) || 0)
+          const sugerido = r.saldo > 0 ? r.saldo * pct / 100 : 0
+          const mesId = mes.de.slice(0, 7)
+          const guardadoMes = reservas.filter(x => x.mes === mesId).reduce((t, x) => t + x.valor, 0)
+          const totalGuardado = reservas.reduce((t, x) => t + x.valor, 0)
+          const guardar = () => {
+            const v = parseFloat(String(prompt('Quanto você guardou? (R$)', sugerido.toFixed(2)) || '').replace(',', '.'))
+            if (!v || v <= 0) return
+            const arr = [...reservas, { id: Date.now(), mes: mesId, valor: v, data: new Date().toISOString().slice(0, 10) }]
+            localStorage.setItem('ol_reservas', JSON.stringify(arr)); setReservas(arr)
+          }
+          const desfazer = () => {
+            const ult = [...reservas].reverse().find(x => x.mes === mesId)
+            if (!ult || !confirm(`Remover o último valor guardado (${f(ult.valor)})?`)) return
+            const arr = reservas.filter(x => x.id !== ult.id)
+            localStorage.setItem('ol_reservas', JSON.stringify(arr)); setReservas(arr)
+          }
+          return (
+            <div className="card" style={{ marginBottom: 20, border: '2px solid #3b82f6' }}>
+              <h3 style={{ marginTop: 0 }}>🐷 Reserva do mês — {mes.label}</h3>
+              {r.saldo > 0 ? (
+                <p style={{ fontSize: 15, margin: '0 0 8px' }}>
+                  Pedro, depois de pagar mecânicos e gastos, sobrou <strong style={{ color: '#10b981' }}>{f(r.saldo)}</strong>.
+                  Recomendo guardar <strong style={{ color: '#3b82f6', fontSize: 18 }}>{f(sugerido)}</strong> ({pct}% do lucro).
+                </p>
+              ) : (
+                <p style={{ fontSize: 15, margin: '0 0 8px', color: '#f59e0b' }}>
+                  Este mês ainda não sobrou lucro, Pedro. Sem problema: quando o mês fechar no positivo, eu te digo quanto guardar.
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
+                <span>Porcentagem para guardar:</span>
+                <div style={{ maxWidth: 260 }}><CampoPct chave="reserva_mes" label="" value={pctReserva} onChange={setPctReserva} placeholder="20" /></div>
+              </div>
+              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14, margin: '10px 0' }}>
+                <span>✅ Guardado este mês: <strong>{f(guardadoMes)}</strong>{sugerido > 0 && guardadoMes >= sugerido ? ' 🎉 Meta batida!' : ''}</span>
+                <span>💰 Total já guardado: <strong style={{ color: '#3b82f6' }}>{f(totalGuardado)}</strong></span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-primary" onClick={guardar}>🐷 Guardei dinheiro</button>
+                {guardadoMes > 0 && <button className="btn-secondary" onClick={desfazer}>↩ Desfazer último</button>}
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--text-light)', margin: '8px 0 0' }}>Lance as contas (luz, aluguel…) na Planilha de Gastos para o lucro já vir com elas descontadas. O que você guarda não conta como gasto.</p>
             </div>
           )
         })()}
