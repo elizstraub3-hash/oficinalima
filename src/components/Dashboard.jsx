@@ -428,6 +428,19 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
+        {/* === LUCRO DO MÊS === */}
+        {(() => {
+          const mes = listarPeriodos().meses[0]
+          const r = resumoPeriodo(mes)
+          const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
+          return (
+            <div className="card" style={{ marginBottom: 20, borderLeft: `5px solid ${cor}` }}>
+              <h3 style={{ margin: 0, fontSize: 17 }}>💰 Pedro, você tem um lucro desse mês de <span style={{ color: cor }}>R$ {r.saldo.toFixed(2).replace('.', ',')}</span></h3>
+              <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>{mes.label}: entrou R$ {r.entradas.toFixed(2).replace('.', ',')} · saiu R$ {r.saidas.toFixed(2).replace('.', ',')}</div>
+            </div>
+          )
+        })()}
+
         {/* === DESTAQUES DOS MECÂNICOS === */}
         {(() => {
           const semana = listarPeriodos().semanas[0]
