@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SeletorPeriodo, acharPeriodo, noPeriodo } from './Periodo.jsx'
 import Modal from './Modal.jsx'
+import { extrairGasto } from './AcoesAssistente.js'
 import './Gastos.css'
 
 const KEY = 'ol_gastos'
@@ -21,10 +22,19 @@ const CATS_INFO = [
 ]
 const CATS = CATS_INFO.map(c => c.nome)
 
+export const FORMAS = [
+  { nome: 'Cartão de crédito', icon: '💳' },
+  { nome: 'Cartão de débito',  icon: '🏧' },
+  { nome: 'Pix',               icon: '⚡' },
+  { nome: 'Dinheiro',          icon: '💵' },
+  { nome: 'Boleto',            icon: '📄' },
+]
+const iconeForma = n => FORMAS.find(f => f.nome === n)?.icon || '❔'
+
 function load() { return JSON.parse(localStorage.getItem(KEY) || '[]') }
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)) }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1 }
-const empty = () => ({ descricao: '', descBreve: '', categoria: 'Peças', valor: '', comissao: '', fornecedor: '', nota: '', data: new Date().toISOString().split('T')[0] })
+const empty = () => ({ descricao: '', descBreve: '', categoria: 'Peças', valor: '', comissao: '', fornecedor: '', nota: '', pagamento: localStorage.getItem('ol_ultima_forma') || 'Pix', data: new Date().toISOString().split('T')[0] })
 
 const fmt = v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`
 
@@ -35,6 +45,7 @@ export default function Gastos() {
   const [form, setForm] = useState(empty())
   const [filtrocat, setFiltrocat] = useState('todos')
   const [busca, setBusca] = useState('')
+  const [filtroForma, setFiltroForma] = useState('todas')
   const [periodoId, setPeriodoId] = useState('semana-0')
   const periodo = acharPeriodo(periodoId)
   const doPeriodo = items.filter(g => noPeriodo(g.data, periodo))
@@ -43,7 +54,7 @@ export default function Gastos() {
   function openAdd() { setEditing(null); setForm(empty()); setModal(true) }
   function openEdit(item) {
     setEditing(item.id)
-    setForm({ descricao: item.descricao, descBreve: item.descBreve || '', categoria: item.categoria, valor: item.valor, comissao: item.comissao || '', fornecedor: item.fornecedor || '', nota: item.nota || '', data: item.data })
+    setForm({ catManual: true, descricao: item.descricao, descBreve: item.descBreve || '', categoria: item.categoria, valor: item.valor, comissao: item.comissao || '', fornecedor: item.fornecedor || '', nota: item.nota || '', pagamento: item.pagamento || '', data: item.data })
     setModal(true)
   }
 
@@ -53,12 +64,17 @@ export default function Gastos() {
     const arr = load()
     if (editing) {
       const idx = arr.findIndex(x => x.id === editing)
-      arr[idx] = { ...arr[idx], ...form, valor: parseFloat(form.valor) }
+      const { catManual, ...dados } = form
+      arr[idx] = { ...arr[idx], ...dados, valor: parseFloat(form.valor) }
     } else {
-      arr.push({ ...form, id: nextId(arr), valor: parseFloat(form.valor) })
+      const { catManual, ...dados } = form
+      arr.push({ ...dados, id: nextId(arr), valor: parseFloat(form.valor) })
     }
     save(arr)
-    setModal(false)
+    if (form.pagamento) localStorage.setItem('ol_ultima_forma', form.pagamento)
+    if (e.nativeEvent?.submitter?.dataset?.outro) {
+      setForm(f => ({ ...empty(), data: f.data, pagamento: f.pagamento }))
+    } else setModal(false)
     refresh()
   }
 
@@ -70,6 +86,7 @@ export default function Gastos() {
 
   const filtered = doPeriodo.filter(g => {
     if (filtrocat !== 'todos' && g.categoria !== filtrocat) return false
+    if (filtroForma !== 'todas' && (g.pagamento || 'Não informado') !== filtroForma) return false
     if (busca && !g.descricao.toLowerCase().includes(busca.toLowerCase()) && !(g.fornecedor || '').toLowerCase().includes(busca.toLowerCase())) return false
     return true
   })
@@ -80,6 +97,11 @@ export default function Gastos() {
     cat,
     total: doPeriodo.filter(g => g.categoria === cat).reduce((s, g) => s + Number(g.valor), 0),
   })).filter(x => x.total > 0).sort((a, b) => b.total - a.total)
+
+  const porForma = [...FORMAS.map(f => f.nome), 'Não informado'].map(nome => ({
+    nome,
+    total: doPeriodo.filter(g => (g.pagamento || 'Não informado') === nome).reduce((s, g) => s + Number(g.valor), 0),
+  })).filter(x => x.total > 0)
 
   return (
     <div>
@@ -107,6 +129,15 @@ export default function Gastos() {
             )
           })}
         </div>
+        {porForma.length > 0 && (
+          <div className="gastos-cats" style={{ marginTop: 8 }}>
+            {porForma.map(x => (
+              <button key={x.nome} className={`cat-chip ${filtroForma === x.nome ? 'active' : ''}`} onClick={() => setFiltroForma(filtroForma === x.nome ? 'todas' : x.nome)}>
+                {iconeForma(x.nome)} {x.nome}: <strong>{fmt(x.total)}</strong>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -118,6 +149,11 @@ export default function Gastos() {
           <select value={filtrocat} onChange={e => setFiltrocat(e.target.value)}>
             <option value="todos">Todas as categorias</option>
             {CATS.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <select value={filtroForma} onChange={e => setFiltroForma(e.target.value)}>
+            <option value="todas">Todas as formas</option>
+            {FORMAS.map(f => <option key={f.nome} value={f.nome}>{f.icon} {f.nome}</option>)}
+            <option>Não informado</option>
           </select>
         </div>
 
@@ -137,6 +173,7 @@ export default function Gastos() {
                 <th>Data</th>
                 <th>Descrição</th>
                 <th>Categoria</th>
+                <th>Pagamento</th>
                 <th>Fornecedor</th>
                 <th>Nota/NF</th>
                 <th>Valor</th>
@@ -152,6 +189,7 @@ export default function Gastos() {
                     {g.descBreve && <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 2 }}>{g.descBreve}</div>}
                   </td>
                   <td><span className="badge badge-gray">{CATS_INFO.find(c => c.nome === g.categoria)?.icon} {g.categoria}</span></td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{g.pagamento ? `${iconeForma(g.pagamento)} ${g.pagamento}` : '—'}</td>
                   <td style={{ color: 'var(--text-light)' }}>{g.fornecedor || '—'}</td>
                   <td style={{ color: 'var(--text-light)', fontSize: 13 }}>{g.nota || '—'}</td>
                   <td>
@@ -176,7 +214,7 @@ export default function Gastos() {
           <form onSubmit={handleSave}>
             <div className="form-group">
               <label>Descrição *</label>
-              <input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Filtro de óleo, gasolina..." required />
+              <input value={form.descricao} onChange={e => { const v = e.target.value; setForm(f => ({ ...f, descricao: v, ...(f.catManual ? {} : { categoria: (() => { const c = extrairGasto(v).categoria; return c === 'Outros' ? 'Peças' : c })() }) })) }} placeholder="Ex: Filtro de óleo, gasolina..." required />
             </div>
             <div className="form-group">
               <label>Descrição Breve <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>({(form.descBreve || '').length}/50)</span></label>
@@ -187,10 +225,21 @@ export default function Gastos() {
                 maxLength={50}
               />
             </div>
+            <div className="form-group">
+              <label>Como foi pago?</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {FORMAS.map(fp => (
+                  <button type="button" key={fp.nome} onClick={() => setForm(f => ({ ...f, pagamento: fp.nome }))}
+                    className={form.pagamento === fp.nome ? 'btn-primary' : 'btn-secondary'} style={{ fontSize: 13, padding: '6px 10px' }}>
+                    {fp.icon} {fp.nome}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Categoria</label>
-                <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}>
+                <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value, catManual: true }))}>
                   {CATS_INFO.map(c => <option key={c.nome} value={c.nome}>{c.icon} {c.nome}</option>)}
                 </select>
                 {(() => { const info = CATS_INFO.find(c => c.nome === form.categoria); return info ? <small style={{ color: 'var(--text-light)', fontSize: 11, marginTop: 4, display: 'block' }}>Ex: {info.ex}</small> : null })()}
@@ -222,6 +271,7 @@ export default function Gastos() {
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
+              {!editing && <button type="submit" data-outro="1" className="btn-secondary">+ Salvar e lançar outro</button>}
               <button type="submit" className="btn-primary">{editing ? 'Salvar' : 'Adicionar'}</button>
             </div>
           </form>
