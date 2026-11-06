@@ -4,6 +4,7 @@ import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario, listarPeriodos, pctFuncionario } from './Funcionarios.jsx'
 import { resumoPeriodo } from './Relatorio.jsx'
+import { pecasDasOS } from './FaixasPecas.js'
 import { noPeriodo, dataOS } from './Periodo.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
@@ -156,6 +157,29 @@ function calcAlertas() {
   }
 
   return alertas
+}
+
+export function lucroDoPeriodo(per) {
+  const nomesF = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').map(x => x.nome)
+  {
+            let mob = 0, comissao = 0
+            const concl = JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), per))
+            concl.forEach(o => {
+              const svs = o.servicos?.length ? o.servicos : [{ maoDeObra: o.maoDeObra, funcionario: o.funcionario }]
+              svs.forEach(sv => {
+                const v = parseFloat(sv.maoDeObra) || 0
+                mob += v
+                if (sv.funcionario && nomesF.includes(sv.funcionario)) comissao += v * pctFuncionario(sv.funcionario)
+              })
+            })
+            const p = pecasDasOS(per)
+            const r = resumoPeriodo(per)
+            const salarios = lancamentosCaixa().filter(e => e.origem === 'mecanico' && String(e.descricao || '').startsWith('Salário fixo') && noPeriodo(e.data, per)).reduce((t, e) => t + e.valor, 0)
+            const gastos = r.totalGastos + salarios
+            const lucroMob = mob - comissao
+            const bruto = lucroMob + p.lucro
+            return { mob, comissao, lucroMob, pVenda: p.venda, pCusto: p.custo, pLucro: p.lucro, vendido: mob + p.venda, bruto, gastos, gastosPlan: r.totalGastos, salarios, real: bruto - gastos, os: concl.length }
+          }
 }
 
 export default function Dashboard({ setPage }) {
@@ -426,94 +450,99 @@ export default function Dashboard({ setPage }) {
         {(() => {
           const { semanas, meses } = listarPeriodos()
           const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const mes = meses[0]
-          const r = resumoPeriodo(mes), w = resumoPeriodo(semanas[0])
-          const pagos = lancamentosCaixa().filter(e => e.origem === 'mecanico' && noPeriodo(e.data, mes))
-          const porFunc = Object.entries(pagos.reduce((acc, e) => { const n = e.funcionario || 'Funcionário'; acc[n] = (acc[n] || 0) + e.valor; return acc }, {})).sort((x, y) => y[1] - x[1])
-          const totalFunc = pagos.reduce((t, e) => t + e.valor, 0)
-          const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
-          const L = (rot, v, c, sub) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sub ? 13 : 14, padding: '3px 0', paddingLeft: sub ? 20 : 0, color: sub ? 'var(--text-light)' : undefined }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
+          const calc = lucroDoPeriodo
+          const S = calc(semanas[0]), M = calc(meses[0])
+          const cor = v => v >= 0 ? '#10b981' : '#ef4444'
+          const Big = ({ t, v, sub }) => (
+            <div style={{ flex: '1 1 260px', textAlign: 'center', background: 'var(--bg-card2)', borderRadius: 12, padding: '14px 10px', border: `2px solid ${cor(v)}` }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{t}</div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: cor(v), lineHeight: 1.15 }}>{f(v)}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{sub}</div>
+            </div>
+          )
+          const th = { textAlign: 'right', padding: '6px 8px', fontSize: 12, color: 'var(--text-light)' }
+          const Row = ({ t, k, c, forte, sep }) => (
+            <tr style={{ borderTop: sep ? '2px solid var(--border)' : '1px solid var(--border)' }}>
+              <td style={{ padding: '6px 8px', fontWeight: forte ? 800 : 400 }}>{t}</td>
+              {[S, M].map((x, i) => <td key={i} style={{ textAlign: 'right', padding: '6px 8px', fontWeight: forte ? 800 : 600, color: c === 'auto' ? cor(x[k]) : c }}>{f(x[k])}</td>)}
+            </tr>
+          )
           return (
-            <div className="card" style={{ marginBottom: 20, border: `2px solid ${cor}` }}>
-              {(() => {
-                const bruto = r.entradas - r.pecasOS.custo
-                const corB = bruto >= 0 ? '#10b981' : '#ef4444'
-                const bW = w.entradas - w.pecasOS.custo
-                return (
-                  <div style={{ textAlign: 'center', padding: '6px 0 16px', borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
-                    <div style={{ fontSize: 15, color: 'var(--text-light)' }}>💰 Pedro, seu lucro bruto em {mes.label}</div>
-                    <div style={{ fontSize: 44, fontWeight: 900, color: corB, lineHeight: 1.15 }}>{f(bruto)}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>Tudo que entrou ({f(r.entradas)}) menos o custo das peças vendidas ({f(r.pecasOS.custo)})</div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 22, flexWrap: 'wrap', fontSize: 13, marginTop: 8 }}>
-                      <span>Lucro bruto da semana: <strong style={{ color: bW >= 0 ? '#10b981' : '#ef4444' }}>{f(bW)}</strong></span>
-                      <span>Sobra depois de gastos e funcionários: <strong style={{ color: cor }}>{f(r.saldo)}</strong></span>
-                      <span>{r.osConcluidas} OS concluídas</span>
-                    </div>
-                  </div>
-                )
-              })()}
-              {(() => {
-                const nomesF = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').map(x => x.nome)
-                let mob = 0, comissao = 0
-                JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-                  .filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), mes))
-                  .forEach(o => {
-                    const svs = o.servicos?.length ? o.servicos : [{ maoDeObra: o.maoDeObra, funcionario: o.funcionario }]
-                    svs.forEach(sv => {
-                      const v = parseFloat(sv.maoDeObra) || 0
-                      mob += v
-                      if (sv.funcionario && nomesF.includes(sv.funcionario)) comissao += v * pctFuncionario(sv.funcionario)
-                    })
-                  })
-                const ficaMob = mob - comissao
-                const p = r.pecasOS
-                const real = ficaMob + p.lucro
-                const Box = ({ t, children, c }) => <div style={{ flex: '1 1 220px', background: 'var(--bg-card2)', borderRadius: 10, padding: '10px 14px', borderTop: `3px solid ${c}` }}><div style={{ fontWeight: 700, marginBottom: 6 }}>{t}</div>{children}</div>
-                return (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <Box t="🔧 Mão de obra" c="#3b82f6">
-                        {L('Cobrado dos clientes', mob)}
-                        {L('− Comissão dos mecânicos', comissao, '#ef4444')}
-                        {L('= Fica para a oficina', ficaMob, '#10b981')}
-                      </Box>
-                      <Box t="🔩 Peças" c="#f59e0b">
-                        {L('Vendido aos clientes', p.venda)}
-                        {L('− Custo das peças', p.custo, '#ef4444')}
-                        {L('= Lucro nas peças', p.lucro, '#10b981')}
-                      </Box>
-                      <Box t="🏢 Lucro real da oficina" c="#10b981">
-                        <div style={{ fontSize: 28, fontWeight: 900, color: real >= 0 ? '#10b981' : '#ef4444' }}>{f(real)}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-light)' }}>O que fica para a oficina da mão de obra + lucro das peças, antes dos gastos da planilha.</div>
-                        <div style={{ fontSize: 13, marginTop: 6 }}>Depois dos gastos ({f(r.totalGastos)}): <strong style={{ color: real - r.totalGastos >= 0 ? '#10b981' : '#ef4444' }}>{f(real - r.totalGastos)}</strong></div>
-                      </Box>
-                    </div>
-                  </div>
-                )
-              })()}
-              <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 240px' }}>
-                  {L('💵 Entrou no mês', r.entradas, '#10b981')}
-                  {L('🔩 Peças', r.entPecas, undefined, true)}
-                  {L('🔧 Mão de obra', r.entMob, undefined, true)}
-                  {r.entradas - r.entPecas - r.entMob > 0.004 && L('➕ Outras entradas', r.entradas - r.entPecas - r.entMob, undefined, true)}
-                </div>
-                <div style={{ flex: '1 1 240px' }}>
-                  {L('💸 Saiu no mês', r.saidas, '#ef4444')}
-                  {L('🧾 Gastos (planilha)', r.totalGastos, undefined, true)}
-                  {L('👷 Pagamento dos funcionários', totalFunc, undefined, true)}
-                  {porFunc.map(([n, v]) => <div key={n} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, paddingLeft: 40, color: 'var(--text-light)' }}><span>• {n}</span><span>{f(v)}</span></div>)}
-                  {r.saidas - r.totalGastos - totalFunc > 0.004 && L('➖ Outras saídas', r.saidas - r.totalGastos - totalFunc, undefined, true)}
-                </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro — {meses[0].label}</h3>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
+                <Big t="📈 Lucro bruto do mês" v={M.bruto} sub={`Mão de obra ${f(M.lucroMob)} + peças ${f(M.pLucro)} · semana: ${f(S.bruto)}`} />
+                <Big t="🏢 Lucro real do mês" v={M.real} sub={`Lucro bruto − gastos (${f(M.gastos)}) · semana: ${f(S.real)}`} />
               </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead><tr><th style={{ ...th, textAlign: 'left' }}></th><th style={th}>Esta semana</th><th style={th}>Este mês</th></tr></thead>
+                  <tbody>
+                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#3b82f6' }}>🔧 MÃO DE OBRA</td></tr>
+                    <Row t="Total vendido em mão de obra" k="mob" />
+                    <Row t="− Comissão dos mecânicos" k="comissao" c="#ef4444" />
+                    <Row t="= Lucro na mão de obra" k="lucroMob" c="auto" forte />
+                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#f59e0b' }}>🔩 PEÇAS / PRODUTOS</td></tr>
+                    <Row t="Total vendido em peças" k="pVenda" />
+                    <Row t="− Custo das peças" k="pCusto" c="#ef4444" />
+                    <Row t="= Lucro nas peças" k="pLucro" c="auto" forte />
+                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#ef4444' }}>🧾 GASTOS</td></tr>
+                    <Row t="Gastos da planilha" k="gastosPlan" />
+                    <Row t="Salários fixos" k="salarios" />
+                    <Row t="= Total de gastos" k="gastos" c="#ef4444" forte />
+                    <tr><td colSpan={3} style={{ padding: '10px 8px 2px', fontWeight: 800, color: '#10b981' }}>📊 RESULTADO</td></tr>
+                    <Row t="Total vendido (mão de obra + peças)" k="vendido" />
+                    <Row t="Lucro bruto (mão de obra + peças)" k="bruto" c="auto" forte />
+                    <Row t="Lucro real (depois dos gastos)" k="real" c="auto" forte sep />
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 8 }}>{S.os} OS concluídas na semana · {M.os} no mês. Só entram OS concluídas.</div>
             </div>
           )
         })()}
 
+      <div className="dash-side-row">
+        <div className="dash-col-direita">
+        {/* === CONSELHOS PARA O PEDRO === */}
+        {(() => {
+          const { semanas, meses } = listarPeriodos()
+          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const m = { ...resumoPeriodo(meses[0]), saldo: lucroDoPeriodo(meses[0]).real }, w = resumoPeriodo(semanas[0]), wAnt = semanas[1] ? resumoPeriodo(semanas[1]) : null
+          const avisos = []
+          const ruim = t => avisos.push({ c: '#ef4444', i: '🛑', t })
+          const atencao = t => avisos.push({ c: '#f59e0b', i: '⚠️', t })
+          const bom = t => avisos.push({ c: '#10b981', i: '✅', t })
+          if (m.saldo < 0) ruim(`Pare de gastar, Pedro! Este mês saiu mais do que entrou (prejuízo de ${f(-m.saldo)} no lucro real). Segure compras que não são urgentes.`)
+          else if (m.entradas > 0 && m.totalGastos > m.entradas * 0.5) atencao(`Os gastos já são ${Math.round(m.totalGastos / m.entradas * 100)}% do que entrou no mês. Evite gastos extras até fechar o mês.`)
+          if (wAnt && wAnt.totalGastos > 0 && w.totalGastos > wAnt.totalGastos * 1.3) atencao(`Você gastou mais esta semana (${f(w.totalGastos)}) do que na semana passada (${f(wAnt.totalGastos)}).`)
+          const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
+          const paradas = ordens.filter(o => !['concluido', 'cancelado'].includes(o.status) && o.data && (Date.now() - new Date(o.data)) / 864e5 > 7)
+          if (paradas.length) atencao(`${paradas.length} OS aberta(s) há mais de 7 dias. Conclua ou cobre o cliente para o dinheiro entrar.`)
+          const orc = ordens.filter(o => o.status === 'orcamento').length
+          if (orc) atencao(`${orc} orçamento(s) esperando resposta. Vale mandar uma mensagem para o cliente.`)
+          const semCusto = ordens.filter(o => o.status === 'concluido').some(o => (o.itens || []).some(it => !Number(it.custo)))
+          if (semCusto) atencao('Tem peça nas OS sem o custo preenchido. Coloque o custo para o lucro das peças ficar certo.')
+          const baixo = JSON.parse(localStorage.getItem('ol_estoque') || '[]').filter(x => Number(x.qtd) <= Number(x.qtdMinima || 3))
+          if (baixo.length) atencao(`Estoque baixo: ${baixo.slice(0, 3).map(x => x.nome).join(', ')}${baixo.length > 3 ? '…' : ''}. Compre só o necessário.`)
+          if (m.saldo > 0 && m.totalGastos <= m.entradas * 0.5) bom(`Mês no positivo: lucro real de ${f(m.saldo)}. Continue assim e guarde uma reserva.`)
+          if (!avisos.length) bom('Tudo em ordem por aqui, Pedro! Continue lançando OS e gastos para os números ficarem certinhos.')
+          return (
+            <div className="card" style={{ marginBottom: 20 }}>
+              <h3 style={{ marginTop: 0 }}>🧭 O que fazer agora, Pedro</h3>
+              {avisos.map((a, k) => (
+                <div key={k} style={{ borderLeft: `4px solid ${a.c}`, padding: '6px 10px', margin: '6px 0', fontSize: 14, background: 'var(--bg-card2)', borderRadius: 6 }}>{a.i} {a.t}</div>
+              ))}
+            </div>
+          )
+        })()}
+
+        </div>
+        <div className="dash-col-direita">
         {/* === RESERVA DO MÊS === */}
         {(() => {
           const mes = listarPeriodos().meses[0]
-          const r = resumoPeriodo(mes)
+          const r = { saldo: lucroDoPeriodo(mes).real }
           const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
           const pct = Math.max(0, Number(pctReserva) || 0)
           const sugerido = r.saldo > 0 ? r.saldo * pct / 100 : 0
@@ -537,7 +566,7 @@ export default function Dashboard({ setPage }) {
               <h3 style={{ marginTop: 0 }}>🐷 Reserva do mês — {mes.label}</h3>
               {r.saldo > 0 ? (
                 <p style={{ fontSize: 15, margin: '0 0 8px' }}>
-                  Pedro, depois de pagar mecânicos e gastos, sobrou <strong style={{ color: '#10b981' }}>{f(r.saldo)}</strong>.
+                  Pedro, seu lucro real do mês (depois de mecânicos e gastos) é <strong style={{ color: '#10b981' }}>{f(r.saldo)}</strong>.
                   Recomendo guardar <strong style={{ color: '#3b82f6', fontSize: 18 }}>{f(sugerido)}</strong> ({pct}% do lucro).
                 </p>
               ) : (
@@ -562,38 +591,8 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-        {/* === CONSELHOS PARA O PEDRO === */}
-        {(() => {
-          const { semanas, meses } = listarPeriodos()
-          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const m = resumoPeriodo(meses[0]), w = resumoPeriodo(semanas[0]), wAnt = semanas[1] ? resumoPeriodo(semanas[1]) : null
-          const avisos = []
-          const ruim = t => avisos.push({ c: '#ef4444', i: '🛑', t })
-          const atencao = t => avisos.push({ c: '#f59e0b', i: '⚠️', t })
-          const bom = t => avisos.push({ c: '#10b981', i: '✅', t })
-          if (m.saldo < 0) ruim(`Pare de gastar, Pedro! Este mês saiu mais do que entrou (prejuízo de ${f(-m.saldo)}). Segure compras que não são urgentes.`)
-          else if (m.entradas > 0 && m.totalGastos > m.entradas * 0.5) atencao(`Os gastos já são ${Math.round(m.totalGastos / m.entradas * 100)}% do que entrou no mês. Evite gastos extras até fechar o mês.`)
-          if (wAnt && wAnt.totalGastos > 0 && w.totalGastos > wAnt.totalGastos * 1.3) atencao(`Você gastou mais esta semana (${f(w.totalGastos)}) do que na semana passada (${f(wAnt.totalGastos)}).`)
-          const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]')
-          const paradas = ordens.filter(o => !['concluido', 'cancelado'].includes(o.status) && o.data && (Date.now() - new Date(o.data)) / 864e5 > 7)
-          if (paradas.length) atencao(`${paradas.length} OS aberta(s) há mais de 7 dias. Conclua ou cobre o cliente para o dinheiro entrar.`)
-          const orc = ordens.filter(o => o.status === 'orcamento').length
-          if (orc) atencao(`${orc} orçamento(s) esperando resposta. Vale mandar uma mensagem para o cliente.`)
-          const semCusto = ordens.filter(o => o.status === 'concluido').some(o => (o.itens || []).some(it => !Number(it.custo)))
-          if (semCusto) atencao('Tem peça nas OS sem o custo preenchido. Coloque o custo para o lucro das peças ficar certo.')
-          const baixo = JSON.parse(localStorage.getItem('ol_estoque') || '[]').filter(x => Number(x.qtd) <= Number(x.qtdMinima || 3))
-          if (baixo.length) atencao(`Estoque baixo: ${baixo.slice(0, 3).map(x => x.nome).join(', ')}${baixo.length > 3 ? '…' : ''}. Compre só o necessário.`)
-          if (m.saldo > 0 && m.totalGastos <= m.entradas * 0.5) bom(`Mês no positivo: lucro de ${f(m.saldo)}. Continue assim e guarde uma reserva.`)
-          if (!avisos.length) bom('Tudo em ordem por aqui, Pedro! Continue lançando OS e gastos para os números ficarem certinhos.')
-          return (
-            <div className="card" style={{ marginBottom: 20 }}>
-              <h3 style={{ marginTop: 0 }}>🧭 O que fazer agora, Pedro</h3>
-              {avisos.map((a, k) => (
-                <div key={k} style={{ borderLeft: `4px solid ${a.c}`, padding: '6px 10px', margin: '6px 0', fontSize: 14, background: 'var(--bg-card2)', borderRadius: 6 }}>{a.i} {a.t}</div>
-              ))}
-            </div>
-          )
-        })()}
+        </div>
+      </div>
 
         {/* === RELATÓRIO DE SEXTA === */}
         {new Date().getDay() === 5 && (() => {
@@ -606,7 +605,7 @@ export default function Dashboard({ setPage }) {
               <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14, marginBottom: 12 }}>
                 <span>💵 Entradas: <strong style={{ color: '#10b981' }}>{fmtR(r.entradas)}</strong></span>
                 <span>💸 Saídas: <strong style={{ color: '#ef4444' }}>{fmtR(r.saidas)}</strong></span>
-                <span>📈 Saldo: <strong>{fmtR(r.saldo)}</strong></span>
+                <span>📈 Lucro real: <strong>{fmtR(lucroDoPeriodo(semana).real)}</strong></span>
                 {r.mecanicos.filter(m => m.maoDeObra > 0).map(m => (
                   <span key={m.nome}>👷 {m.nome}: <strong style={{ color: '#3b82f6' }}>{fmtR(m.aPagar)}</strong></span>
                 ))}
@@ -616,89 +615,57 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-      {/* === MECÂNICOS: DESTAQUES | FUNCIONÁRIOS === */}
-      <div className="dash-side-row">
-        <div className="dash-col-direita">
-        {/* === DESTAQUES DOS MECÂNICOS === */}
-        {(() => {
-          const semana = listarPeriodos().semanas[0]
-          const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const ordens = JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'concluido' && (() => { const d = o.fim ? new Date(o.fim - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) : o.data; return d >= semana.de && d <= semana.ate })())
-          const nomes = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').map(f => f.nome).filter(Boolean)
-          const dados = nomes.map(nome => {
-            const mob = calcResumoFuncionario(nome, semana).maoDeObra || 0
-            const pecas = ordens.filter(o => o.funcionario === nome).reduce((s, o) => s + (o.itens || []).reduce((a, it) => a + (Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1), 0), 0)
-            return { nome, mob, pecas }
-          })
-          const topMob = [...dados].sort((x, y) => y.mob - x.mob)[0]
-          const topPecas = [...dados].sort((x, y) => y.pecas - x.pecas)[0]
-          if (!dados.length) return null
-          return (
-            <div className="card" style={{ marginBottom: 20 }}>
-              <h3 style={{ marginTop: 0 }}>🏆 Destaques — {semana.label.toLowerCase()}</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
-                <span>🔧 Mais mão de obra: <strong>{topMob.mob > 0 ? `${topMob.nome} (${fmtR(topMob.mob)})` : '—'}</strong></span>
-                <span>🔩 Mais vendeu peças: <strong>{topPecas.pecas > 0 ? `${topPecas.nome} (${fmtR(topPecas.pecas)})` : '—'}</strong></span>
-              </div>
+      {/* === FUNCIONÁRIOS + DESTAQUES === */}
+      {(() => {
+        const semana = listarPeriodos().semanas[0]
+        const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+        const todos = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => (f.nome || '').trim())
+        const ativos = todos.filter(f => f.status !== 'inativo')
+        const inativos = todos.length - ativos.length
+        const concl = JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), semana))
+        const dados = ativos.map(f => {
+          const r = calcResumoFuncionario(f.nome, semana)
+          const pecas = concl.filter(o => o.funcionario === f.nome).reduce((t, o) => t + (o.itens || []).reduce((x, it) => x + (Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1), 0), 0)
+          const pag = r.tipoPagamento === 'fixo' ? `Salário ${fmtR(r.salario)}` : r.tipoPagamento === 'ambos' ? `Fixo + ${Math.round(r.pct * 100)}%` : `${Math.round(r.pct * 100)}%`
+          return { f, r, pecas, pag }
+        })
+        const maxMob = Math.max(0, ...dados.map(d => d.r.maoDeObra || 0))
+        const maxPec = Math.max(0, ...dados.map(d => d.pecas))
+        const td = { padding: '8px', textAlign: 'right', whiteSpace: 'nowrap' }
+        const th = { ...td, fontSize: 12, color: 'var(--text-light)', fontWeight: 600 }
+        return (
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              <h3 style={{ margin: 0 }}>👷 Funcionários — {semana.label.toLowerCase()}</h3>
+              <button className="btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setPage && setPage('funcionarios')}>Ver todos →</button>
             </div>
-          )
-        })()}
-
-        </div>
-        <div className="dash-col-direita">
-        {/* === FUNCIONÁRIOS NA SEMANA === */}
-        {(() => {
-          const semana = listarPeriodos().semanas[0]
-          const todos = JSON.parse(localStorage.getItem('ol_funcionarios') || '[]').filter(f => (f.nome || '').trim())
-          const funcs = [...todos.filter(f => f.status !== 'inativo'), ...todos.filter(f => f.status === 'inativo')]
-          const fmtR = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const linha = { fontSize: 12, color: 'var(--text-light)', marginTop: 2 }
-          return (
-            <div className="card" style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>👷 Funcionários — {semana.label.toLowerCase()}</h3>
-                <button className="btn-secondary" style={{ fontSize: 13, padding: '6px 12px' }} onClick={() => setPage && setPage('funcionarios')}>Ver todos →</button>
+            {!dados.length ? (
+              <p style={{ fontSize: 13, color: 'var(--text-light)', margin: 0 }}>Nenhum funcionário ativo. <button className="btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setPage && setPage('funcionarios')}>+ Cadastrar</button></p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead><tr>
+                    <th style={{ ...th, textAlign: 'left' }}>Funcionário</th><th style={th}>Pagamento</th><th style={th}>OS</th><th style={th}>Mão de obra</th><th style={th}>Peças vendidas</th><th style={th}>A pagar</th>
+                  </tr></thead>
+                  <tbody>
+                    {dados.map(({ f, r, pecas, pag }) => (
+                      <tr key={f.id ?? f.nome} style={{ borderTop: '1px solid var(--border)' }}>
+                        <td style={{ ...td, textAlign: 'left' }}><strong>{f.nome}</strong> <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{f.cargo || ''}</span></td>
+                        <td style={{ ...td, fontSize: 13, color: 'var(--text-light)' }}>{pag}</td>
+                        <td style={td}>{r.concluidas}{r.emAndamento ? <span style={{ fontSize: 12, color: 'var(--text-light)' }}> (+{r.emAndamento})</span> : ''}</td>
+                        <td style={td}>{maxMob > 0 && r.maoDeObra === maxMob ? '🏆 ' : ''}{fmtR(r.maoDeObra)}</td>
+                        <td style={td}>{maxPec > 0 && pecas === maxPec ? '🏆 ' : ''}{fmtR(pecas)}</td>
+                        <td style={{ ...td, fontWeight: 700, color: '#3b82f6' }}>{fmtR(r.aPagar)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>🏆 = quem mais fez mão de obra / mais vendeu peças na semana · (+n) = OS em andamento{inativos ? ` · ${inativos} inativo(s) não mostrado(s)` : ''}</div>
               </div>
-              {!funcs.length ? (
-                <p style={{ fontSize: 13, color: 'var(--text-light)', margin: 0 }}>
-                  Nenhum funcionário cadastrado ainda. <button className="btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }} onClick={() => setPage && setPage('funcionarios')}>+ Cadastrar</button>
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
-                  {funcs.map(f => {
-                    const r = calcResumoFuncionario(f.nome, semana)
-                    const inativo = f.status === 'inativo'
-                    return (
-                      <div key={f.id ?? f.nome} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', opacity: inativo ? 0.55 : 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'flex-start' }}>
-                          <div>
-                            <strong>{f.nome}</strong>
-                            <div style={linha}>{f.cargo || 'Funcionário'}</div>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, whiteSpace: 'nowrap', background: inativo ? 'rgba(127,127,127,0.2)' : 'rgba(16,185,129,0.15)', color: inativo ? 'var(--text-light)' : '#10b981' }}>
-                            {inativo ? '○ Inativo' : '● Ativo'}
-                          </span>
-                        </div>
-                        {f.telefone && <div style={linha}>📞 {f.telefone}</div>}
-                        {f.entrada && <div style={linha}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
-                        <div style={linha}>💰 {r.tipoPagamento !== 'comissao' ? `Salário ${fmtR(r.salario)}/mês` : ''}{r.tipoPagamento === 'ambos' ? ' + ' : ''}{r.tipoPagamento !== 'fixo' ? `${Math.round(r.pct * 100)}% da mão de obra` : ''}{r.despesa ? ' · entra como despesa' : ''}</div>
-                        <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 6, fontSize: 13 }}>
-                          <div>{r.concluidas} OS concluída(s) · {r.emAndamento} em andamento</div>
-                          <div>Mão de obra: <strong>{fmtR(r.maoDeObra)}</strong></div>
-                          <div>A pagar: <strong style={{ color: '#3b82f6' }}>{fmtR(r.aPagar)}</strong></div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })()}
-
-        </div>
-      </div>
-
+            )}
+          </div>
+        )
+      })()}
 
       {/* === CONFIRMAÇÃO COMISSÃO NOTINHA === */}
       {notinhaConfirm && (() => {
