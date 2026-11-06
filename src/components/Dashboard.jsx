@@ -428,15 +428,38 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-        {/* === LUCRO DO MÊS === */}
+        {/* === RESUMO DA EMPRESA === */}
         {(() => {
-          const mes = listarPeriodos().meses[0]
-          const r = resumoPeriodo(mes)
-          const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
+          const { semanas, meses } = listarPeriodos()
+          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const col = (titulo, per) => {
+            const r = resumoPeriodo(per)
+            const mecs = r.mecanicos.reduce((t, m) => t + (m.aPagar || 0), 0)
+            const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
+            const L = (rot, v, c) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '2px 0' }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
+            return (
+              <div style={{ flex: '1 1 220px' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginBottom: 4 }}>{titulo}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: cor, marginBottom: 6 }}>{f(r.saldo)}</div>
+                {L('💵 Entrou', r.entradas, '#10b981')}
+                {L('   🔩 Peças', r.entPecas)}
+                {L('   🔧 Mão de obra', r.entMob)}
+                {L('💸 Saiu', r.saidas, '#ef4444')}
+                {L('   🧾 Gastos', r.totalGastos)}
+                {L('   👷 Mecânicos', mecs)}
+                {L('📈 Lucro nas peças', r.pecasOS.lucro, '#3b82f6')}
+                {L('📈 Lucro na mão de obra', r.entMob - mecs, '#3b82f6')}
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>{r.osConcluidas} OS concluídas</div>
+              </div>
+            )
+          }
           return (
-            <div className="card" style={{ marginBottom: 20, borderLeft: `5px solid ${cor}` }}>
-              <h3 style={{ margin: 0, fontSize: 17 }}>💰 Pedro, você tem um lucro desse mês de <span style={{ color: cor }}>R$ {r.saldo.toFixed(2).replace('.', ',')}</span></h3>
-              <div style={{ fontSize: 13, color: 'var(--text-light)', marginTop: 4 }}>{mes.label}: entrou R$ {r.entradas.toFixed(2).replace('.', ',')} · saiu R$ {r.saidas.toFixed(2).replace('.', ',')}</div>
+            <div className="card" style={{ marginBottom: 20, border: '2px solid #10b981' }}>
+              <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro na empresa</h3>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                {col(`Este mês (${meses[0].label})`, meses[0])}
+                {col('Esta semana', semanas[0])}
+              </div>
             </div>
           )
         })()}
