@@ -404,9 +404,57 @@ export default function Dashboard({ setPage }) {
         )
       })}
 
-      {/* === CHECKLIST + NOTINHAS LADO A LADO === */}
-      <div className="dash-side-row">
-        <div className="dash-col-direita">
+      {/* === CARDS === */}
+      <div className="dash-cards">
+        {cards.map((c, i) => (
+          <button key={i} className="dash-card" onClick={() => setPage(c.page)}>
+            <div className="dash-card-icon" style={{ background: c.color + '18' }}>
+              <span>{c.icon}</span>
+            </div>
+            <div className="dash-card-info">
+              <span className="dash-card-label">{c.label}</span>
+              <strong className="dash-card-value" style={{ color: c.color }}>{c.value}</strong>
+            </div>
+          </button>
+        ))}
+      </div>
+
+        {/* === RESUMO DA EMPRESA === */}
+        {(() => {
+          const { semanas, meses } = listarPeriodos()
+          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
+          const col = (titulo, per) => {
+            const r = resumoPeriodo(per)
+            const mecs = r.mecanicos.reduce((t, m) => t + (m.aPagar || 0), 0)
+            const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
+            const L = (rot, v, c, sub) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sub ? 12 : 13, padding: '2px 0', paddingLeft: sub ? 22 : 0, color: sub ? 'var(--text-light)' : undefined, borderTop: sub ? 'none' : '1px solid var(--border)' }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
+            return (
+              <div style={{ flex: '1 1 220px' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginBottom: 4 }}>{titulo}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: cor, marginBottom: 6 }}>{f(r.saldo)}</div>
+                {L('💵 Entrou', r.entradas, '#10b981')}
+                {L('🔩 Peças', r.entPecas, undefined, true)}
+                {L('🔧 Mão de obra', r.entMob, undefined, true)}
+                {L('💸 Saiu', r.saidas, '#ef4444')}
+                {L('🧾 Gastos', r.totalGastos, undefined, true)}
+                {L('👷 Mecânicos', mecs, undefined, true)}
+                {L('📈 Lucro nas peças', r.pecasOS.lucro, '#3b82f6')}
+                {L('📈 Lucro na mão de obra', r.entMob - mecs, '#3b82f6')}
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>{r.osConcluidas} OS concluídas</div>
+              </div>
+            )
+          }
+          return (
+            <div className="card" style={{ marginBottom: 20, border: '2px solid #10b981' }}>
+              <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro na empresa</h3>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                {col(`Este mês (${meses[0].label})`, meses[0])}
+                {col('Esta semana', semanas[0])}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* === RELATÓRIO DE SEXTA === */}
         {new Date().getDay() === 5 && (() => {
           const semana = listarPeriodos().semanas[0]
@@ -428,42 +476,9 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-        {/* === RESUMO DA EMPRESA === */}
-        {(() => {
-          const { semanas, meses } = listarPeriodos()
-          const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const col = (titulo, per) => {
-            const r = resumoPeriodo(per)
-            const mecs = r.mecanicos.reduce((t, m) => t + (m.aPagar || 0), 0)
-            const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
-            const L = (rot, v, c) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '2px 0' }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
-            return (
-              <div style={{ flex: '1 1 220px' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-light)', marginBottom: 4 }}>{titulo}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: cor, marginBottom: 6 }}>{f(r.saldo)}</div>
-                {L('💵 Entrou', r.entradas, '#10b981')}
-                {L('   🔩 Peças', r.entPecas)}
-                {L('   🔧 Mão de obra', r.entMob)}
-                {L('💸 Saiu', r.saidas, '#ef4444')}
-                {L('   🧾 Gastos', r.totalGastos)}
-                {L('   👷 Mecânicos', mecs)}
-                {L('📈 Lucro nas peças', r.pecasOS.lucro, '#3b82f6')}
-                {L('📈 Lucro na mão de obra', r.entMob - mecs, '#3b82f6')}
-                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>{r.osConcluidas} OS concluídas</div>
-              </div>
-            )
-          }
-          return (
-            <div className="card" style={{ marginBottom: 20, border: '2px solid #10b981' }}>
-              <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro na empresa</h3>
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                {col(`Este mês (${meses[0].label})`, meses[0])}
-                {col('Esta semana', semanas[0])}
-              </div>
-            </div>
-          )
-        })()}
-
+      {/* === MECÂNICOS: DESTAQUES | FUNCIONÁRIOS === */}
+      <div className="dash-side-row">
+        <div className="dash-col-direita">
         {/* === DESTAQUES DOS MECÂNICOS === */}
         {(() => {
           const semana = listarPeriodos().semanas[0]
@@ -481,7 +496,7 @@ export default function Dashboard({ setPage }) {
           return (
             <div className="card" style={{ marginBottom: 20 }}>
               <h3 style={{ marginTop: 0 }}>🏆 Destaques — {semana.label.toLowerCase()}</h3>
-              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
                 <span>🔧 Mais mão de obra: <strong>{topMob.mob > 0 ? `${topMob.nome} (${fmtR(topMob.mob)})` : '—'}</strong></span>
                 <span>🔩 Mais vendeu peças: <strong>{topPecas.pecas > 0 ? `${topPecas.nome} (${fmtR(topPecas.pecas)})` : '—'}</strong></span>
               </div>
@@ -489,6 +504,8 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
+        </div>
+        <div className="dash-col-direita">
         {/* === FUNCIONÁRIOS NA SEMANA === */}
         {(() => {
           const semana = listarPeriodos().semanas[0]
@@ -539,23 +556,9 @@ export default function Dashboard({ setPage }) {
           )
         })()}
 
-        </div>{/* end dash-col-direita */}
-      </div>{/* end dash-side-row */}
-
-      {/* === CARDS === */}
-      <div className="dash-cards">
-        {cards.map((c, i) => (
-          <button key={i} className="dash-card" onClick={() => setPage(c.page)}>
-            <div className="dash-card-icon" style={{ background: c.color + '18' }}>
-              <span>{c.icon}</span>
-            </div>
-            <div className="dash-card-info">
-              <span className="dash-card-label">{c.label}</span>
-              <strong className="dash-card-value" style={{ color: c.color }}>{c.value}</strong>
-            </div>
-          </button>
-        ))}
+        </div>
       </div>
+
 
       {/* === CONFIRMAÇÃO COMISSÃO NOTINHA === */}
       {notinhaConfirm && (() => {
