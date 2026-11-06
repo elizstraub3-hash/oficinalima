@@ -50,7 +50,7 @@ export function lancamentosCaixa() {
       const pct = (f.comissao === undefined || f.comissao === '' ? 50 : Number(f.comissao)) / 100
       if (!pct) return
       mecanicos.push({
-        id: `${o.id}-${k}`, origem: 'mecanico', tipo: 'saida', categoria: 'Funcionários', valor: mo * pct,
+        id: `${o.id}-${k}`, origem: 'mecanico', funcionario: f.nome, tipo: 'saida', categoria: 'Funcionários', valor: mo * pct,
         data: o.fim ? dataLocal(o.fim) : (o.data || dataLocal(Date.now())),
         descricao: `Mão de obra ${f.nome} (${Math.round(pct * 100)}%) — ${o.numero || 'OS ' + o.id}`,
       })
@@ -64,7 +64,7 @@ export function lancamentosCaixa() {
     let [a, m] = inicio.split('-').map(Number)
     while (`${a}-${String(m).padStart(2, '0')}` <= hojeStr.slice(0, 7)) {
       const data = `${a}-${String(m).padStart(2, '0')}-${dia}`
-      if (data <= hojeStr) mecanicos.push({ id: `sal-${f.id}-${a}-${m}`, origem: 'mecanico', tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome}` })
+      if (data <= hojeStr) mecanicos.push({ id: `sal-${f.id}-${a}-${m}`, origem: 'mecanico', funcionario: f.nome, tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome}` })
       m++; if (m > 12) { m = 1; a++ }
     }
   })

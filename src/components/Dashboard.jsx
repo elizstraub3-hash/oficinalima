@@ -4,6 +4,7 @@ import CampoPct, { pctSalva, fatorMargem } from './CampoPct.jsx'
 import { lancamentosCaixa } from './Caixa.jsx'
 import { calcResumoFuncionario, listarPeriodos } from './Funcionarios.jsx'
 import { resumoPeriodo } from './Relatorio.jsx'
+import { noPeriodo } from './Periodo.jsx'
 
 const KEY_NOTINHAS = 'ol_notinhas'
 function loadNotinhas() { return JSON.parse(localStorage.getItem(KEY_NOTINHAS) || '[]') }
@@ -425,33 +426,34 @@ export default function Dashboard({ setPage }) {
         {(() => {
           const { semanas, meses } = listarPeriodos()
           const f = v => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`
-          const col = (titulo, per) => {
-            const r = resumoPeriodo(per)
-            const mecs = r.mecanicos.reduce((t, m) => t + (m.aPagar || 0), 0)
-            const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
-            const L = (rot, v, c, sub) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sub ? 12 : 13, padding: '2px 0', paddingLeft: sub ? 22 : 0, color: sub ? 'var(--text-light)' : undefined, borderTop: sub ? 'none' : '1px solid var(--border)' }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
-            return (
-              <div style={{ flex: '1 1 220px' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-light)', marginBottom: 4 }}>{titulo}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: cor, marginBottom: 6 }}>{f(r.saldo)}</div>
-                {L('💵 Entrou', r.entradas, '#10b981')}
-                {L('🔩 Peças', r.entPecas, undefined, true)}
-                {L('🔧 Mão de obra', r.entMob, undefined, true)}
-                {L('💸 Saiu', r.saidas, '#ef4444')}
-                {L('🧾 Gastos', r.totalGastos, undefined, true)}
-                {L('👷 Mecânicos', mecs, undefined, true)}
-                {L('📈 Lucro nas peças', r.pecasOS.lucro, '#3b82f6')}
-                {L('📈 Lucro na mão de obra', r.entMob - mecs, '#3b82f6')}
-                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>{r.osConcluidas} OS concluídas</div>
-              </div>
-            )
-          }
+          const mes = meses[0]
+          const r = resumoPeriodo(mes), w = resumoPeriodo(semanas[0])
+          const pagos = lancamentosCaixa().filter(e => e.origem === 'mecanico' && noPeriodo(e.data, mes))
+          const porFunc = Object.entries(pagos.reduce((acc, e) => { const n = e.funcionario || 'Funcionário'; acc[n] = (acc[n] || 0) + e.valor; return acc }, {})).sort((x, y) => y[1] - x[1])
+          const totalFunc = pagos.reduce((t, e) => t + e.valor, 0)
+          const cor = r.saldo >= 0 ? '#10b981' : '#ef4444'
+          const L = (rot, v, c, sub) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sub ? 13 : 14, padding: '3px 0', paddingLeft: sub ? 20 : 0, color: sub ? 'var(--text-light)' : undefined }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
           return (
-            <div className="card" style={{ marginBottom: 20, border: '2px solid #10b981' }}>
-              <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro na empresa</h3>
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                {col(`Este mês (${meses[0].label})`, meses[0])}
-                {col('Esta semana', semanas[0])}
+            <div className="card" style={{ marginBottom: 20, border: `2px solid ${cor}` }}>
+              <div style={{ textAlign: 'center', padding: '6px 0 16px', borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
+                <div style={{ fontSize: 15, color: 'var(--text-light)' }}>💰 Pedro, seu lucro em {mes.label}</div>
+                <div style={{ fontSize: 44, fontWeight: 900, color: cor, lineHeight: 1.15 }}>{f(r.saldo)}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-light)' }}>Esta semana: <strong style={{ color: w.saldo >= 0 ? '#10b981' : '#ef4444' }}>{f(w.saldo)}</strong> · {r.osConcluidas} OS concluídas no mês</div>
+              </div>
+              <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 240px' }}>
+                  {L('💵 Entrou no mês', r.entradas, '#10b981')}
+                  {L('🔩 Peças', r.entPecas, undefined, true)}
+                  {L('🔧 Mão de obra', r.entMob, undefined, true)}
+                  {r.entradas - r.entPecas - r.entMob > 0.004 && L('➕ Outras entradas', r.entradas - r.entPecas - r.entMob, undefined, true)}
+                </div>
+                <div style={{ flex: '1 1 240px' }}>
+                  {L('💸 Saiu no mês', r.saidas, '#ef4444')}
+                  {L('🧾 Gastos (planilha)', r.totalGastos, undefined, true)}
+                  {L('👷 Pagamento dos funcionários', totalFunc, undefined, true)}
+                  {porFunc.map(([n, v]) => <div key={n} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, paddingLeft: 40, color: 'var(--text-light)' }}><span>• {n}</span><span>{f(v)}</span></div>)}
+                  {r.saidas - r.totalGastos - totalFunc > 0.004 && L('➖ Outras saídas', r.saidas - r.totalGastos - totalFunc, undefined, true)}
+                </div>
               </div>
             </div>
           )
