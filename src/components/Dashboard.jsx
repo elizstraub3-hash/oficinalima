@@ -471,9 +471,28 @@ export default function Dashboard({ setPage }) {
             <div className="card" style={{ marginBottom: 20 }}>
               <h3 style={{ marginTop: 0 }}>💰 Pedro, seu lucro — {meses[0].label}</h3>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 16 }}>
-                <Big t="📈 Lucro bruto do mês" v={M.bruto} sub={`Mão de obra ${f(M.lucroMob)} + peças ${f(M.pLucro)} · semana: ${f(S.bruto)}`} />
-                <Big t="🏢 Lucro real do mês" v={M.real} sub={`Lucro bruto − gastos (${f(M.gastos)}) · semana: ${f(S.real)}`} />
+                <Big t="📈 Lucro bruto do mês" v={M.bruto} sub={<>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: 4 }}>O que o trabalho da oficina rendeu, antes de pagar as despesas</div>
+                  Mão de obra {f(M.mob)} − comissão {f(M.comissao)} = <strong>{f(M.lucroMob)}</strong><br />
+                  Peças {f(M.pVenda)} − custo {f(M.pCusto)} = <strong>{f(M.pLucro)}</strong><br />
+                  Semana: {f(S.bruto)}
+                </>} />
+                <Big t="🏢 Lucro real do mês" v={M.real} sub={<>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: 4 }}>O que sobra no seu bolso depois de pagar tudo</div>
+                  Lucro bruto {f(M.bruto)} − gastos {f(M.gastos)} = <strong>{f(M.real)}</strong><br />
+                  (luz, aluguel, café, gasolina, salários fixos…)<br />
+                  Semana: {f(S.real)}
+                </>} />
               </div>
+              {M.bruto > 0 && (
+                <div style={{ fontSize: 13, background: 'var(--bg-card2)', borderRadius: 8, padding: '8px 12px', marginBottom: 14 }}>
+                  💡 {M.real < 0
+                    ? 'O trabalho da oficina dá lucro, mas os gastos estão comendo tudo. Corte gastos.'
+                    : M.gastos > M.bruto * 0.6
+                      ? `Os gastos estão levando ${Math.round(M.gastos / M.bruto * 100)}% do lucro bruto. Vale segurar as despesas.`
+                      : 'Lucro bruto bom e gastos controlados. Continue assim!'}
+                </div>
+              )}
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead><tr><th style={{ ...th, textAlign: 'left' }}></th><th style={th}>Esta semana</th><th style={th}>Este mês</th></tr></thead>
