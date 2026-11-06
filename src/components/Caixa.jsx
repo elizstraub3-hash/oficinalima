@@ -56,15 +56,28 @@ export function lancamentosCaixa() {
       })
     })
   })
-  // Salário fixo dos funcionários marcados como despesa: sai todo mês no dia do pagamento
+  // Salário fixo é sempre despesa da oficina: semanal (conta na semana, pago na sexta) ou mensal (no dia do pagamento)
   const hojeStr = dataLocal(Date.now())
-  funcs.filter(f => (f.tipoPagamento === 'fixo' || f.tipoPagamento === 'ambos') && Number(f.salario) > 0).forEach(f => {
+  ler('ol_funcionarios').filter(f => f.status !== 'inativo' && (f.tipoPagamento === 'fixo' || f.tipoPagamento === 'ambos') && Number(f.salario) > 0).forEach(f => {
+    const inicio = f.criadoEm || hojeStr
+    if (f.frequencia === 'semanal') {
+      // semanas de sábado a sexta; o salário entra na semana mesmo antes de ser pago
+      const d = new Date(hojeStr + 'T12:00:00'); d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7))
+      for (let i = 0; i < 260; i++) {
+        const sexta = dataLocal(d.getTime())
+        const sab = new Date(d); sab.setDate(d.getDate() - 6)
+        if (sexta < inicio) break
+        const data = sexta <= hojeStr ? sexta : hojeStr
+        mecanicos.push({ id: `sal-${f.id}-${sexta}`, origem: 'mecanico', salario: true, funcionario: f.nome, tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome} (semana até ${sexta.slice(8, 10)}/${sexta.slice(5, 7)})` })
+        d.setDate(d.getDate() - 7)
+      }
+      return
+    }
     const dia = String(Math.min(28, Math.max(1, Number(f.diaPagamento) || 5))).padStart(2, '0')
-    const inicio = (f.criadoEm || hojeStr).slice(0, 7)
-    let [a, m] = inicio.split('-').map(Number)
+    let [a, m] = inicio.slice(0, 7).split('-').map(Number)
     while (`${a}-${String(m).padStart(2, '0')}` <= hojeStr.slice(0, 7)) {
       const data = `${a}-${String(m).padStart(2, '0')}-${dia}`
-      if (data <= hojeStr) mecanicos.push({ id: `sal-${f.id}-${a}-${m}`, origem: 'mecanico', funcionario: f.nome, tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome}` })
+      if (data <= hojeStr) mecanicos.push({ id: `sal-${f.id}-${a}-${m}`, origem: 'mecanico', salario: true, funcionario: f.nome, tipo: 'saida', categoria: 'Funcionários', valor: Number(f.salario), data, descricao: `Salário fixo ${f.nome}` })
       m++; if (m > 12) { m = 1; a++ }
     }
   })

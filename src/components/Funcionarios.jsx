@@ -71,6 +71,7 @@ export function calcResumoFuncionario(nome, periodo) {
     despesa: !!load().find(x => x.nome === nome)?.despesa,
     tipoPagamento: tipoPag(load().find(x => x.nome === nome)),
     salario: Number(load().find(x => x.nome === nome)?.salario) || 0,
+    frequencia: load().find(x => x.nome === nome)?.frequencia || 'mensal',
     total: minhas.length,
     concluidas: concluidas.length,
     emAndamento: minhas.filter(o => o.status === 'em_andamento').length,
@@ -154,7 +155,7 @@ export default function Funcionarios() {
               {f.endereco && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>📍 {f.endereco}</div>}
               {f.entrada && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>🕗 {f.entrada}–{f.almocoSai || '?'} · almoço · {f.almocoVolta || '?'}–{f.saida || '?'}</div>}
               <div style={{ fontSize: 12, marginTop: 2 }}>
-                💰 {tipoPag(f) !== 'comissao' && <>Salário <strong>{fmt(f.salario)}</strong>/mês (dia {f.diaPagamento || 5}){tipoPag(f) === 'ambos' ? ' + ' : ''}</>}
+                💰 {tipoPag(f) !== 'comissao' && <>Salário <strong>{fmt(f.salario)}</strong>{f.frequencia === 'semanal' ? '/semana (sexta)' : `/mês (dia ${f.diaPagamento || 5})`}{tipoPag(f) === 'ambos' ? ' + ' : ''}</>}
                 {tipoPag(f) !== 'fixo' && <><strong>{f.comissao ?? 50}%</strong> da mão de obra</>} · Despesa: <strong style={{ color: f.despesa ? '#ef4444' : 'var(--text-light)' }}>{f.despesa ? 'Sim' : 'Não'}</strong>
               </div>
             </div>
@@ -192,8 +193,8 @@ export default function Funcionarios() {
           </div>
           <div className="func-resumo-item">
             <span className="func-resumo-label">👷 {r.tipoPagamento === 'fixo' ? 'Salário fixo' : `Comissão a pagar (${Math.round(r.pct * 100)}%)`}</span>
-            <strong style={{ color: '#3b82f6' }}>{r.tipoPagamento === 'fixo' ? `${fmt(r.salario)}/mês` : fmt(r.aPagar)}</strong>
-            {r.tipoPagamento === 'ambos' && <small style={{ color: 'var(--text-light)' }}>+ salário {fmt(r.salario)}/mês</small>}
+            <strong style={{ color: '#3b82f6' }}>{r.tipoPagamento === 'fixo' ? `${fmt(r.salario)}/${r.frequencia === 'semanal' ? 'semana' : 'mês'}` : fmt(r.aPagar)}</strong>
+            {r.tipoPagamento === 'ambos' && <small style={{ color: 'var(--text-light)' }}>+ salário {fmt(r.salario)}/{r.frequencia === 'semanal' ? 'semana' : 'mês'}</small>}
           </div>
           <div className="func-resumo-item">
             <span className="func-resumo-label">Total em OS</span>
@@ -339,18 +340,29 @@ export default function Funcionarios() {
                 </button>
               ))}
             </div>
-            {(form.tipoPagamento || 'comissao') !== 'comissao' && (
+            {(form.tipoPagamento || 'comissao') !== 'comissao' && (<>
+              <div className="form-group">
+                <label>Paga o salário</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[['semanal', '📅 Por semana'], ['mensal', '🗓️ Por mês']].map(([k, l]) => (
+                    <button type="button" key={k} onClick={() => setForm(f => ({ ...f, frequencia: k }))}
+                      className={(form.frequencia || 'mensal') === k ? 'btn-primary' : 'btn-secondary'} style={{ flex: 1 }}>{l}</button>
+                  ))}
+                </div>
+              </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Salário fixo por mês (R$)</label>
-                  <input type="number" min="0" step="0.01" value={form.salario} onChange={e => setForm(f => ({ ...f, salario: e.target.value }))} placeholder="Ex: 2000" />
+                  <label>Salário fixo por {(form.frequencia || 'mensal') === 'semanal' ? 'semana' : 'mês'} (R$)</label>
+                  <input type="number" min="0" step="0.01" value={form.salario} onChange={e => setForm(f => ({ ...f, salario: e.target.value }))} placeholder={(form.frequencia || 'mensal') === 'semanal' ? 'Ex: 800' : 'Ex: 2000'} />
                 </div>
+                {(form.frequencia || 'mensal') === 'mensal' ? (
                 <div className="form-group">
                   <label>Dia do pagamento</label>
                   <input type="number" min="1" max="28" value={form.diaPagamento} onChange={e => setForm(f => ({ ...f, diaPagamento: e.target.value }))} placeholder="5" />
                 </div>
+                ) : <div className="form-group"><label>Dia do pagamento</label><div style={{ padding: '10px 0', color: 'var(--text-light)' }}>Toda sexta-feira</div></div>}
               </div>
-            )}
+            </>)}
             <div className="form-row">
               {(form.tipoPagamento || 'comissao') !== 'fixo' ? (
               <div className="form-group">

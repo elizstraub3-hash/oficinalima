@@ -174,7 +174,7 @@ export function lucroDoPeriodo(per) {
             })
             const p = pecasDasOS(per)
             const r = resumoPeriodo(per)
-            const salarios = lancamentosCaixa().filter(e => e.origem === 'mecanico' && String(e.descricao || '').startsWith('Salário fixo') && noPeriodo(e.data, per)).reduce((t, e) => t + e.valor, 0)
+            const salarios = lancamentosCaixa().filter(e => e.origem === 'mecanico' && e.salario && noPeriodo(e.data, per)).reduce((t, e) => t + e.valor, 0)
             const gastos = r.totalGastos + salarios
             const lucroMob = mob - comissao
             const bruto = lucroMob + p.lucro
@@ -199,6 +199,7 @@ export default function Dashboard({ setPage }) {
   const [notinhaOpen, setNotinhaOpen] = useState(false)
   const [notinhaConfirm, setNotinhaConfirm] = useState(null)
   const [pctReserva, setPctReserva] = useState(() => pctSalva('reserva_mes') || 20)
+  const [pagos, setPagos] = useState(() => JSON.parse(localStorage.getItem('ol_pagos_func') || '{}'))
   const [reservas, setReservas] = useState(() => JSON.parse(localStorage.getItem('ol_reservas') || '[]'))
   const [dashPctInput, setDashPctInput] = useState(() => pctSalva('comissao_notinha'))
   const saudacao = getSaudacao()
@@ -448,6 +449,13 @@ export default function Dashboard({ setPage }) {
           const paradas = ordens.filter(o => !['concluido', 'cancelado'].includes(o.status) && o.data && (Date.now() - new Date(o.data)) / 864e5 > 7)
           if (paradas.length) atencao(`${paradas.length} OS aberta(s) há mais de 7 dias. Conclua ou cobre o cliente para o dinheiro entrar.`)
           const orc = ordens.filter(o => o.status === 'orcamento').length
+          {
+            const pg = JSON.parse(localStorage.getItem('ol_pagos_func') || '{}')
+            const sem = semanas[0]
+            const pend = lancamentosCaixa().filter(e => e.origem === 'mecanico' && noPeriodo(e.data, sem))
+              .reduce((acc, e) => { acc[e.funcionario] = (acc[e.funcionario] || 0) + e.valor; return acc }, {})
+            Object.entries(pend).forEach(([n, v]) => { if (v > 0 && !pg[`${n}|${sem.ate}`]) atencao(`Falta pagar ${n}: ${f(v)} desta semana. Quando pagar, marque "Pago" lá em Funcionários.`) })
+          }
           if (orc) atencao(`${orc} orçamento(s) esperando resposta. Vale mandar uma mensagem para o cliente.`)
           const semCusto = ordens.filter(o => o.status === 'concluido').some(o => (o.itens || []).some(it => !Number(it.custo)))
           if (semCusto) atencao('Tem peça nas OS sem o custo preenchido. Coloque o custo para o lucro das peças ficar certo.')
@@ -633,11 +641,22 @@ export default function Dashboard({ setPage }) {
         const ativos = todos.filter(f => f.status !== 'inativo')
         const inativos = todos.length - ativos.length
         const concl = JSON.parse(localStorage.getItem('ol_ordens') || '[]').filter(o => o.status === 'concluido' && noPeriodo(dataOS(o), semana))
+        const salariosSemana = lancamentosCaixa().filter(e => e.salario && noPeriodo(e.data, semana))
+        const marcar = (chave, valor) => {
+          const novo = { ...pagos }
+          if (novo[chave]) { if (!confirm('Desmarcar este pagamento?')) return; delete novo[chave] }
+          else novo[chave] = { valor, data: new Date().toISOString().slice(0, 10) }
+          localStorage.setItem('ol_pagos_func', JSON.stringify(novo)); setPagos(novo)
+        }
         const dados = ativos.map(f => {
           const r = calcResumoFuncionario(f.nome, semana)
           const pecas = concl.filter(o => o.funcionario === f.nome).reduce((t, o) => t + (o.itens || []).reduce((x, it) => x + (Number(it.valor ?? it.valorUnit) || 0) * (Number(it.qtd) || 1), 0), 0)
-          const pag = r.tipoPagamento === 'fixo' ? `Salário ${fmtR(r.salario)}` : r.tipoPagamento === 'ambos' ? `Fixo + ${Math.round(r.pct * 100)}%` : `${Math.round(r.pct * 100)}%`
-          return { f, r, pecas, pag }
+          const per = f.frequencia === 'semanal' ? '/sem' : '/mês'
+          const pag = r.tipoPagamento === 'fixo' ? `Salário ${fmtR(r.salario)}${per}` : r.tipoPagamento === 'ambos' ? `${fmtR(r.salario)}${per} + ${Math.round(r.pct * 100)}%` : `${Math.round(r.pct * 100)}%`
+          const sal = salariosSemana.filter(e => e.funcionario === f.nome).reduce((t, e) => t + e.valor, 0)
+          const total = r.aPagar + sal
+          const chave = `${f.nome}|${semana.ate}`
+          return { f, r, pecas, pag, sal, total, chave, pago: pagos[chave] }
         })
         const maxMob = Math.max(0, ...dados.map(d => d.r.maoDeObra || 0))
         const maxPec = Math.max(0, ...dados.map(d => d.pecas))
@@ -655,22 +674,30 @@ export default function Dashboard({ setPage }) {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead><tr>
-                    <th style={{ ...th, textAlign: 'left' }}>Funcionário</th><th style={th}>Pagamento</th><th style={th}>OS</th><th style={th}>Mão de obra</th><th style={th}>Peças vendidas</th><th style={th}>A pagar</th>
+                    <th style={{ ...th, textAlign: 'left' }}>Funcionário</th><th style={th}>Pagamento</th><th style={th}>OS</th><th style={th}>Mão de obra</th><th style={th}>Peças vendidas</th><th style={th}>A pagar na semana</th><th style={th}></th>
                   </tr></thead>
                   <tbody>
-                    {dados.map(({ f, r, pecas, pag }) => (
+                    {dados.map(({ f, r, pecas, pag, sal, total, chave, pago }) => (
                       <tr key={f.id ?? f.nome} style={{ borderTop: '1px solid var(--border)' }}>
                         <td style={{ ...td, textAlign: 'left' }}><strong>{f.nome}</strong> <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{f.cargo || ''}</span></td>
                         <td style={{ ...td, fontSize: 13, color: 'var(--text-light)' }}>{pag}</td>
                         <td style={td}>{r.concluidas}{r.emAndamento ? <span style={{ fontSize: 12, color: 'var(--text-light)' }}> (+{r.emAndamento})</span> : ''}</td>
                         <td style={td}>{maxMob > 0 && r.maoDeObra === maxMob ? '🏆 ' : ''}{fmtR(r.maoDeObra)}</td>
                         <td style={td}>{maxPec > 0 && pecas === maxPec ? '🏆 ' : ''}{fmtR(pecas)}</td>
-                        <td style={{ ...td, fontWeight: 700, color: '#3b82f6' }}>{fmtR(r.aPagar)}</td>
+                        <td style={{ ...td, fontWeight: 700, color: '#3b82f6' }}>
+                          {fmtR(total)}
+                          {sal > 0 && r.aPagar > 0 && <div style={{ fontSize: 11, color: 'var(--text-light)', fontWeight: 400 }}>salário {fmtR(sal)} + comissão {fmtR(r.aPagar)}</div>}
+                        </td>
+                        <td style={td}>
+                          {total > 0 && (pago
+                            ? <button onClick={() => marcar(chave, total)} title="Clique para desmarcar" style={{ background: 'rgba(16,185,129,.15)', color: '#10b981', border: 'none', borderRadius: 14, padding: '4px 10px', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>✅ Pago</button>
+                            : <button onClick={() => marcar(chave, total)} style={{ background: 'rgba(245,158,11,.15)', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: 14, padding: '4px 10px', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>⏳ Marcar pago</button>)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>🏆 = quem mais fez mão de obra / mais vendeu peças na semana · (+n) = OS em andamento{inativos ? ` · ${inativos} inativo(s) não mostrado(s)` : ''}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>🏆 = quem mais fez mão de obra / mais vendeu peças na semana · (+n) = OS em andamento · O salário semanal já entra no lucro real da semana, mesmo antes de pagar{inativos ? ` · ${inativos} inativo(s) não mostrado(s)` : ''}</div>
               </div>
             )}
           </div>
