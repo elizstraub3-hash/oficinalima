@@ -435,11 +435,23 @@ export default function Dashboard({ setPage }) {
           const L = (rot, v, c, sub) => <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: sub ? 13 : 14, padding: '3px 0', paddingLeft: sub ? 20 : 0, color: sub ? 'var(--text-light)' : undefined }}><span>{rot}</span><strong style={{ color: c }}>{f(v)}</strong></div>
           return (
             <div className="card" style={{ marginBottom: 20, border: `2px solid ${cor}` }}>
-              <div style={{ textAlign: 'center', padding: '6px 0 16px', borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
-                <div style={{ fontSize: 15, color: 'var(--text-light)' }}>💰 Pedro, seu lucro em {mes.label}</div>
-                <div style={{ fontSize: 44, fontWeight: 900, color: cor, lineHeight: 1.15 }}>{f(r.saldo)}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-light)' }}>Esta semana: <strong style={{ color: w.saldo >= 0 ? '#10b981' : '#ef4444' }}>{f(w.saldo)}</strong> · {r.osConcluidas} OS concluídas no mês</div>
-              </div>
+              {(() => {
+                const bruto = r.entradas - r.pecasOS.custo
+                const corB = bruto >= 0 ? '#10b981' : '#ef4444'
+                const bW = w.entradas - w.pecasOS.custo
+                return (
+                  <div style={{ textAlign: 'center', padding: '6px 0 16px', borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
+                    <div style={{ fontSize: 15, color: 'var(--text-light)' }}>💰 Pedro, seu lucro bruto em {mes.label}</div>
+                    <div style={{ fontSize: 44, fontWeight: 900, color: corB, lineHeight: 1.15 }}>{f(bruto)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>Tudo que entrou ({f(r.entradas)}) menos o custo das peças vendidas ({f(r.pecasOS.custo)})</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 22, flexWrap: 'wrap', fontSize: 13, marginTop: 8 }}>
+                      <span>Lucro bruto da semana: <strong style={{ color: bW >= 0 ? '#10b981' : '#ef4444' }}>{f(bW)}</strong></span>
+                      <span>Sobra depois de gastos e funcionários: <strong style={{ color: cor }}>{f(r.saldo)}</strong></span>
+                      <span>{r.osConcluidas} OS concluídas</span>
+                    </div>
+                  </div>
+                )
+              })()}
               <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 240px' }}>
                   {L('💵 Entrou no mês', r.entradas, '#10b981')}
